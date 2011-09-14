@@ -369,10 +369,10 @@ private:
 const char * compatibilityError(ConversionRank tc);
 
 void compatibilityWarning(const SourceLocation & loc, ConversionRank tc,
-    const Type * from, const Type * to);
+    const Type * from, QualifiedType to);
 
 void compatibilityWarning(const SourceLocation & loc, ConversionRank tc,
-    const Expr * from, const Type * to);
+    const Expr * from, QualifiedType to);
 
 // Given a type, append the linkage name of that type to the output buffer.
 void typeLinkageName(llvm::SmallVectorImpl<char> & out, const Type * ty);

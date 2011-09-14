@@ -245,7 +245,7 @@ MDNode * MDWriter::functionDefn(const FunctionDefn * fn) {
     builder.put(serializeAst(fn->templateSignature()->ast()));
   } else {
     if (fn->type() != NULL) {
-      builder.put(serializeType(fn->returnType()));
+      builder.put(serializeType(fn->returnType().type()));
       builder.put(parameterList(fn->params()));
 
       DASSERT_OBJ(!fn->hasUnboundTypeParams(), fn);

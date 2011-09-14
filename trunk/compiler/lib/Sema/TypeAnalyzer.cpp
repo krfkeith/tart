@@ -117,7 +117,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
         return ftype;
       }
 
-      if (ftype->returnType() == NULL) {
+      if (ftype->returnType().isNull()) {
         ftype->setReturnType(&VoidType::instance);
       }
 

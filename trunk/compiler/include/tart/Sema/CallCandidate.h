@@ -89,10 +89,10 @@ public:
       that this argument will be assigned to. This may not be the same
       as the formally declared parameter type, as pattern variable
       substitutions may have occurred. */
-  const Type * paramType(int argIndex) const;
+  QualifiedType paramType(int argIndex) const;
 
   /** Get the return type of this candidate. */
-  const Type * resultType() const { return resultType_; }
+  QualifiedType resultType() const { return resultType_; }
 
   /** The list of relabeled type parameters. */
   const TupleType * typeParams() const { return typeParams_; }
@@ -169,8 +169,8 @@ private:
   Provision * primaryProvision_;
   ParameterAssignments paramAssignments_;
   const FunctionType * fnType_;
-  const Type * resultType_;
-  ConstTypeList paramTypes_;
+  QualifiedType resultType_;
+  QualifiedTypeList paramTypes_;
   const TupleType * typeParams_;
   const TupleType * typeArgs_;
   TemplateConditionList conditions_;

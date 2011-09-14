@@ -85,8 +85,7 @@ Expr * ExprAnalyzer::reduceMultipleAssign(const ASTOper * ast) {
     rhs = SharedValueExpr::get(rhs);
     for (size_t i = 0; i < dstVars.size(); ++i) {
       Expr * srcVal = new BinaryExpr(
-          Expr::ElementRef, rhs->location(), tt->member(i).type(),
-          rhs, ConstantInteger::getUInt32(i));
+          Expr::ElementRef, rhs->location(), tt->member(i), rhs, ConstantInteger::getUInt32(i));
 
       ma->appendArg(reduceStoreValue(ast->location(), dstVars[i], srcVal));
     }

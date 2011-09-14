@@ -37,8 +37,8 @@ public:
   void setIsInvocable(bool value) { isInvocable_ = value; }
 
   // Return type
-  const Type * returnType() const { return returnType_; }
-  void setReturnType(const Type * type) { returnType_ = type; }
+  QualifiedType returnType() const { return returnType_; }
+  void setReturnType(QualifiedType type) { returnType_ = type; }
 
   /** True if this function type uses 'struct return' calling convention. */
   bool isStructReturn() const;
@@ -82,7 +82,7 @@ public:
 
   llvm::Type * createIRType() const;
   llvm::FunctionType * createIRFunctionType(
-      const Type * selfType, const ParameterList & params, const Type * returnType) const;
+      const Type * selfType, const ParameterList & params, QualifiedType returnType) const;
   llvm::Type * irEmbeddedType() const;
   llvm::Type * irParameterType() const;
   bool isReferenceType() const;
@@ -99,7 +99,7 @@ public:
 
 private:
   bool isStatic_;
-  const Type * returnType_;
+  QualifiedType returnType_;
   ParameterDefn * selfParam_;
   ParameterList params_;
   mutable TupleType * paramTypes_;

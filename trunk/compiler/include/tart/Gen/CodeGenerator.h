@@ -94,7 +94,7 @@ typedef llvm::SmallVector<llvm::Value *, 16> ValueList;
 typedef std::vector<llvm::Constant *> ConstantList;
 typedef llvm::DenseMap<const CompositeType *, RuntimeTypeInfo *> RTTypeMap;
 typedef llvm::DenseMap<const ConstantObjectRef *, llvm::Constant *> ConstantObjectMap;
-typedef llvm::DenseMap<const Type *, llvm::DIType> DITypeMap;
+typedef llvm::DenseMap<QualifiedType, llvm::DIType, QualifiedType::KeyInfo> DITypeMap;
 typedef llvm::DenseMap<llvm::GlobalVariable *, llvm::Constant *> StaticRootMap;
 typedef llvm::StringMap<llvm::Constant *> StringLiteralMap;
 typedef llvm::SmallVector<LocalScope *, 4> LocalScopeList;
@@ -470,7 +470,7 @@ public:
   void clearDebugLocation();
 
   /** Generate debugging information for types. */
-  llvm::DIType genDIType(const Type * type);
+  llvm::DIType genDIType(QualifiedType type);
   llvm::DIType genDIPrimitiveType(const PrimitiveType * type);
   llvm::DIType genDICompositeType(const CompositeType * type);
   llvm::DIType genDIEnumType(const EnumType * type);
@@ -484,8 +484,8 @@ public:
       uint64_t & offset);
   llvm::DIType genDITypeMember(llvm::DIDescriptor Scope, llvm::Type * type,
       llvm::DIType memberType, StringRef name, unsigned sourceLine, uint64_t & offset);
-  llvm::DIType genDIEmbeddedType(const Type * type);
-  llvm::DIType genDIParameterType(const Type * type);
+  llvm::DIType genDIEmbeddedType(QualifiedType type);
+  llvm::DIType genDIParameterType(QualifiedType type);
 
   // Return the pointer to the reflection data for this module.
   llvm::GlobalVariable * createModuleObjectPtr();

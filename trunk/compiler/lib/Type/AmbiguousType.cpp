@@ -18,34 +18,34 @@ namespace tart {
 // -------------------------------------------------------------------
 // AmbiguousType
 
-void AmbiguousType::listProspects(ProspectList & out, const Type * ty, const ProvisionSet & add) {
+void AmbiguousType::listProspects(ProspectList & out, QualifiedType ty, const ProvisionSet & add) {
   static int recursionCheck = 0;
   ++recursionCheck;
   DASSERT(recursionCheck < 50);
 
   switch (ty->typeClass()) {
     case Type::AmbiguousParameter: {
-      static_cast<const AmbiguousParameterType *>(ty)->listProspects(out, add);
+      ty.as<AmbiguousParameterType>()->listProspects(out, add);
       break;
     }
 
     case Type::AmbiguousResult: {
-      static_cast<const AmbiguousResultType *>(ty)->listProspects(out, add);
+      ty.as<AmbiguousResultType>()->listProspects(out, add);
       break;
     }
 
     case Type::AmbiguousPhi: {
-      static_cast<const AmbiguousPhiType *>(ty)->listProspects(out, add);
+      ty.as<AmbiguousPhiType>()->listProspects(out, add);
       break;
     }
 
     case Type::AmbiguousTypeParam: {
-      static_cast<const AmbiguousTypeParamType *>(ty)->listProspects(out, add);
+      ty.as<AmbiguousTypeParamType>()->listProspects(out, add);
       break;
     }
 
     default:
-      out.push_back(Prospect(ty, add));
+      out.push_back(Prospect(ty.type(), add));
       break;
   }
 

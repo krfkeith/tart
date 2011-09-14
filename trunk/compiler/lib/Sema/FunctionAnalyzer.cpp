@@ -528,9 +528,9 @@ bool FunctionAnalyzer::resolveReturnType() {
   bool success = true;
 
   FunctionType * funcType = target->functionType();
-  const Type * returnType = funcType->returnType();
+  QualifiedType returnType = funcType->returnType();
 
-  if (returnType == NULL && target->passes().isRunning(FunctionDefn::ReturnTypePass)) {
+  if (returnType.isNull() && target->passes().isRunning(FunctionDefn::ReturnTypePass)) {
     diag.fatal(target) << "Recursive function must have explicit return type.";
     return false;
   }
@@ -540,7 +540,7 @@ bool FunctionAnalyzer::resolveReturnType() {
       // We can't do type inference on a template, since the types are unknown.
       // (And also because we haven't built a CFG).
       // Templates that don't have an explicit return type are assumed void.
-      if (returnType == NULL) {
+      if (returnType.isNull()) {
         funcType->setReturnType(&VoidType::instance);
       }
 
@@ -553,7 +553,7 @@ bool FunctionAnalyzer::resolveReturnType() {
   if (target->passes().begin(FunctionDefn::ReturnTypePass)) {
     SourceLocation  returnTypeLoc;
     TypeList returnTypes;
-    if (returnType == NULL) {
+    if (returnType.isNull()) {
       returnType = &VoidType::instance;
 #if INFER_RETURN_TYPE
       BlockList & blocks = target->blocks();
@@ -753,10 +753,10 @@ bool FunctionAnalyzer::createReflectionData() {
       }
 
       if (!ftype->returnType()->isVoidType()) {
-        const Type * returnType = dealias(ftype->returnType());
+        QualifiedType returnType = dealias(ftype->returnType());
         if (returnType->isBoxableType()) {
           // Cache the boxing function for this type.
-          ExprAnalyzer(this, target).coerceToObjectFn(returnType);
+          ExprAnalyzer(this, target).coerceToObjectFn(returnType.type());
         } else if (!returnType->isReferenceType()) {
           // For the moment we can't handle non-reference types in reflection.
           doReflect = false;

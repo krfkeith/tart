@@ -26,7 +26,7 @@ namespace tart {
 
 extern bool unifyVerbose;
 
-Expr * ExprAnalyzer::doImplicitCast(Expr * in, const Type * toType, unsigned options) {
+Expr * ExprAnalyzer::doImplicitCast(Expr * in, QualifiedType toType, unsigned options) {
   DASSERT(in != NULL);
   if (isErrorResult(toType)) {
     return in;
@@ -95,15 +95,16 @@ Expr * ExprAnalyzer::doImplicitCast(Expr * in, const Type * toType, unsigned opt
   if (options & AO_EXPLICIT_CAST) {
     conversionOpts |= TypeConversion::EXPLICIT;
   }
-  ConversionRank rank = TypeConversion::convert(in, toType, &castExpr, conversionOpts);
+  ConversionRank rank;
+  llvm::tie(rank, castExpr) = TypeConversion::convert(in, toType, conversionOpts);
   DASSERT(rank == Incompatible || castExpr != NULL);
 
   if (rank == Incompatible && (options & (AO_IMPLICIT_CAST | AO_EXPLICIT_CAST))) {
     // Try a coercive cast. Note that we don't do this in 'convert' because it
     // can't handle building the actual call expression.
-    castExpr = tryCoerciveCast(in, toType);
+    castExpr = tryCoerciveCast(in, toType.type());
     if (castExpr != NULL) {
-      Expr * result = inferTypes(subject_, castExpr, toType, false);
+      Expr * result = inferTypes(subject_, castExpr, toType.type(), false);
       return result;
     }
   }
@@ -121,7 +122,7 @@ Expr * ExprAnalyzer::doBoxCast(Expr * in) {
   FunctionDefn * coerceFn = coerceToObjectFn(fromType);
   FnCallExpr * call = new FnCallExpr(Expr::FnCall, in->location(), coerceFn, NULL);
   call->appendArg(in);
-  call->setType(Builtins::typeObject);
+  call->setType(Builtins::typeObject.get());
   return call;
 }
 
@@ -171,7 +172,7 @@ Expr * ExprAnalyzer::doUnboxCast(Expr * in, const Type * toType) {
 
   DASSERT(valueOfMethod->isSingular());
   FnCallExpr * call = new FnCallExpr(Expr::FnCall, in->location(), valueOfMethod, NULL);
-  call->appendArg(doImplicitCast(in, Builtins::typeObject));
+  call->appendArg(doImplicitCast(in, Builtins::typeObject.get()));
   call->setType(valueOfMethod->returnType());
   return call;
 }

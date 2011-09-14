@@ -44,7 +44,7 @@ public:
 private:
   const ExprType    exprType_;
   SourceLocation    loc_;
-  const Type      * type_;
+  QualifiedType     type_;
 
   static const ExprList emptyList;
 
@@ -55,14 +55,20 @@ public:
     , type_(type)
   {}
 
+  Expr(ExprType k, const SourceLocation & l, QualifiedType type)
+    : exprType_(k)
+    , loc_(l)
+    , type_(type.type())
+  {}
+
   virtual ~Expr() {}
 
   /** The type of expression node. */
   ExprType exprType() const { return exprType_; }
 
   /** The type of this expression. */
-  const Type * type() const { return type_; }
-  void setType(const Type * type) { type_ = type; }
+  const Type * type() const { return type_.type(); }
+  void setType(QualifiedType type) { type_ = type; }
 
   /** The type of this expression with aliases removed. */
   const Type * canonicalType() const;
@@ -121,7 +127,7 @@ public:
 class UnaryExpr : public Expr {
 public:
   /** Constructor. */
-  UnaryExpr(ExprType k, const SourceLocation & loc, const Type * type, Expr * a)
+  UnaryExpr(ExprType k, const SourceLocation & loc, QualifiedType type, Expr * a)
     : Expr(k, loc, type)
     , arg_(a)
   {}
@@ -151,14 +157,14 @@ private:
 
 public:
   /** Constructor. */
-  BinaryExpr(ExprType k, const SourceLocation & loc, const Type * type)
+  BinaryExpr(ExprType k, const SourceLocation & loc, QualifiedType type)
     : Expr(k, loc, type)
     , first_(NULL)
     , second_(NULL)
   {}
 
   /** Constructor. */
-  BinaryExpr(ExprType k, const SourceLocation & loc, const Type * type,
+  BinaryExpr(ExprType k, const SourceLocation & loc, QualifiedType type,
       Expr * f, Expr * s)
     : Expr(k, loc, type)
     , first_(f)
@@ -215,11 +221,11 @@ protected:
   bool areArgsConstant() const;
   bool areArgsSideEffectFree() const;
 
-  ArglistExpr(ExprType k, const SourceLocation & loc, const Type * type)
+  ArglistExpr(ExprType k, const SourceLocation & loc, QualifiedType type)
     : Expr(k, loc, type)
   {}
 
-  ArglistExpr(ExprType k, const SourceLocation & loc, const ExprList & exprs, const Type * type)
+  ArglistExpr(ExprType k, const SourceLocation & loc, const ExprList & exprs, QualifiedType type)
     : Expr(k, loc, type)
   {
     args_.append(exprs.begin(), exprs.end());

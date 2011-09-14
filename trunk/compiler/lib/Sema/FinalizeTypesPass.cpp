@@ -252,7 +252,7 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
       result->setType(method->functionType()->selfParam()->type());
     } else {
       //DASSERT_OBJ(strcmp(method->name(), "construct") != 0, method);
-      DASSERT_OBJ(method->returnType() != NULL, method);
+      DASSERT(method->returnType()) << "Missing return type for " << method;
       result->setType(method->returnType());
       if (method->storageClass() != Storage_Instance) {
         result->setSelfArg(NULL);

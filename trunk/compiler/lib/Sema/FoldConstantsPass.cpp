@@ -50,7 +50,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
 
       size_t argCount = cc->argCount();
       for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
-        const Type * paramType = cc->paramType(argIndex);
+        QualifiedType paramType = cc->paramType(argIndex);
         if (!paramType->isUnsizedIntType()) {
           exactMatch = false;
         }

@@ -729,6 +729,10 @@ const Type * AnalyzerBase::inferType(ValueDefn * valueDef) {
   DFAIL("Failed to determine type of value.");
 }
 
+bool AnalyzerBase::analyzeType(QualifiedType in, AnalysisTask task) {
+  return analyzeType(in.unqualified(), task);
+}
+
 bool AnalyzerBase::analyzeType(const Type * in, AnalysisTask task) {
   if (in != NULL) {
     TypeDefn * de = in->typeDefn();
@@ -749,7 +753,7 @@ bool AnalyzerBase::analyzeType(const Type * in, AnalysisTask task) {
         }
 
         if (!ftype->returnType()->isVoidType()) {
-          analyzeType(ftype->returnType(), task);
+          analyzeType(ftype->returnType().type(), task);
         }
 
         size_t numTypes = in->numTypeParams();

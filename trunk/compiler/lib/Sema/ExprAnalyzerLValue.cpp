@@ -305,12 +305,12 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
 
   // Memory address type
   if (const AddressType * maType = dyn_cast<AddressType>(arrayType)) {
-    const Type * elemType = maType->typeParam(0).type();
-    if (!AnalyzerBase::analyzeType(elemType, Task_PrepTypeComparison)) {
+    QualifiedType elemType = maType->typeParam(0);
+    if (!AnalyzerBase::analyzeType(elemType.type(), Task_PrepTypeComparison)) {
       return &Expr::ErrorVal;
     }
 
-    DASSERT_OBJ(elemType != NULL, maType);
+    DASSERT_OBJ(!elemType.isNull(), maType);
 
     if (args.size() != 1) {
       diag.fatal(ast) << "Incorrect number of array index dimensions";
@@ -338,8 +338,8 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
       return &Expr::ErrorVal;
     }
 
-    const Type * elemType = naType->typeParam(0).type();
-    DASSERT_OBJ(elemType != NULL, naType);
+    QualifiedType elemType = naType->typeParam(0);
+    DASSERT_OBJ(!elemType.isNull(), naType);
 
     if (args.size() != 1) {
       diag.fatal(ast) << "Incorrect number of array subscripts";
@@ -349,7 +349,8 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
     Expr * indexExpr = args[0];
     if (TypeConversion::check(
         indexExpr, &Int32Type::instance, TypeConversion::COERCE) == Incompatible) {
-      diag.fatal(ast) << "Native array subscript must be integer type, but is " << indexExpr->type();
+      diag.fatal(ast) << "Native array subscript must be integer type, but is " <<
+          indexExpr->type();
       return &Expr::ErrorVal;
     }
 
@@ -363,8 +364,8 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
       return &Expr::ErrorVal;
     }
 
-    const Type * elemType = faType->typeParam(0).type();
-    DASSERT_OBJ(elemType != NULL, faType);
+    QualifiedType elemType = faType->typeParam(0);
+    DASSERT_OBJ(!elemType.isNull(), faType);
 
     if (args.size() != 1) {
       diag.fatal(ast) << "Incorrect number of array subscripts";
@@ -411,7 +412,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
       }
 
       uint32_t index = uint32_t(indexVal.getZExtValue());
-      return new BinaryExpr(Expr::ElementRef, ast->location(), tt->member(index).type(), arrayExpr, cint);
+      return new BinaryExpr(Expr::ElementRef, ast->location(), tt->member(index), arrayExpr, cint);
     } else {
       diag.fatal(args[0]) << "Tuple subscript must be an integer constant";
       return &Expr::ErrorVal;

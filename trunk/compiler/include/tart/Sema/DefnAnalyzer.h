@@ -69,6 +69,7 @@ public:
 
   /** Add a type to the set of types reflected within a module. */
   bool reflectType(const Type * type);
+  bool reflectType(QualifiedType type);
   void reflectTypeMembers(CompositeType * type);
 
   /** Get the module in which a definition was defined - includes code to handle

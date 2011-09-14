@@ -91,7 +91,7 @@ const Type * FunctionDefn::type() const {
   return type_;
 }
 
-const Type * FunctionDefn::returnType() const {
+QualifiedType FunctionDefn::returnType() const {
   return type_->returnType();
 }
 
@@ -183,8 +183,8 @@ bool FunctionDefn::canOverride(const FunctionDefn * base) const {
   const FunctionType * funcType = functionType();
   const FunctionType * baseType = base->functionType();
 
-  const Type * baseReturn = baseType->returnType();
-  const Type * funcReturn = funcType->returnType();
+  QualifiedType baseReturn = baseType->returnType();
+  QualifiedType funcReturn = funcType->returnType();
 
   if (!TypeRelation::isEqual(baseReturn, funcReturn)) {
     // TODO: Variance test.
@@ -292,7 +292,7 @@ void FunctionDefn::format(FormatStream & out) const {
       out << "(";
       formatParameterList(out, params());
       out << ")";
-      if (type_->returnType() != NULL && !type_->returnType()->isVoidType()) {
+      if (!type_->returnType().isNull() && !type_->returnType()->isVoidType()) {
         out << " -> " << type_->returnType();
       }
     }

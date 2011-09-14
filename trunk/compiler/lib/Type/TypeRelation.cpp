@@ -98,8 +98,8 @@ static bool isEqualFunction(Qualified<FunctionType> lfn, Qualified<FunctionType>
   // Again, I *think* that's right. Having two functions with identical names & signatures
   // but having different type params would be ...weird.
 
-  DASSERT(lfn->returnType() != NULL);
-  DASSERT(rfn->returnType() != NULL);
+  DASSERT(lfn->returnType());
+  DASSERT(rfn->returnType());
   if (!TypeRelation::isEqual(lfn->returnType(), rfn->returnType())) {
     return false;
   }

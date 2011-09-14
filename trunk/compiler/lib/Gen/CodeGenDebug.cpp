@@ -285,8 +285,8 @@ void CodeGenerator::genDILocalVariable(const VariableDefn * var, Value * value) 
   }
 }
 
-DIType CodeGenerator::genDIType(const Type * type) {
-  DASSERT(type != NULL);
+DIType CodeGenerator::genDIType(QualifiedType type) {
+  DASSERT(!type.isNull());
   DIType result = dbgTypeMap_[type];
   if ((MDNode *)result != NULL) {
     return result;
@@ -296,46 +296,46 @@ DIType CodeGenerator::genDIType(const Type * type) {
 
   switch (type->typeClass()) {
     case Type::Primitive:
-      result = genDIPrimitiveType(static_cast<const PrimitiveType *>(type));
+      result = genDIPrimitiveType(static_cast<const PrimitiveType *>(type.type()));
       break;
 
     case Type::Class:
     case Type::Struct:
     case Type::Interface:
-      return genDICompositeType(static_cast<const CompositeType *>(type));
+      return genDICompositeType(static_cast<const CompositeType *>(type.type()));
       break;
 
     case Type::Enum:
-      result = genDIEnumType(static_cast<const EnumType *>(type));
+      result = genDIEnumType(static_cast<const EnumType *>(type.type()));
       break;
 
     case Type::NArray:
-      result = genDINativeArrayType(static_cast<const NativeArrayType *>(type));
+      result = genDINativeArrayType(static_cast<const NativeArrayType *>(type.type()));
       break;
 
     case Type::FlexibleArray:
-      result = genDIFlexibleArrayType(static_cast<const FlexibleArrayType *>(type));
+      result = genDIFlexibleArrayType(static_cast<const FlexibleArrayType *>(type.type()));
       break;
 
     case Type::NAddress:
-      result = genDIAddressType(static_cast<const AddressType *>(type));
+      result = genDIAddressType(static_cast<const AddressType *>(type.type()));
       break;
 
     case Type::Union:
-      result = genDIUnionType(static_cast<const UnionType *>(type));
+      result = genDIUnionType(static_cast<const UnionType *>(type.type()));
       break;
 
     case Type::Tuple:
-      result = genDITupleType(static_cast<const TupleType *>(type));
+      result = genDITupleType(static_cast<const TupleType *>(type.type()));
       break;
 
     case Type::Function:
-      result = genDIFunctionType(static_cast<const FunctionType *>(type));
+      result = genDIFunctionType(static_cast<const FunctionType *>(type.type()));
       break;
 
     case Type::Alias: {
-      const TypeAlias * alias = static_cast<const TypeAlias *>(type);
-      result = genDIType(alias->value());
+      result = genDIType(type.as<TypeAlias>()->value());
+      break;
     }
 
     case Type::TypeLiteral:
@@ -370,7 +370,7 @@ DIType CodeGenerator::genDIPrimitiveType(const PrimitiveType * type) {
   return di;
 }
 
-DIType CodeGenerator::genDIEmbeddedType(const Type * type) {
+DIType CodeGenerator::genDIEmbeddedType(QualifiedType type) {
   DIType di = genDIType(type);
   if (type->typeClass() == Type::Class || type->typeClass() == Type::Interface) {
     di = diBuilder_.createPointerType(di,
@@ -382,7 +382,7 @@ DIType CodeGenerator::genDIEmbeddedType(const Type * type) {
   return di;
 }
 
-DIType CodeGenerator::genDIParameterType(const Type * type) {
+DIType CodeGenerator::genDIParameterType(QualifiedType type) {
   // TODO: Need to take 'shape' into account.
   DIType di = genDIType(type);
   if (type->typeClass() == Type::Class || type->typeClass() == Type::TypeLiteral) {
@@ -556,7 +556,7 @@ DIType CodeGenerator::genDIFlexibleArrayType(const FlexibleArrayType * type) {
 
 DIType CodeGenerator::genDIAddressType(const AddressType * type) {
   return diBuilder_.createPointerType(
-      genDIType(type->typeParam(0).type()),
+      genDIType(type->typeParam(0)),
       getSizeOfInBits(type->irType()),
       getAlignOfInBits(type->irType()));
 }

@@ -9,6 +9,10 @@
 #include "llvm/ADT/SmallVector.h"
 #endif
 
+#ifndef LLVM_ADT_ARRAYREF_H
+#include "llvm/ADT/ArrayRef.h"
+#endif
+
 #include <stddef.h>
 
 namespace tart {
@@ -81,6 +85,13 @@ public:
     while (first < last) {
       (*first)->mark();
       first++;
+    }
+  }
+
+  template <class T>
+  static void markArray(llvm::ArrayRef<T> array) {
+    for (typename llvm::ArrayRef<T>::const_iterator it = array.begin(); it != array.end(); ++it) {
+      (*it)->mark();
     }
   }
 

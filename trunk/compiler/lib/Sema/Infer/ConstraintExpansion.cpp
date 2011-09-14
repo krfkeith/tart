@@ -82,11 +82,11 @@ bool ConstraintExpansion::expand(const Type * ty, Constraint::Kind kind,
       const Candidates & cd = apt->expr()->candidates();
       for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
         CallCandidate * cc = *it;
-        const Type * paramType = cc->paramType(apt->argIndex());
+        QualifiedType paramType = cc->paramType(apt->argIndex());
         ProvisionSet ccProvisions(provisions);
         ccProvisions.insertIfValid(cc->primaryProvision());
         if (ccProvisions.isConsistent()) {
-          result_.insertAndOptimize(apt->expr()->location(), paramType, kind, ccProvisions);
+          result_.insertAndOptimize(apt->expr()->location(), paramType.type(), kind, ccProvisions);
         }
       }
       return true;
@@ -97,11 +97,11 @@ bool ConstraintExpansion::expand(const Type * ty, Constraint::Kind kind,
       const Candidates & cd = art->expr()->candidates();
       for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
         CallCandidate * cc = *it;
-        const Type * resultType = art->candidateResultType(cc);
+        QualifiedType resultType = art->candidateResultType(cc);
         ProvisionSet ccProvisions(provisions);
         ccProvisions.insertIfValid(cc->primaryProvision());
         if (ccProvisions.isConsistent()) {
-          result_.insertAndOptimize(art->expr()->location(), resultType, kind, ccProvisions);
+          result_.insertAndOptimize(art->expr()->location(), resultType.type(), kind, ccProvisions);
         }
       }
       return true;

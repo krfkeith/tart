@@ -69,7 +69,7 @@ public:
 
   /** Attempt to silently case 'in' to 'toType', using whatever means available.
       Report an error if the cast is not possible. */
-  Expr * doImplicitCast(Expr * in, const Type * toType, unsigned options = AO_IMPLICIT_CAST);
+  Expr * doImplicitCast(Expr * in, QualifiedType toType, unsigned options = AO_IMPLICIT_CAST);
   Expr * doBoxCast(Expr * in);
   Expr * doUnboxCast(Expr * in, const Type * toType);
 
@@ -167,12 +167,12 @@ public:
   bool reduceArgList(const ASTNodeList & in, CallExpr * call);
 
   /** Evaluate the function return type. */
-  const Type * reduceReturnType(CallExpr * call);
+  QualifiedType reduceReturnType(CallExpr * call);
 
   /** Given the index of an input argument, determine for each candidate
       which parameter that argument maps to, and return a set containing
       the types of those parameters. */
-  const Type * getMappedParameterType(CallExpr * call, int index);
+  QualifiedType getMappedParameterType(CallExpr * call, int index);
 
   /** Add an overload to a call expression.
       Parameters:
@@ -240,7 +240,7 @@ public:
 
   /** Set the function return type. If in a macro expansion, this will be the
       return type of the macro. */
-  const Type * setReturnType(const Type * returnType);
+  QualifiedType setReturnType(QualifiedType returnType);
 
   /** Cause a 'return' statement to instead assign to a local variable.
       Used during macro expansion. Returns previous value. */
@@ -250,7 +250,7 @@ public:
   bool setInMacroExpansion(bool value);
 
 protected:
-  const Type * returnType_;
+  QualifiedType returnType_;
   LValueExpr * macroReturnVal_;
   bool inMacroExpansion_;
 

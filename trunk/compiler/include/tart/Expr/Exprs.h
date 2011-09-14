@@ -126,7 +126,7 @@ public:
 /// An multiple assignment expression
 class MultiAssignExpr : public ArglistExpr {
 public:
-  MultiAssignExpr(const SourceLocation & loc, const Type * type);
+  MultiAssignExpr(const SourceLocation & loc, QualifiedType type);
 
   // Overrides
 
@@ -199,7 +199,7 @@ private:
 public:
   /** Constructor. */
   BoundMethodExpr(const SourceLocation & loc, Expr * selfArg, FunctionDefn * method,
-      const Type * type);
+      QualifiedType type);
 
   /** Return the reference to the 'self' param */
   Expr * selfArg() const { return selfArg_; }
@@ -228,7 +228,7 @@ class CallExpr : public ArglistExpr {
 private:
   Expr * function_;
   Candidates candidates_;
-  const Type * expectedReturnType_;
+  QualifiedType expectedReturnType_;
 
 public:
   CallExpr(ExprType k, const SourceLocation & loc, Expr * f)
@@ -245,16 +245,16 @@ public:
   Candidates & candidates() { return candidates_; }
 
   /** The function expression being called. */
-  const Type * expectedReturnType() const { return expectedReturnType_; }
-  void setExpectedReturnType(const Type * t) { expectedReturnType_ = t; }
+  QualifiedType expectedReturnType() const { return expectedReturnType_; }
+  void setExpectedReturnType(QualifiedType ty) { expectedReturnType_ = ty; }
 
   /** If all of the overload candidates have the same type for the Nth
       parameter slot, then return that type, otherwise return NULL. */
-  const Type * singularParamType(int arg);
+  QualifiedType singularParamType(int arg);
 
   /** If all of the overload candidates have the same return type, then
       return that type, otherwise return NULL. */
-  const Type * singularResultType();
+  QualifiedType singularResultType();
 
   /** Return either the single non-culled candidate, or NULL. */
   CallCandidate * singularCandidate();
@@ -381,7 +381,7 @@ public:
 /// A 'new object' expression
 class NewExpr : public Expr {
 public:
-  NewExpr(const SourceLocation & loc, const Type * type)
+  NewExpr(const SourceLocation & loc, QualifiedType type)
     : Expr(New, loc, type)
   {}
 
@@ -403,13 +403,6 @@ public:
   static CastExpr * upCast(Expr * value, const Type * toType);
   static CastExpr * tryCast(Expr * value, const Type * toType);
   static CastExpr * dynamicCast(Expr * value, const Type * toType);
-
-  /** Constructor. */
-  CastExpr(ExprType k, const SourceLocation & loc, const Type * type, Expr * a)
-    : UnaryExpr(k, loc, type, a)
-    , typeIndex_(0)
-  {
-  }
 
   /** Constructor. */
   CastExpr(ExprType k, const SourceLocation & loc, QualifiedType type, Expr * a)
@@ -442,7 +435,7 @@ public:
   /** Constructor. */
   BinaryOpcodeExpr(
       llvm::Instruction::BinaryOps op,
-      const SourceLocation & loc, const Type * type)
+      const SourceLocation & loc, QualifiedType type)
     : BinaryExpr(BinaryOpcode, loc, type)
     , opCode_(op)
   {}
@@ -450,7 +443,7 @@ public:
   /** Constructor. */
   BinaryOpcodeExpr(
       llvm::Instruction::BinaryOps op,
-      const SourceLocation & loc, const Type * type,
+      const SourceLocation & loc, QualifiedType type,
       Expr * a0, Expr * a1)
     : BinaryExpr(BinaryOpcode, loc, type, a0, a1)
     , opCode_(op)
@@ -571,11 +564,11 @@ public:
 /// A tuple constructor expression.
 class TupleCtorExpr : public ArglistExpr {
 public:
-  TupleCtorExpr(const SourceLocation & loc, const Type * type)
+  TupleCtorExpr(const SourceLocation & loc, QualifiedType type)
     : ArglistExpr(TupleCtor, loc, type)
   {}
 
-  TupleCtorExpr(const SourceLocation & loc, const Type * type, const ExprList & argList)
+  TupleCtorExpr(const SourceLocation & loc, QualifiedType type, const ExprList & argList)
     : ArglistExpr(TupleCtor, loc, type)
   {
     args().append(argList.begin(), argList.end());

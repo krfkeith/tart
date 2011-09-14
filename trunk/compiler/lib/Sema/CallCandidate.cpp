@@ -147,11 +147,11 @@ void CallCandidate::relabelTypeVars(BindingEnv & env) {
     // Substitute all occurrences of pattern vars in the result type
     // the corresponding pattern value.
     resultType_ = relabel(resultType_);
-    AnalyzerBase::analyzeType(resultType_, Task_PrepTypeComparison);
+    AnalyzerBase::analyzeType(resultType_.type(), Task_PrepTypeComparison);
 
     // Same with function parameter types.
-    for (ConstTypeList::iterator pt = paramTypes_.begin(); pt != paramTypes_.end(); ++pt) {
-      const Type * paramType = relabel.transform(*pt);
+    for (QualifiedTypeList::iterator pt = paramTypes_.begin(); pt != paramTypes_.end(); ++pt) {
+      QualifiedType paramType = relabel.transform(*pt);
       if (AnalyzerBase::analyzeType(paramType, Task_PrepTypeComparison)) {
         *pt = paramType;
       }
@@ -167,14 +167,14 @@ void CallCandidate::relabelTypeVars(BindingEnv & env) {
   }
 }
 
-const Type * CallCandidate::paramType(int argIndex) const {
+QualifiedType CallCandidate::paramType(int argIndex) const {
   return paramTypes_[parameterIndex(argIndex)];
 }
 
 bool CallCandidate::unify(CallExpr * callExpr, BindingEnv & env, FormatStream * errStrm) {
   size_t argCount = callExpr_->argCount();
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
-    const Type * paramType = this->paramType(argIndex);
+    QualifiedType paramType = this->paramType(argIndex);
     AnalyzerBase::analyzeType(paramType, Task_PrepConversion);
   }
 
@@ -197,7 +197,7 @@ bool CallCandidate::unify(CallExpr * callExpr, BindingEnv & env, FormatStream * 
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
     const Type * argType = argExpr->type();
-    const Type * paramType = this->paramType(argIndex);
+    QualifiedType paramType = this->paramType(argIndex);
 
     // Skip unsized type integers for now, we'll bind them on the second pass.
     if (!env.unify(&candidateSite, paramType, argType, Constraint::LOWER_BOUND)) {
@@ -210,8 +210,8 @@ bool CallCandidate::unify(CallExpr * callExpr, BindingEnv & env, FormatStream * 
   }
 
   // Unify the return type
-  const Type * expectedReturnType = callExpr_->expectedReturnType();
-  if (expectedReturnType != NULL) {
+  QualifiedType expectedReturnType = callExpr_->expectedReturnType();
+  if (!expectedReturnType.isNull()) {
     if (!env.unify(&candidateSite, resultType_, expectedReturnType, Constraint::UPPER_BOUND)) {
       if (errStrm) {
         *errStrm << "Return type " << expectedReturnType << " failed to unify with " << resultType_;
@@ -257,12 +257,12 @@ ConversionRank CallCandidate::updateConversionRank() {
   size_t argCount = callExpr_->argCount();
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
-    const Type * paramType = this->paramType(argIndex);
+    QualifiedType paramType = this->paramType(argIndex);
     combineConversionRanks(TypeConversion::check(argExpr, paramType, TypeConversion::COERCE));
   }
 
-  const Type * expectedReturnType = callExpr_->expectedReturnType();
-  if (expectedReturnType != NULL && callExpr_->exprType() != Expr::Construct) {
+  QualifiedType expectedReturnType = callExpr_->expectedReturnType();
+  if (!expectedReturnType.isNull() && callExpr_->exprType() != Expr::Construct) {
     AnalyzerBase::analyzeType(resultType_, Task_PrepTypeComparison);
     combineConversionRanks(
         TypeConversion::check(resultType_, expectedReturnType, TypeConversion::COERCE));
@@ -314,10 +314,10 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
   // So other than type aliases, we don't want to dereference any types.
   size_t argCount = paramAssignments_.size();
   for (size_t i = 0; i < argCount; ++i) {
-    const Type * t0 = paramType(i);
-    const Type * t1 = other->paramType(i);
+    QualifiedType t0 = paramType(i);
+    QualifiedType t1 = other->paramType(i);
 
-    RelativeSpecificity rspec = isMoreSpecific(t0, t1);
+    RelativeSpecificity rspec = isMoreSpecific(t0.type(), t1.type());
     if (rspec == NOT_MORE_SPECIFIC) {
       return false;
     } else if (rspec == MORE_SPECIFIC) {
@@ -511,10 +511,10 @@ void CallCandidate::trace() const {
   safeMark(method_);
   safeMark(method_);
   safeMark(fnType_);
-  safeMark(resultType_);
+  safeMark(resultType_.type());
   safeMark(typeParams_);
   safeMark(spCandidate_);
-  markList(paramTypes_.begin(), paramTypes_.end());
+  markArray(llvm::ArrayRef<QualifiedType>(paramTypes_));
   markList(conditions_.begin(), conditions_.end());
 }
 
