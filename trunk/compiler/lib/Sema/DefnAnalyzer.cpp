@@ -609,7 +609,7 @@ bool DefnAnalyzer::reflectType(const Type * type) {
       reflectType(ft->returnType());
       if (ft->returnType()->isBoxableType()) {
         // Cache the boxing function for this type.
-        ea.coerceToObjectFn(ft->returnType());
+        ea.coerceToObjectFn(ft->returnType().type());
       }
       break;
     }
@@ -629,6 +629,10 @@ bool DefnAnalyzer::reflectType(const Type * type) {
   }
 
   return false;
+}
+
+bool DefnAnalyzer::reflectType(QualifiedType type) {
+  return reflectType(type.type());
 }
 
 void DefnAnalyzer::reflectTypeMembers(CompositeType * type) {

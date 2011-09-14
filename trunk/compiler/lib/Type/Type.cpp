@@ -67,7 +67,7 @@ const char * compatibilityError(ConversionRank rank) {
 }
 
 void compatibilityWarning(const SourceLocation & loc,
-  ConversionRank rank, const Type * from, const Type * to) {
+  ConversionRank rank, const Type * from, QualifiedType to) {
   DASSERT(!isErrorResult(from));
   if (isConversionWarning(rank)) {
     diag.error(loc) << Format_QualifiedName << compatibilityError(rank) <<
@@ -76,7 +76,7 @@ void compatibilityWarning(const SourceLocation & loc,
 }
 
 void compatibilityWarning(const SourceLocation & loc,
-  ConversionRank rank, const Expr * from, const Type * to) {
+  ConversionRank rank, const Expr * from, QualifiedType to) {
   DASSERT(!isErrorResult(from));
   if (isConversionWarning(rank)) {
     diag.error(loc) << Format_QualifiedName << compatibilityError(rank) <<

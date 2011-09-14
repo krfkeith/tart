@@ -115,6 +115,7 @@ public:
 
   /** Do the requested analysis passes on the type. */
   static bool analyzeType(const Type * in, AnalysisTask pass);
+  static bool analyzeType(QualifiedType in, AnalysisTask pass);
 
   /** Do the a complete analysis of the module. */
   static bool analyzeModule(Module * mod);

@@ -32,6 +32,10 @@ public:
     return get();
   }
 
+  operator Qualified<CompositeType>() const {
+    return Qualified<CompositeType>(get());
+  }
+
   llvm::Type * irType() const;
   llvm::Type * irEmbeddedType() const;
   llvm::Type * irParameterType() const;

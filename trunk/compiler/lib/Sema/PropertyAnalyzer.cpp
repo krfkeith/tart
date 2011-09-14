@@ -180,7 +180,7 @@ bool PropertyAnalyzer::resolveAccessorType() {
       if (ast != NULL) {
         DASSERT_OBJ(getter->functionType() == NULL, getter);
         FunctionType * getterType = ta.typeFromFunctionAST(getter->functionDecl());
-        DASSERT_OBJ(getterType->returnType() == NULL, getter);
+        DASSERT_OBJ(getterType->returnType().isNull(), getter);
         getterType->setReturnType(type);
 
         // Add the property parameters
@@ -243,7 +243,7 @@ bool PropertyAnalyzer::resolveAccessorType() {
           setterType->addParam(valueParam);
         }
 
-        DASSERT_OBJ(setterType->returnType() == NULL, setter);
+        DASSERT_OBJ(setterType->returnType().isNull(), setter);
         setterType->setReturnType(&VoidType::instance);
 
         setter->setFunctionType(setterType);

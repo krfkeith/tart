@@ -159,7 +159,7 @@ public:
   ParameterList & params() { return type_->params(); }
 
   /** Return type. */
-  const Type * returnType() const;
+  QualifiedType returnType() const;
 
   /** Scope containing the parameters. */
   const IterableScope & parameterScope() const { return parameterScope_; }

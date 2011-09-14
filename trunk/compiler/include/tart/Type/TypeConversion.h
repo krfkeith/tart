@@ -117,6 +117,14 @@ namespace TypeConversion {
     return std::make_pair(rank, dstExpr);
   }
 
+  /** Do a type conversion, and return both the conversion rank and the converted expression. */
+  inline std::pair<ConversionRank, Expr *> convert(
+      Expr * srcExpr, QualifiedType dstType, int options = 0) {
+    Expr * dstExpr = NULL;
+    ConversionRank rank = convert(srcExpr->type(), srcExpr, dstType, &dstExpr, options);
+    return std::make_pair(rank, dstExpr);
+  }
+
   /** Check if a conversion is possible, and return a conversion ranking. */
   inline ConversionRank check(const Type * srcType, const Type * dstType, int options = 0) {
     return convert(srcType, NULL, dstType, NULL, options);

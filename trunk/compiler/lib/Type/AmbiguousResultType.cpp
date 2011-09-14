@@ -40,7 +40,7 @@ void AmbiguousResultType::expand(TypeExpansion & out) const {
   }
 }
 
-const Type * AmbiguousResultType::candidateResultType(const CallCandidate * cc) const {
+QualifiedType AmbiguousResultType::candidateResultType(const CallCandidate * cc) const {
 //  if (callExpr_->exprType() == Expr::Construct && cc->method()->isCtor()) {
 //    return cc->method()->functionType()->selfParam()->type();
 //  }
@@ -54,8 +54,8 @@ void AmbiguousResultType::trace() const {
 }
 
 void AmbiguousResultType::format(FormatStream & out) const {
-  const Type * singularType = callExpr_->singularResultType();
-  if (singularType != NULL) {
+  QualifiedType singularType = callExpr_->singularResultType();
+  if (singularType) {
     out << singularType;
     return;
   }

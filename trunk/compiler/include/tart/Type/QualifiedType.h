@@ -25,6 +25,9 @@ struct SourceLocation;
 /** Combine type qualifiers. Right side qualifiers override left side precedence. */
 unsigned combineQualifiers(unsigned left, unsigned right);
 
+// Forward declaration of dealias.
+const Type * dealias(const Type * t);
+
 /// -------------------------------------------------------------------
 /// Value type containing a type reference and qualifier bits.
 template<class T>
@@ -58,6 +61,14 @@ public:
 
   /** The unmodified base type. */
   const T * type() const { return type_; }
+
+  /** The unmodified base type. */
+  const T * unqualified() const { return type_; }
+
+  /** Return this type with aliases removed. */
+  Qualified dealias() const {
+    return Qualified(static_cast<const T *>(::tart::dealias(type_)), qualifiers_);
+  }
 
   /** Assignment. */
   Qualified & operator=(const Qualified & qty) {

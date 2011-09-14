@@ -692,12 +692,12 @@ llvm::Function * CodeGenerator::genCallAdapterFn(const FunctionType * fnType) {
   Value * returnVal = builder_.CreateCall(fnPtr, args /*, "invoke"*/);
 
   if (!fnType->returnType()->isVoidType()) {
-    const Type * returnType = fnType->returnType();
+    QualifiedType returnType = fnType->returnType();
     if (sret != NULL) {
       returnVal = sret;
     }
 
-    returnVal = genCast(returnVal, returnType, Builtins::typeObject);
+    returnVal = genCast(returnVal, returnType.type(), Builtins::typeObject);
     if (returnVal == NULL) {
       currentFn_ = NULL;
       return NULL;

@@ -117,7 +117,7 @@ void Expr::format(FormatStream & out) const {
 }
 
 void Expr::trace() const {
-  safeMark(type_);
+  safeMark(type_.type());
 }
 
 // -------------------------------------------------------------------
@@ -373,7 +373,7 @@ void AssignmentExpr::trace() const {
 // -------------------------------------------------------------------
 // MultiAssignExpr
 
-MultiAssignExpr::MultiAssignExpr(const SourceLocation & loc, const Type * type)
+MultiAssignExpr::MultiAssignExpr(const SourceLocation & loc, QualifiedType type)
   : ArglistExpr(MultiAssign, loc, type)
 {
 }
@@ -431,7 +431,7 @@ void ClearVarExpr::trace() const {
 // BoundMethodExpr
 
 BoundMethodExpr::BoundMethodExpr(const SourceLocation & loc, Expr * selfArg, FunctionDefn * method,
-    const Type * type)
+    QualifiedType type)
   : Expr(BoundMethod, loc, type)
   , selfArg_(selfArg)
   , method_(method)
@@ -471,15 +471,15 @@ bool CallExpr::isSingular() const {
   return function_ != NULL && function_->isSingular();
 }
 
-const Type * CallExpr::singularParamType(int index) {
-  const Type * singularType = NULL;
+QualifiedType CallExpr::singularParamType(int index) {
+  QualifiedType singularType = NULL;
   for (Candidates::iterator it = candidates_.begin(); it != candidates_.end(); ++it) {
     if ((*it)->isCulled()) {
       continue;
     }
 
-    const Type *  ty = (*it)->paramType(index);
-    if (singularType == NULL) {
+    QualifiedType ty = (*it)->paramType(index);
+    if (singularType.isNull()) {
       singularType = ty;
     } else if (!TypeRelation::isEqual(ty, singularType)) {
       return NULL;
@@ -489,16 +489,16 @@ const Type * CallExpr::singularParamType(int index) {
   return singularType;
 }
 
-const Type * CallExpr::singularResultType() {
-  const Type * singularType = NULL;
+QualifiedType CallExpr::singularResultType() {
+  QualifiedType singularType = NULL;
   for (Candidates::iterator it = candidates_.begin(); it != candidates_.end(); ++it) {
     CallCandidate * cc = *it;
     if (cc->isCulled()) {
       continue;
     }
 
-    const Type * ty = cc->resultType();
-    if (singularType == NULL) {
+    QualifiedType ty = cc->resultType();
+    if (singularType.isNull()) {
       singularType = ty;
     } else if (!TypeRelation::isEqual(ty, singularType)) {
       return NULL;

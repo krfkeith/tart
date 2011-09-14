@@ -424,7 +424,7 @@ llvm::GlobalVariable * Reflector::getFunctionTypePtr(const FunctionType * type) 
     diag.fatal() << "Attempting to add a type export during output phase: " << type;
   }
 
-  getTypePtr(type->returnType());
+  getTypePtr(type->returnType().type());
   for (ParameterList::const_iterator it = type->params().begin();
       it != type->params().end(); ++it) {
     getTypePtr((*it)->type());
@@ -992,7 +992,7 @@ void Reflector::emitFunctionType(const FunctionType * type) {
   // Union return values temporarily disabled for the moment.
   bool canInvoke = false;
   const Type * selfType = type->selfParam() != NULL ? type->selfParam()->type() : NULL;
-  const Type * returnType = type->returnType();
+  const Type * returnType = type->returnType().type();
   if (type->isInvocable() &&
       returnType->typeClass() != Type::Union &&
       (selfType == NULL ||
@@ -1008,7 +1008,7 @@ void Reflector::emitFunctionType(const FunctionType * type) {
   sb.combine(Builtins::typeType);
 
   // FunctionType._returnType
-  sb.addPointerField(reflect::FunctionType::returnType, getTypePtr(type->returnType()));
+  sb.addPointerField(reflect::FunctionType::returnType, getTypePtr(type->returnType().type()));
 
   // FunctionType._selfType
   if (type->selfParam() != NULL) {

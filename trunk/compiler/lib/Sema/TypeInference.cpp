@@ -282,7 +282,7 @@ void CallSite::formatCallSignature(FormatStream & out) {
   out << cd.front()->method()->name() << "(";
   formatExprTypeList(out, callExpr_->args());
   out << ")";
-  if (callExpr_->expectedReturnType() != NULL) {
+  if (callExpr_->expectedReturnType()) {
     out << " -> " << callExpr_->expectedReturnType();
   }
 }

@@ -71,7 +71,7 @@ public:
    */
   static void listProspects(
       ProspectList & out,
-      const Type * ty,
+      QualifiedType ty,
       const ProvisionSet & add = ProvisionSet());
 
   // Overrides

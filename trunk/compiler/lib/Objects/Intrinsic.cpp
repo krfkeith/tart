@@ -204,7 +204,7 @@ Value * PrimitiveParseIntrinsic::generate(CodeGenerator & cg, const FnCallExpr *
     return NULL;
   }
 
-  const PrimitiveType * ptype = cast<PrimitiveType>(fn->returnType());
+  const PrimitiveType * ptype = cast<PrimitiveType>(fn->returnType().type());
   TypeId id = ptype->typeId();
 
   if (functions_[id] == NULL) {

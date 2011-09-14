@@ -353,9 +353,9 @@ Expr * ExprAnalyzer::reduceForEachStmt(const ForEachStmt * st, const Type * expe
       iterValue = SharedValueExpr::get(iterValue);
       for (size_t i = 0; i < numVars; ++i) {
         VariableDefn * var = cast<VariableDefn>(vars[i]);
-        const Type * elementType = tt->member(i).type();
+        QualifiedType elementType = tt->member(i);
         if (var->type() == NULL) {
-          var->setType(elementType);
+          var->setType(elementType.type());
         }
 
         if (!analyzeVariable(var, Task_PrepTypeGeneration)) {
@@ -755,7 +755,7 @@ Expr * ExprAnalyzer::reduceThrowStmt(const ThrowStmt * st, const Type * expected
 }
 
 Expr * ExprAnalyzer::reduceReturnStmt(const ReturnStmt * st, const Type * expected) {
-  DASSERT(returnType_ != NULL);
+  DASSERT(!returnType_.isNull());
   Expr * resultVal = NULL;
   if (st->value() != NULL) {
     //if (funcDef->isGenerator()) {
@@ -764,13 +764,13 @@ Expr * ExprAnalyzer::reduceReturnStmt(const ReturnStmt * st, const Type * expect
     //}
 
     analyzeType(returnType_, Task_PrepTypeComparison);
-    resultVal = inferTypes(reduceExpr(st->value(), returnType_), returnType_);
+    resultVal = inferTypes(reduceExpr(st->value(), returnType_.type()), returnType_.type());
     CHECK_EXPR(resultVal);
 
     // If the return value type is an unsized int, and there's no explicit return
     // type declared, then choose an integer type.
     const Type * exprType = resultVal->type();
-    if (exprType->isUnsizedIntType() && returnType_ == NULL) {
+    if (exprType->isUnsizedIntType() && !returnType_) {
       DFAIL("Obsolete?");
       if (TypeConversion::check(resultVal, &Int32Type::instance) >= ExactConversion) {
         resultVal->setType(&Int32Type::instance);
@@ -779,16 +779,16 @@ Expr * ExprAnalyzer::reduceReturnStmt(const ReturnStmt * st, const Type * expect
       }
     }
 
-    if (returnType_ != NULL) {
+    if (returnType_) {
       analyzeType(exprType, Task_PrepTypeComparison);
       resultVal = doImplicitCast(resultVal, returnType_);
     }
   } else if (returnType_->typeClass() == Type::Union) {
     // Converting a void to a union.
-    const UnionType * utype = static_cast<const UnionType *>(returnType_);
+    Qualified<UnionType> utype = returnType_.as<UnionType>();
     if (utype->hasVoidType()) {
       int typeIndex = utype->getTypeIndex(&VoidType::instance);
-      CastExpr * voidValue = new CastExpr(Expr::UnionCtorCast, st->location(), utype,
+      CastExpr * voidValue = new CastExpr(Expr::UnionCtorCast, st->location(), returnType_,
           ConstantNull::get(st->location(), &VoidType::instance));
       voidValue->setTypeIndex(typeIndex);
       resultVal = voidValue;
@@ -875,8 +875,8 @@ bool ExprAnalyzer::reduceDeclStmt(const DeclStmt * st, const Type * expected, Ex
       int memberIndex = 0;
       for (DefnList::const_iterator it = vars.begin(); it != vars.end(); ++it, ++memberIndex) {
         VariableDefn * var = static_cast<VariableDefn *>(*it);
-        Expr * initVal = new BinaryExpr(Expr::ElementRef, var->ast()->location(), tt->member(
-            memberIndex).type(), initExpr, ConstantInteger::getUInt32(memberIndex));
+        Expr * initVal = new BinaryExpr(Expr::ElementRef, var->ast()->location(),
+            tt->member(memberIndex), initExpr, ConstantInteger::getUInt32(memberIndex));
         exprs.push_back(new InitVarExpr(st->location(), var, initVal));
         if (var->type() == NULL) {
           DASSERT(initVal->canonicalType() != &AnyType::instance);
@@ -1096,8 +1096,8 @@ FunctionDefn * ExprAnalyzer::findInterfaceMethod(const CompositeType * type,
   return NULL;
 }
 
-const Type * ExprAnalyzer::setReturnType(const Type * returnType) {
-  const Type * oldType = returnType_;
+QualifiedType ExprAnalyzer::setReturnType(QualifiedType returnType) {
+  QualifiedType oldType = returnType_;
   returnType_ = returnType;
   return oldType;
 }

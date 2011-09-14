@@ -770,7 +770,7 @@ bool ClassAnalyzer::analyzeConstructors() {
               continue;
             }
 
-            if (ctor->returnType() == NULL) {
+            if (ctor->returnType().isNull()) {
               ctor->functionType()->setReturnType(&VoidType::instance);
             }
 

@@ -35,7 +35,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
   if (in->function()->defnType() == Defn::Macro) {
     FunctionDefn * macro = in->function();
     FunctionType * mtype = macro->functionType();
-    const Type * returnType = dealias(mtype->returnType());
+    QualifiedType returnType = mtype->returnType().dealias();
 
     // Add a dependency on the macro's module. Do this here because
     // the module reference will be removed during the expansion.
@@ -48,7 +48,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
       retValScope->setScopeName("macro-return");
       stAn.function()->localScopes().push_back(retValScope);
       retVal = new VariableDefn(Defn::Var, NULL, "__retval");
-      retVal->setType(returnType);
+      retVal->setType(returnType.type());
       retVal->setStorageClass(Storage_Local);
       retVal->addTrait(Defn::Singular);
       retValScope->addMember(retVal);
@@ -88,7 +88,7 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
 
     Scope * savedScope = stAn.setActiveScope(&paramScope);
     bool saveInMacroExpansion = stAn.setInMacroExpansion(true);
-    const Type * savedReturnType = stAn.setReturnType(returnType);
+    QualifiedType savedReturnType = stAn.setReturnType(returnType);
 
     const Stmt * macroBody;
     if (macro->ast() != NULL) {

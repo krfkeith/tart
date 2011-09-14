@@ -417,7 +417,7 @@ bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDef
         FunctionDefn * cons = cast<FunctionDefn>(*it);
         if (analyzeFunction(cons, Task_PrepTypeComparison)) {
           DASSERT(cons->type() != NULL);
-          DASSERT(cons->returnType() == NULL || cons->returnType()->isVoidType());
+          DASSERT(cons->returnType().isNull() || cons->returnType()->isVoidType());
           DASSERT(cons->storageClass() == Storage_Instance);
           DASSERT(cons->isTemplate() || cons->isTemplateMember());
           cons->setFlag(FunctionDefn::Ctor);
@@ -449,7 +449,7 @@ bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDef
         FunctionDefn * cons = cast<FunctionDefn>(*it);
         DASSERT(cons->type() != NULL);
         DASSERT(cons->isCtor());
-        DASSERT(cons->returnType() == NULL || cons->returnType()->isVoidType());
+        DASSERT(cons->returnType().isNull() || cons->returnType()->isVoidType());
         DASSERT(cons->storageClass() == Storage_Instance);
         addOverload(call, newExpr, cons, args, sp);
       }
@@ -470,7 +470,7 @@ bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDef
         FunctionDefn * cons = cast<FunctionDefn>(*it);
         DASSERT(cons->type() != NULL);
         DASSERT(cons->isCtor());
-        DASSERT(cons->returnType() == NULL || cons->returnType()->isVoidType());
+        DASSERT(cons->returnType().isNull() || cons->returnType()->isVoidType());
         DASSERT(cons->storageClass() == Storage_Instance);
         addOverload(call, newExpr, cons, args, sp);
       }
@@ -531,12 +531,12 @@ bool ExprAnalyzer::reduceArgList(const ASTNodeList & in, CallExpr * call) {
       arg = static_cast<const ASTKeywordArg *>(arg)->arg();
     }
 
-    const Type * paramType = getMappedParameterType(call, i);
-    if (paramType == NULL) {
+    QualifiedType paramType = getMappedParameterType(call, i);
+    if (paramType.isNull()) {
       return false;
     }
 
-    Expr * ex = reduceExpr(arg, paramType);
+    Expr * ex = reduceExpr(arg, paramType.type());
     if (isErrorResult(ex)) {
       return false;
     }
@@ -547,9 +547,9 @@ bool ExprAnalyzer::reduceArgList(const ASTNodeList & in, CallExpr * call) {
   return true;
 }
 
-const Type * ExprAnalyzer::reduceReturnType(CallExpr * call) {
-  const Type * ty = call->singularResultType();
-  if (ty != NULL && ty->isSingular()) {
+QualifiedType ExprAnalyzer::reduceReturnType(CallExpr * call) {
+  QualifiedType ty = call->singularResultType();
+  if (!ty.isNull() && ty->isSingular()) {
     if (call->isSingular()) {
       DASSERT_OBJ(ty->isSingular(), call);
     }
@@ -560,9 +560,9 @@ const Type * ExprAnalyzer::reduceReturnType(CallExpr * call) {
   return new AmbiguousResultType(call);
 }
 
-const Type * ExprAnalyzer::getMappedParameterType(CallExpr * call, int index) {
-  const Type * ty = call->singularParamType(index);
-  if (ty != NULL && ty->isSingular()) {
+QualifiedType ExprAnalyzer::getMappedParameterType(CallExpr * call, int index) {
+  QualifiedType ty = call->singularParamType(index);
+  if (!ty.isNull() && ty->isSingular()) {
     return ty;
   }
 
@@ -665,7 +665,7 @@ void ExprAnalyzer::noCandidatesError(CallExpr * call, const ExprList & methods) 
   //fs << Format_Dealias << callable << "(";
   formatExprTypeList(fs, call->args());
   fs << ")";
-  if (call->expectedReturnType() != NULL) {
+  if (!call->expectedReturnType().isNull()) {
     fs << " -> " << call->expectedReturnType();
   }
   fs.flush();

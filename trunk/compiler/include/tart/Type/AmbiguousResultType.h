@@ -28,7 +28,7 @@ public:
   CallExpr * expr() const { return callExpr_; }
 
   /** The result type for a given candidate. */
-  const Type * candidateResultType(const CallCandidate * cc) const;
+  QualifiedType candidateResultType(const CallCandidate * cc) const;
 
   // Overrides
 

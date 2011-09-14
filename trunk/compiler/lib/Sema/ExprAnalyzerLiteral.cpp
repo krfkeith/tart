@@ -92,7 +92,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
   size_t paramCount = ftype->params().size();
 
   if (ftype != NULL) {
-    if (ftype->returnType() == NULL) {
+    if (ftype->returnType().isNull()) {
       if (expected != NULL) {
         // Check if the expected type is a specialization of the 'tart.core.Function' interface
         // and return the 0th parameter if so.

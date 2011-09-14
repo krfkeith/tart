@@ -33,7 +33,7 @@ namespace tart {
 ExprAnalyzer::ExprAnalyzer(
     Module * mod, Scope * activeScope, Defn * subject, FunctionDefn * currentFunction)
   : AnalyzerBase(mod, activeScope, subject, currentFunction)
-  , returnType_(currentFunction ? currentFunction->returnType() : NULL)
+  , returnType_(currentFunction ? currentFunction->returnType() : QualifiedType())
   , macroReturnVal_(NULL)
   , inMacroExpansion_(false)
 {
@@ -41,7 +41,7 @@ ExprAnalyzer::ExprAnalyzer(
 
 ExprAnalyzer::ExprAnalyzer(const AnalyzerBase * parent, FunctionDefn * currentFunction)
   : AnalyzerBase(parent->module(), parent->activeScope(), parent->subject(), currentFunction)
-  , returnType_(currentFunction ? currentFunction->returnType() : NULL)
+  , returnType_(currentFunction ? currentFunction->returnType() : QualifiedType())
   , macroReturnVal_(NULL)
   , inMacroExpansion_(false)
 {

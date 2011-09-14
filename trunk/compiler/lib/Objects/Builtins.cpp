@@ -179,7 +179,7 @@ void Builtins::loadSystemClasses() {
   typeTraceDescriptor.get();
 
   // Analyze class Object.
-  AnalyzerBase::analyzeType(typeObject, Task_PrepMemberLookup);
+  AnalyzerBase::analyzeType(typeObject.get(), Task_PrepMemberLookup);
 
   // Get the function that tests for a type
   funcHasBase = getMember<FunctionDefn>(typeTypeInfoBlock.get(), "hasBase");
