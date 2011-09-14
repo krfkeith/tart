@@ -17,6 +17,10 @@
 #include "tart/Common/Formattable.h"
 #endif
 
+#ifndef TART_TYPE_QUALIFIEDTYPE_H
+#include "tart/Type/QualifiedType.h"
+#endif
+
 #ifndef TART_CFG_CFG_H
 #include "tart/CFG/CFG.h"
 #endif
@@ -243,6 +247,9 @@ inline bool isErrorResult(const Expr * ex) {
 }
 
 bool isErrorResult(const Type * ty);
+inline bool isErrorResult(const QualifiedType & qtype) {
+  return isErrorResult(qtype.type());
+}
 
 bool any(ExprList::const_iterator first, ExprList::const_iterator last, bool (Expr::*func)() const);
 bool all(ExprList::const_iterator first, ExprList::const_iterator last, bool (Expr::*func)() const);

@@ -47,6 +47,7 @@ public:
   IterableScope & accessorScope() { return accessorScope_; }
 
   void setType(const Type * t) { type_ = t; }
+  void setType(QualifiedType t) { type_ = t.type(); }
 
   /** Which analysis passes are running / have run. */
   const PassMgr & passes() const { return passes_; }

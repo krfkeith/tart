@@ -5,13 +5,12 @@
 #ifndef TART_TYPE_TYPECONVERSION_H
 #define TART_TYPE_TYPECONVERSION_H
 
-#ifndef TART_COMMON_FORMATTABLE_H
-#include "tart/Common/Formattable.h"
+#ifndef TART_TYPE_QUALIFIEDTYPE_H
+#include "tart/Type/QualifiedType.h"
 #endif
 
 namespace tart {
 
-class Type;
 class Expr;
 
 /// -------------------------------------------------------------------
@@ -91,6 +90,7 @@ struct Conversion {
 /// -------------------------------------------------------------------
 /// Type conversion functions.
 namespace TypeConversion {
+
   enum Options {
     COERCE = (1<<0),        // Allow coercive casts
     DYNAMIC_NULL = (1<<1),  // Allow dynamic casts (null if fail)
@@ -100,13 +100,21 @@ namespace TypeConversion {
 
   /** Do a type conversion, and return both the conversion rank and the converted type. */
   ConversionRank convert(
-      const Type * srcType, Expr * srcExpr,
-      const Type * dstType, Expr ** dstExpr, int options = 0);
+      QualifiedType srcType, Expr * srcExpr,
+      QualifiedType dstType, Expr ** dstExpr, int options = 0);
 
-  /** Do a type conversion, and return both the conversion rank and the converted type. */
+  /** Do a type conversion, and return both the conversion rank and the converted expression. */
   inline ConversionRank convert(
       Expr * srcExpr, const Type * dstType, Expr ** dstExpr, int options = 0) {
     return convert(srcExpr->type(), srcExpr, dstType, dstExpr, options);
+  }
+
+  /** Do a type conversion, and return both the conversion rank and the converted expression. */
+  inline std::pair<ConversionRank, Expr *> convert(
+      Expr * srcExpr, const Type * dstType, int options = 0) {
+    Expr * dstExpr = NULL;
+    ConversionRank rank = convert(srcExpr->type(), srcExpr, dstType, &dstExpr, options);
+    return std::make_pair(rank, dstExpr);
   }
 
   /** Check if a conversion is possible, and return a conversion ranking. */
@@ -115,11 +123,21 @@ namespace TypeConversion {
   }
 
   /** Check if a conversion is possible, and return a conversion ranking. */
+  inline ConversionRank check(QualifiedType srcType, QualifiedType dstType, int options = 0) {
+    return convert(srcType, NULL, dstType, NULL, options);
+  }
+
+  /** Check if a conversion is possible, and return a conversion ranking. */
   inline ConversionRank check(Expr * srcExpr, const Type * dstType, int options = 0) {
+    return convert(srcExpr->type(), srcExpr, dstType, NULL, options);
+  }
+
+  /** Check if a conversion is possible, and return a conversion ranking. */
+  inline ConversionRank check(Expr * srcExpr, QualifiedType dstType, int options = 0) {
     return convert(srcExpr->type(), srcExpr, dstType, NULL, options);
   }
 };
 
 } // namespace tart
 
-#endif
+#endif // TART_TYPE_TYPECONVERSION_H

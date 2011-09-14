@@ -30,7 +30,7 @@ public:
   // Overrides
 
   size_t numTypeParams() const { return 1; }
-  virtual const Type * typeParam(int index) const { return literalType_; }
+  virtual QualifiedType typeParam(int index) const { return literalType_; }
   llvm::Type * irType() const { return createIRType(); }
   llvm::Type * createIRType() const;
   bool isSingular() const;

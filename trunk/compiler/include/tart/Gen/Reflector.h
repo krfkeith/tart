@@ -146,7 +146,7 @@ public:
   llvm::Constant * emitFieldList(const IterableScope * scope, StringRef name);
 
   /** Generate a TypeList from the given list of types. */
-  llvm::Constant * emitTypeList(const ConstTypeList & types);
+  llvm::Constant * emitTypeList(const QualifiedTypeList & types);
 
   /** Generate a StaticList from the given list of constant elements. */
   llvm::Constant * emitStaticList(const ConstantList & elements,

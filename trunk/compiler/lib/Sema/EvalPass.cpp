@@ -510,9 +510,9 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
     return NULL;
   }
 
-  const Type * elementType = arrayType->typeParam(0);
-  TypeList naTypeArgs;
-  naTypeArgs.push_back(const_cast<Type *>(elementType));
+  QualifiedType elementType = arrayType->typeParam(0);
+  QualifiedTypeList naTypeArgs;
+  naTypeArgs.push_back(elementType);
   naTypeArgs.push_back(UnitType::get(
       ConstantInteger::get(in->location(), &UInt64Type::instance, in->args().size())));
   ConstantNativeArray * arrayData =

@@ -37,7 +37,7 @@ const Type * AmbiguousTypeParamType::forType(const Type * base, const Type * mat
         if (paramIndex >= base->numTypeParams()) {
           return NULL;
         } else {
-          return base->typeParam(paramIndex);
+          return base->typeParam(paramIndex).type();
         }
       }
       return NULL;
@@ -47,7 +47,7 @@ const Type * AmbiguousTypeParamType::forType(const Type * base, const Type * mat
     case Type::NArray:
     case Type::FlexibleArray: {
       if (paramIndex == 0 && (match == NULL || base->typeClass() == match->typeClass())) {
-        return base->typeParam(0);
+        return base->typeParam(0).type();
       }
       return NULL;
     }
@@ -56,7 +56,7 @@ const Type * AmbiguousTypeParamType::forType(const Type * base, const Type * mat
       if (match != NULL || paramIndex >= base->numTypeParams()) {
         return NULL;
       } else {
-        return base->typeParam(paramIndex);
+        return base->typeParam(paramIndex).type();
       }
     }
 

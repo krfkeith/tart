@@ -39,6 +39,9 @@ public:
   /** Write a type expression. */
   ASTWriter & write(const Type * ty);
 
+  /** Write a qualified type expression. */
+  ASTWriter & write(QualifiedType ty);
+
   /** Write an expression. */
   ASTWriter & write(const Expr * ex);
 

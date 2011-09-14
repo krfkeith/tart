@@ -38,7 +38,7 @@ void SpCandidate::relabelTypeVars(BindingEnv & env) {
 
   if (def_->hasUnboundTypeParams()) {
     size_t numParams = tm->typeParams()->size();
-    TypeVarMap assignments;
+    QualifiedTypeVarMap assignments;
 
     // For each template parameter, create a TypeAssignment instance.
     for (size_t i = 0; i < numParams; ++i) {
@@ -70,8 +70,8 @@ bool SpCandidate::unify(SourceContext * source, BindingEnv & env) {
   DASSERT(args_->size() <= tm->typeParams()->size());
   size_t i;
   for (i = 0; i < args_->size(); ++i) {
-    const Type * pattern = params_->member(i);
-    const Type * value = (*args_)[i];
+    QualifiedType pattern = params_->member(i);
+    QualifiedType value = (*args_)[i];
     // We need to do more than unify here.
     if (!env.unify(source, pattern, value, Constraint::EXACT)) {
       return false;
@@ -79,8 +79,8 @@ bool SpCandidate::unify(SourceContext * source, BindingEnv & env) {
   }
 
   for (; i < tm->typeParams()->size(); ++i) {
-    const Type * pattern = params_->member(i);
-    const Type * value = typeParamDefaults_[i];
+    QualifiedType pattern = params_->member(i);
+    QualifiedType value = typeParamDefaults_[i];
     if (!env.unify(source, pattern, value, Constraint::EXACT)) {
       return false;
     }
@@ -91,7 +91,7 @@ bool SpCandidate::unify(SourceContext * source, BindingEnv & env) {
   // Transform the condition list based on the unification result.
   conditions_.clear();
   if (!tm->conditions().empty()) {
-    TypeVarMap vars;
+    QualifiedTypeVarMap vars;
     env.toTypeVarMap(vars, this);
     SubstitutionTransform subst(vars);
     for (TemplateConditionList::const_iterator it = tm->conditions().begin();
@@ -111,7 +111,7 @@ Type * SpCandidate::toType(SourceContext * source, BindingEnv & env) {
     relabelTypeVars(env);
     if (unify(&candidateSite, env)) {
       env.updateAssignments(source->location());
-      TypeVarMap vars;
+      QualifiedTypeVarMap vars;
       env.toTypeVarMap(vars, this);
       return tdef->templateSignature()->instantiateType(source->location(), vars);
     } else {
@@ -135,9 +135,9 @@ ConversionRank SpCandidate::updateConversionRank() {
   }
 
   for (size_t i = 0; i < args_->size(); ++i) {
-    const Type * pattern = (*params_)[i];
-    const Type * value = (*args_)[i];
-    AnalyzerBase::analyzeType(value, Task_PrepTypeComparison);
+    QualifiedType pattern = (*params_)[i];
+    QualifiedType value = (*args_)[i];
+    AnalyzerBase::analyzeType(value.type(), Task_PrepTypeComparison);
     conversionRank_ = std::min(conversionRank_, TypeConversion::check(value, pattern));
   }
 
@@ -155,8 +155,8 @@ bool SpCandidate::isMoreSpecific(const SpCandidate * other) const {
   bool same = true;
   size_t numParams = tm->typeParams()->size();
   for (size_t i = 0; i < numParams; ++i) {
-    const Type * param = tm->typeParam(i);
-    const Type * oparam = otm->typeParam(i);
+    QualifiedType param = tm->typeParam(i);
+    QualifiedType oparam = otm->typeParam(i);
 
     if (!TypeRelation::isEqual(param, oparam)) {
       same = false;

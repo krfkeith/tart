@@ -323,6 +323,21 @@ bool FunctionAnalyzer::resolveModifiers() {
       success = false;
     }
 
+    // Handle 'read-only' declaration
+    if (isReadOnly) {
+      target->setFlag(FunctionDefn::SelfIsReadOnly, true);
+    }
+
+    if (target->storageClass() == Storage_Instance) {
+      TypeDefn * parentClass = target->enclosingClassDefn();
+      if (parentClass != NULL) {
+        // TODO: When should we *not* do this?
+        if (parentClass->isReadOnly() || parentClass->isImmutable()) {
+          target->setFlag(FunctionDefn::SelfIsReadOnly, true);
+        }
+      }
+    }
+
     // Functions defined in interfaces or protocols must not have a body.
     TypeDefn * enclosingClassDefn = target->enclosingClassDefn();
     if (enclosingClassDefn != NULL && isa<CompositeType>(enclosingClassDefn->typeValue())) {

@@ -120,8 +120,6 @@ Template::Template(Defn * v, Scope * parentScope)
   paramScope_.setScopeName("template-params");
 }
 
-// TODO: Insure that variadic argument is the last one? Do we care?
-
 void Template::setTypeParams(const TupleType * typeParams) {
   DASSERT(typeParams_ == NULL);
   typeParams_ = typeParams;
@@ -129,17 +127,16 @@ void Template::setTypeParams(const TupleType * typeParams) {
   FindTypeVariables(vars_).transform(typeParams_);
 
   // Check for variadic type parameters
-  const TypeVariable * variadicParam = NULL;
+  const TypeVariable * variadicParam;
   for (size_t i = 0; i < typeParams_->size(); ++i) {
-    if (const TypeVariable * tv = dyn_cast<TypeVariable>((*typeParams)[i])) {
-      if (tv->isVariadic()) {
-        if (i != typeParams_->size() - 1) {
-          diag.error(tv) << "template variadic parameter must be last";
-        }
-        isVariadic_ = true;
-        variadicParam = tv;
-        --numRequiredArgs_;
+    if (isVariadicParam(i)) {
+      const TypeVariable * tv = cast<TypeVariable>((*typeParams_)[i].type());
+      if (i != typeParams_->size() - 1) {
+        diag.error(tv) << "template variadic parameter must be last";
       }
+      isVariadic_ = true;
+      variadicParam = tv;
+      --numRequiredArgs_;
     }
   }
 
@@ -155,8 +152,13 @@ void Template::setTypeParams(const TupleType * typeParams) {
   }
 }
 
-const Type * Template::typeParam(int index) const {
+QualifiedType Template::typeParam(int index) const {
   return (*typeParams_)[index];
+}
+
+bool Template::isVariadicParam(int index) const {
+  QualifiedType param = (*typeParams_)[index];
+  return param.isa<TypeVariable>() && param.as<TypeVariable>()->isVariadic();
 }
 
 TypeVariable * Template::patternVar(const char * name) const {
@@ -208,7 +210,7 @@ Defn * Template::findSpecialization(const TupleType * tv) const {
   return NULL;
 }
 
-Defn * Template::instantiate(const SourceLocation & loc, const TypeVarMap & varValues,
+Defn * Template::instantiate(const SourceLocation & loc, const QualifiedTypeVarMap & varValues,
     uint32_t expectedTraits) {
   bool isPartial = false;
   bool isScaffold = false;
@@ -217,7 +219,7 @@ Defn * Template::instantiate(const SourceLocation & loc, const TypeVarMap & varV
   SubstitutionTransform subst(varValues);
 
   // Check to make sure that the parameters are of the correct type.
-  ConstTypeList paramValues;
+  QualifiedTypeList paramValues;
   for (TypeVariableList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
     TypeVariable * var = *it;
     const Type * value = subst(var);
@@ -304,18 +306,18 @@ Defn * Template::instantiate(const SourceLocation & loc, const TypeVarMap & varV
 
   for (size_t i = 0; i < vars_.size(); ++i) {
     TypeVariable * var = vars_[i];
-    const Type * value = paramValues[i];
+    QualifiedType value = paramValues[i];
 
     Defn * argDefn;
-    if (const UnitType * ut = dyn_cast<UnitType>(value)) {
-      Expr * cval = ut->value();
+    if (value.isa<UnitType>()) {
+      Expr * cval = value.as<UnitType>()->value();
       if (cval != NULL && var->valueType() != NULL) {
         cval = var->valueType()->implicitCast(loc, cval);
       }
       argDefn = new VariableDefn(Defn::Let, result->module(), var->name(), cval);
       argDefn->setStorageClass(Storage_Static);
     } else {
-      argDefn = new TypeDefn(result->module(), var->name(), const_cast<Type *>(value));
+      argDefn = new TypeDefn(result->module(), var->name(), const_cast<Type *>(value.type()));
     }
 
     argDefn->setSingular(value->isSingular());
@@ -344,7 +346,7 @@ Defn * Template::instantiate(const SourceLocation & loc, const TypeVarMap & varV
 }
 
 Type * Template::instantiateType(
-    const SourceLocation & loc, const TypeVarMap & varValues, uint32_t expectedTraits)
+    const SourceLocation & loc, const QualifiedTypeVarMap & varValues, uint32_t expectedTraits)
 {
   if (value_->ast() != NULL) {
     TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, varValues, expectedTraits));
@@ -364,7 +366,7 @@ Type * Template::instantiateType(
 
   // TODO: Can TypeTransform do this?
   // Check to make sure that the parameters are of the correct type.
-  TypeList paramValues;
+  QualifiedTypeList paramValues;
   SubstitutionTransform subst(varValues);
   for (TypeVariableList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
     TypeVariable * var = *it;
@@ -397,7 +399,8 @@ Type * Template::instantiateType(
       return FlexibleArrayType::get(TupleType::get(paramValues));
 
     case Type::TypeLiteral:
-      return TypeLiteralType::get(paramValues[0]);
+      // TODO: Disallow qualifiers here
+      return TypeLiteralType::get(paramValues[0].type());
 
     default:
       DFAIL("Invalid template type");
@@ -419,7 +422,7 @@ bool Template::canUnify(const TupleType * args) const {
   return true;
 }
 
-bool Template::canUnify(const Type * param, const Type * value) const {
+bool Template::canUnify(QualifiedType param, QualifiedType value) const {
   value = dealias(value);
   switch (param->typeClass()) {
     case Type::TypeVar:
@@ -444,7 +447,7 @@ TemplateInstance::TemplateInstance(Defn * templateDefn, const TupleType * templa
 {
 }
 
-const Type * TemplateInstance::typeArg(int index) const {
+QualifiedType TemplateInstance::typeArg(int index) const {
   return typeArgs_->member(index);
 }
 
@@ -471,18 +474,18 @@ Defn * TemplateInstance::findLessSpecializedInstance() {
   }
 
   Template * tm = templateDefn_->templateSignature();
-  TypeVarMap varValues;
+  QualifiedTypeVarMap varValues;
   DASSERT(patternVarValues_->size() == tm->patternVarCount());
   bool canMerge = false;
   for (size_t i = 0; i < patternVarValues_->size(); ++i) {
-    const Type * type = patternVarValues_->member(i);
+    const Type * type = patternVarValues_->member(i).type();
     if (type->typeClass() == Type::Class || type->typeClass() == Type::Interface) {
       type = Builtins::typeObject.get();
     }
 
     // TODO: Merge primitive types, addresses, etc.
 
-    if (type != patternVarValues_->member(i)) {
+    if (type != patternVarValues_->member(i).type()) {
       canMerge = true;
     }
 
@@ -512,22 +515,13 @@ void TemplateInstance::format(FormatStream & out) const {
   if (tm && tm->isVariadic()) {
     int index = 0;
     for (TupleType::const_iterator it = typeArgs_->begin(); it != typeArgs_->end(); ++it, ++index) {
-      const TupleType * vargs = NULL;
-      if (const TypeVariable * tv = dyn_cast<TypeVariable>(tm->typeParam(index))) {
-        if (tv->isVariadic()) {
-          vargs = cast<TupleType>(*it);
-          if (vargs->size() == 0) {
-            break;
-          }
-        }
-      }
-
       if (it != typeArgs_->begin()) {
         out << ",";
       }
 
       // Special formatting for variadic template params
-      if (vargs != NULL) {
+      if (tm->isVariadicParam(index)) {
+        Qualified<TupleType> vargs = it->as<TupleType>();
         vargs->formatMembers(out);
       } else {
         (*it)->format(out);

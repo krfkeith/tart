@@ -49,8 +49,8 @@ ConversionRank convertToPrimitive(
 }
 
 ConversionRank convertToComposite(
-    const Type * srcType, Expr * srcExpr,
-    const CompositeType * dstClass, Expr ** dstExpr, int options) {
+    const Type * srcType, unsigned srcQuals, Expr * srcExpr,
+    const CompositeType * dstClass, unsigned dstQuals, Expr ** dstExpr, int options) {
   if (const CompositeType * srcClass = dyn_cast_or_null<CompositeType>(srcType)) {
     DASSERT(dstClass->passes().isFinished(CompositeType::BaseTypesPass)) <<
         "Base type analysis not finished for " << dstClass;
@@ -214,8 +214,8 @@ ConversionRank convertToTuple(
   size_t fieldCount = srcTupleType->size();
   bool identical = true;
   for (size_t i = 0; i < fieldCount; ++i) {
-    const Type * srcMemberType = srcTupleType->member(i);
-    const Type * dstMemberType = dstTupleType->member(i);
+    QualifiedType srcMemberType = srcTupleType->member(i);
+    QualifiedType dstMemberType = dstTupleType->member(i);
     Expr * srcMemberExpr = NULL;
     Expr * dstMemberExpr = NULL;
     if (dstExpr != NULL) {
@@ -258,7 +258,7 @@ ConversionRank convertToTuple(
 }
 
 std::pair<ConversionRank, size_t> selectUnionMember(
-    const UnionType * unionType, const Type * srcType, Expr * srcExpr, int options) {
+    const UnionType * unionType, QualifiedType srcType, Expr * srcExpr, int options) {
   ConversionRank bestRank = Incompatible;
   size_t bestIndex = 0;
   size_t index = 0;
@@ -311,7 +311,7 @@ ConversionRank convertToUnion(
 
   llvm::tie(rank, index) = selectUnionMember(dstUnionType, srcType, srcExpr, options);
   if (rank != Incompatible && dstExpr != NULL) {
-    const Type * memberType = dstUnionType->members()[index];
+    QualifiedType memberType = dstUnionType->members()[index];
     Expr * intermediateExpr = NULL;
     convert(srcType, srcExpr, memberType, &intermediateExpr, options);
     if (intermediateExpr != NULL) {
@@ -333,11 +333,11 @@ ConversionRank convertToUnion(
 ConversionRank convertToAddress(
     const Type * srcType, Expr * srcExpr,
     const AddressType * dstType, Expr ** dstExpr, int options) {
-  const Type * dstElementType = dstType->typeParam(0);
-  DASSERT(dstElementType != NULL);
+  QualifiedType dstElementType = dstType->typeParam(0);
+  DASSERT(!dstElementType.isNull());
   if (isa<AddressType>(srcType)) {
-    const Type * srcElementType = srcType->typeParam(0);
-    DASSERT(srcElementType != NULL);
+    QualifiedType srcElementType = srcType->typeParam(0);
+    DASSERT(!srcElementType.isNull());
 
     // For addresses, the element type must be the same.
     if (TypeRelation::isEqual(dstElementType, srcElementType)) {
@@ -362,10 +362,10 @@ ConversionRank convertToAddress(
 ConversionRank convertToNativeArray(
     const Type * srcType, Expr * srcExpr,
     const NativeArrayType * dstArrayType, Expr ** dstExpr, int options) {
-  const Type * dstElementType = dstArrayType->elementType();
+  QualifiedType dstElementType = dstArrayType->elementType();
   if (const NativeArrayType * srcArrayType = dyn_cast<NativeArrayType>(srcType)) {
-    const Type * srcElementType = srcArrayType->elementType();
-    DASSERT(srcElementType != NULL);
+    QualifiedType srcElementType = srcArrayType->elementType();
+    DASSERT(!srcElementType.isNull());
 
     if (srcArrayType->size() != dstArrayType->size() /*&& dstArrayType->size() != 0*/) {
       return Incompatible;
@@ -381,7 +381,7 @@ ConversionRank convertToNativeArray(
   } else if (const CompositeType * cfrom = dyn_cast<CompositeType>(srcType)) {
     // Special case for initializing a native type from an array literal.
     if (cfrom->typeDefn()->ast() == Builtins::typeArray->typeDefn()->ast()) {
-      const Type * srcElementType = cfrom->typeParam(0);
+      QualifiedType srcElementType = cfrom->typeParam(0);
       if (TypeRelation::isEqual(dstElementType, srcElementType)) {
         if (dstExpr) {
           *dstExpr = srcExpr;
@@ -396,10 +396,10 @@ ConversionRank convertToNativeArray(
 ConversionRank convertToFlexibleArray(
     const Type * srcType, Expr * srcExpr,
     const FlexibleArrayType * dstArrayType, Expr ** dstExpr, int options) {
-  const Type * dstElementType = dstArrayType->elementType();
+  QualifiedType dstElementType = dstArrayType->elementType();
   if (const FlexibleArrayType * srcArrayType = dyn_cast<FlexibleArrayType>(srcType)) {
-    const Type * srcElementType = srcArrayType->elementType();
-    DASSERT(srcElementType != NULL);
+    QualifiedType srcElementType = srcArrayType->elementType();
+    DASSERT(!srcElementType.isNull());
 
     // For native arrays, the element type must be the same.
     if (TypeRelation::isEqual(dstElementType, srcElementType)) {
@@ -416,8 +416,7 @@ ConversionRank convertToTypeLiteral(
     const Type * srcType, Expr * srcExpr,
     const TypeLiteralType * dstLitType, Expr ** dstExpr, int options) {
   if (isa<TypeLiteralType>(srcType)) {
-    DASSERT(srcType->typeParam(0) != NULL);
-
+    DASSERT(!srcType->typeParam(0).isNull());
     if (TypeRelation::isEqual(srcType->typeParam(0), dstLitType->typeParam(0))) {
       if (dstExpr) {
         *dstExpr = srcExpr;
@@ -429,14 +428,14 @@ ConversionRank convertToTypeLiteral(
 }
 
 ConversionRank convert(
-    const Type * srcType, Expr * srcExpr,
-    const Type * dstType, Expr ** dstExpr, int options) {
+    QualifiedType srcType, Expr * srcExpr,
+    QualifiedType dstType, Expr ** dstExpr, int options) {
 
-  DASSERT(srcType != NULL);
-  DASSERT(dstType != NULL);
+  DASSERT(!srcType.isNull());
+  DASSERT(!dstType.isNull());
 
   // Early out
-  if (srcType == dstType) {
+  if (srcType.type() == dstType.type() && srcType.qualifiers() == dstType.qualifiers()) {
     if (dstExpr != NULL) {
       *dstExpr = srcExpr;
     }
@@ -446,7 +445,7 @@ ConversionRank convert(
   // Special cases for source types.
   switch (srcType->typeClass()) {
     case Type::Union: {
-      const UnionType * ut = static_cast<const UnionType *>(srcType);
+      const UnionType * ut = static_cast<const UnionType *>(srcType.type());
       if (ut->isSingleOptionalType() && dstType->isReferenceType()) {
         // Find the single optional type.
         const Type * memberType = ut->getFirstNonVoidType();
@@ -466,7 +465,7 @@ ConversionRank convert(
     case Type::Alias:
       // Dealias srcType
       return convert(
-          static_cast<const TypeAlias *>(srcType)->value(), srcExpr, dstType, dstExpr, options);
+          srcType.as<TypeAlias>()->qualifiedValue(), srcExpr, dstType, dstExpr, options);
 
     case Type::AmbiguousParameter:
     case Type::AmbiguousResult:
@@ -511,7 +510,7 @@ ConversionRank convert(
     }
 
     case Type::Assignment: {
-      const TypeAssignment * ta = static_cast<const TypeAssignment *>(srcType);
+      const TypeAssignment * ta = static_cast<const TypeAssignment *>(srcType.type());
       if (ta->value() != NULL) {
         return convert(ta->value(), srcExpr, dstType, dstExpr, options);
       }
@@ -556,46 +555,48 @@ ConversionRank convert(
     case Type::Alias:
       // Dealias dstType
       return convert(srcType, srcExpr,
-          static_cast<const TypeAlias *>(dstType)->value(), dstExpr, options);
+          dstType.as<TypeAlias>()->qualifiedValue(), dstExpr, options);
 
     case Type::Primitive:
-      return convertToPrimitive(srcType, srcExpr,
-          static_cast<const PrimitiveType *>(dstType), dstExpr, options);
+      return convertToPrimitive(srcType.type(), srcExpr,
+          dstType.as<PrimitiveType>().type(), dstExpr, options);
 
     case Type::Class:
     case Type::Struct:
     case Type::Interface:
     case Type::Protocol:
-      return convertToComposite(srcType, srcExpr,
-          static_cast<const CompositeType *>(dstType), dstExpr, options);
+      return convertToComposite(
+          srcType.type(), srcType.qualifiers(), srcExpr,
+          static_cast<const CompositeType *>(dstType.type()), dstType.qualifiers(), dstExpr,
+          options);
 
     case Type::Enum:
-      return convertToEnum(srcType, srcExpr,
-          static_cast<const EnumType *>(dstType), dstExpr, options);
+      return convertToEnum(srcType.type(), srcExpr,
+          dstType.as<EnumType>().type(), dstExpr, options);
 
     case Type::Function:
-      return convertToFunction(srcType, srcExpr,
-          static_cast<const FunctionType *>(dstType), dstExpr, options);
+      return convertToFunction(srcType.type(), srcExpr,
+          dstType.as<FunctionType>().type(), dstExpr, options);
 
     case Type::Tuple:
-      return convertToTuple(srcType, srcExpr,
-          static_cast<const TupleType *>(dstType), dstExpr, options);
+      return convertToTuple(srcType.type(), srcExpr,
+          dstType.as<TupleType>().type(), dstExpr, options);
 
     case Type::Union:
-      return convertToUnion(srcType, srcExpr,
-          static_cast<const UnionType *>(dstType), dstExpr, options);
+      return convertToUnion(srcType.type(), srcExpr,
+          dstType.as<UnionType>().type(), dstExpr, options);
 
     case Type::NAddress:
-      return convertToAddress(srcType, srcExpr,
-          static_cast<const AddressType *>(dstType), dstExpr, options);
+      return convertToAddress(srcType.type(), srcExpr,
+          dstType.as<AddressType>().type(), dstExpr, options);
 
     case Type::NArray:
-      return convertToNativeArray(srcType, srcExpr,
-          static_cast<const NativeArrayType *>(dstType), dstExpr, options);
+      return convertToNativeArray(srcType.type(), srcExpr,
+          dstType.as<NativeArrayType>().type(), dstExpr, options);
 
     case Type::FlexibleArray:
-      return convertToFlexibleArray(srcType, srcExpr,
-          static_cast<const FlexibleArrayType *>(dstType), dstExpr, options);
+      return convertToFlexibleArray(srcType.type(), srcExpr,
+          dstType.as<FlexibleArrayType>().type(), dstExpr, options);
 
     case Type::Unit:
       DASSERT(dstExpr == NULL);
@@ -606,8 +607,8 @@ ConversionRank convert(
       return NonPreferred;
 
     case Type::TypeLiteral:
-      return convertToTypeLiteral(srcType, srcExpr,
-          static_cast<const TypeLiteralType *>(dstType), dstExpr, options);
+      return convertToTypeLiteral(srcType.type(), srcExpr,
+          dstType.as<TypeLiteralType>().type(), dstExpr, options);
 
     case Type::AmbiguousParameter:
     case Type::AmbiguousResult:
@@ -652,7 +653,7 @@ ConversionRank convert(
     }
 
     case Type::Assignment: {
-      const TypeAssignment * ta = static_cast<const TypeAssignment *>(dstType);
+      Qualified<TypeAssignment> ta = dstType.as<TypeAssignment>();
       if (ta->value() != NULL) {
         return convert(srcType, srcExpr, ta->value(), dstExpr, options);
       } else {
@@ -687,12 +688,6 @@ ConversionRank convert(
       }
     }
 
-    case Type::ModVariadic:
-    case Type::ModMutable:
-    case Type::ModImmutable:
-    case Type::ModReadOnly:
-    case Type::ModAdopted:
-    case Type::ModVolatile:
     case Type::KindCount:
       DFAIL("Type class not supported by convert()");
       break;

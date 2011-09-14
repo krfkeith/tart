@@ -238,7 +238,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
 
             SpCandidate * spFinal = unifiedCandidates.front();
             env.updateAssignments(loc, spFinal);
-            TypeVarMap vars;
+            QualifiedTypeVarMap vars;
             env.toTypeVarMap(vars, spFinal);
             if (TypeDefn * tdef = dyn_cast<TypeDefn>(spFinal->def())) {
               Type * type = tdef->templateSignature()->instantiateType(loc, vars);
@@ -305,7 +305,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
 
   // Memory address type
   if (const AddressType * maType = dyn_cast<AddressType>(arrayType)) {
-    const Type * elemType = maType->typeParam(0);
+    const Type * elemType = maType->typeParam(0).type();
     if (!AnalyzerBase::analyzeType(elemType, Task_PrepTypeComparison)) {
       return &Expr::ErrorVal;
     }
@@ -338,7 +338,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
       return &Expr::ErrorVal;
     }
 
-    const Type * elemType = naType->typeParam(0);
+    const Type * elemType = naType->typeParam(0).type();
     DASSERT_OBJ(elemType != NULL, naType);
 
     if (args.size() != 1) {
@@ -363,7 +363,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
       return &Expr::ErrorVal;
     }
 
-    const Type * elemType = faType->typeParam(0);
+    const Type * elemType = faType->typeParam(0).type();
     DASSERT_OBJ(elemType != NULL, faType);
 
     if (args.size() != 1) {
@@ -411,7 +411,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
       }
 
       uint32_t index = uint32_t(indexVal.getZExtValue());
-      return new BinaryExpr(Expr::ElementRef, ast->location(), tt->member(index), arrayExpr, cint);
+      return new BinaryExpr(Expr::ElementRef, ast->location(), tt->member(index).type(), arrayExpr, cint);
     } else {
       diag.fatal(args[0]) << "Tuple subscript must be an integer constant";
       return &Expr::ErrorVal;
@@ -605,7 +605,7 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
   // Addresses are implicitly dereferenced.
   if (lvalue->base() != NULL && lvalue->base()->type()->typeClass() == Type::NAddress) {
     lvalue->setBase(new UnaryExpr(Expr::PtrDeref, lvalue->base()->location(),
-        lvalue->base()->type()->typeParam(0), lvalue->base()));
+        lvalue->base()->type()->typeParam(0).type(), lvalue->base()));
   }
 
   return lvalue;

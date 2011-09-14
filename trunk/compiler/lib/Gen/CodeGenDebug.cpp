@@ -541,7 +541,7 @@ DIType CodeGenerator::genDINativeArrayType(const NativeArrayType * type) {
   return diBuilder_.createArrayType(
       getSizeOfInBits(type->irEmbeddedType()),
       getAlignOfInBits(type->irEmbeddedType()),
-      genDIEmbeddedType(type->typeParam(0)),
+      genDIEmbeddedType(type->typeParam(0).type()),
       diBuilder_.getOrCreateArray(subrange));
 }
 
@@ -550,13 +550,13 @@ DIType CodeGenerator::genDIFlexibleArrayType(const FlexibleArrayType * type) {
   return diBuilder_.createArrayType(
       getSizeOfInBits(type->irEmbeddedType()),
       getAlignOfInBits(type->irEmbeddedType()),
-      genDIEmbeddedType(type->typeParam(0)),
+      genDIEmbeddedType(type->typeParam(0).type()),
       diBuilder_.getOrCreateArray(subrange));
 }
 
 DIType CodeGenerator::genDIAddressType(const AddressType * type) {
   return diBuilder_.createPointerType(
-      genDIType(type->typeParam(0)),
+      genDIType(type->typeParam(0).type()),
       getSizeOfInBits(type->irType()),
       getAlignOfInBits(type->irType()));
 }
@@ -570,11 +570,11 @@ DIType CodeGenerator::genDIUnionType(const UnionType * type) {
   // Collect union members
   int memberIndex = 0;
   for (TupleType::const_iterator it = type->members().begin(); it != type->members().end(); ++it) {
-    const Type * memberType = *it;
+    QualifiedType memberType = *it;
     if (!memberType->isVoidType()) {
       char name[16];
       snprintf(name, 16, "t%d", memberIndex);
-      DIType memberDbgType = genDIEmbeddedType(memberType);
+      DIType memberDbgType = genDIEmbeddedType(memberType.type());
       unionMembers.push_back(diBuilder_.createMemberType(
           placeHolder,
           name,
@@ -643,7 +643,7 @@ DIType CodeGenerator::genDITupleType(const TupleType * type) {
   DIType placeHolder = diBuilder_.createTemporaryType();
   dbgTypeMap_[type] = placeHolder;
   for (TupleType::const_iterator it = type->begin(); it != type->end(); ++it) {
-    const Type * memberType = *it;
+    QualifiedType memberType = *it;
     uint64_t memberSize = getSizeOfInBits(memberType->irEmbeddedType());
     uint64_t memberAlign = getAlignOfInBits(memberType->irEmbeddedType());
     memberOffset = align(memberOffset, memberAlign);
@@ -654,7 +654,7 @@ DIType CodeGenerator::genDITupleType(const TupleType * type) {
         dbgFile_,
         0, // Source line
         memberSize, memberAlign, memberOffset, 0,
-        genDIEmbeddedType(memberType)));
+        genDIEmbeddedType(memberType.type())));
     memberOffset += memberSize;
   }
 

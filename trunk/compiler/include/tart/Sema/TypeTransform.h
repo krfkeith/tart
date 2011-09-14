@@ -9,6 +9,10 @@
 #include "tart/Type/Type.h"
 #endif
 
+#ifndef TART_TYPE_TEMPLATE_H
+#include "tart/Defn/Template.h"
+#endif
+
 namespace tart {
 
 class EnumType;
@@ -31,10 +35,16 @@ public:
   virtual ~TypeTransform() {}
 
   const Type * transform(const Type * in) { return visit(in); }
+  QualifiedType transform(QualifiedType in) { return visit(in); }
 
   const Type * operator()(const Type * in) { return visit(in); }
+  QualifiedType operator()(QualifiedType in) { return visit(in); }
 
   const Type * visit(const Type * in);
+  QualifiedType visit(QualifiedType in) {
+    return QualifiedType(visit(in.type()), in.qualifiers());
+  }
+
   virtual const Type * visitPrimitiveType(const PrimitiveType * in);
   virtual const Type * visitCompositeType(const CompositeType * in);
   virtual const Type * visitEnumType(const EnumType * in);
@@ -57,7 +67,7 @@ public:
 /// A transform that does a substitution via an environment.
 class SubstitutionTransform : public TypeTransform {
 public:
-  SubstitutionTransform(const TypeVarMap & vars) : vars_(vars) {}
+  SubstitutionTransform(const QualifiedTypeVarMap & vars) : vars_(vars) {}
 
   const Type * visitTypeVariable(const TypeVariable * in);
   const Type * visitTypeAssignment(const TypeAssignment * in);
@@ -65,14 +75,14 @@ public:
   const Type * visitTypeConstraint(const TypeConstraint * in);
 
 protected:
-  const TypeVarMap & vars_;
+  const QualifiedTypeVarMap & vars_;
 };
 
 /// -------------------------------------------------------------------
 /// A transform that relabels all pattern variables.
 class RelabelTransform : public SubstitutionTransform {
 public:
-  RelabelTransform(const TypeVarMap & vars) : SubstitutionTransform(vars) {}
+  RelabelTransform(const QualifiedTypeVarMap & vars) : SubstitutionTransform(vars) {}
 
   const Type * visitTypeVariable(const TypeVariable * in);
 };
@@ -85,7 +95,7 @@ public:
 
   const Type * visitTypeAssignment(const TypeAssignment * in);
 
-  const TypeVarMap vars_;
+  const QualifiedTypeVarMap vars_;
 };
 
 /// -------------------------------------------------------------------

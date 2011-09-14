@@ -285,11 +285,11 @@ Expr * ExprAnalyzer::reduceTuple(const ASTOper * ast, const Type * expected) {
   }
 
   TupleCtorExpr * tuple = new TupleCtorExpr(ast->location(), NULL);
-  ConstTypeList types;
+  QualifiedTypeList types;
   size_t numParams = ast->count();
   bool isSingular = true;
   for (size_t i = 0; i < numParams; ++i) {
-    const Type * elType = ttype != NULL ? ttype->typeParam(i) : NULL;
+    const Type * elType = ttype != NULL ? ttype->typeParam(i).type() : NULL;
     Expr * el = reduceExpr(ast->args()[i], elType);
     if (isErrorResult(el)) {
       return &Expr::ErrorVal;

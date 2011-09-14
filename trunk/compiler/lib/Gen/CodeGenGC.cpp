@@ -287,7 +287,7 @@ void CodeGenerator::createTraceTableEntries(const Type * type, llvm::Constant * 
       size_t indicesSize = indices.size();
       int memberIndex = 0;
       for (TupleType::const_iterator it = ttype->begin(); it != ttype->end(); ++it, ++memberIndex) {
-        const Type * memberType = *it;
+        const Type * memberType = it->type();
         if (memberType->isReferenceType()) {
           indices.push_back(getInt32Val(memberIndex));
           llvm::Constant * fieldOffset = llvm::ConstantExpr::getInBoundsGetElementPtr(basePtr,
@@ -436,7 +436,7 @@ llvm::Function * CodeGenerator::getUnionTraceMethod(const UnionType * utype) {
   int32_t typeIndex = 0;
   for (TupleType::const_iterator it = utype->members().begin(); it != utype->members().end();
       ++it, ++typeIndex) {
-    const Type * memberType = *it;
+    const Type * memberType = it->type();
     if (memberType->isReferenceType()) {
       if (blkPtrTrace == NULL) {
         blkPtrTrace = BasicBlock::Create(context_, "ptr_trace", fn);
@@ -512,7 +512,7 @@ void CodeGenerator::addStaticRoot(llvm::GlobalVariable * gv, const Type * type) 
       if (isPointer) {
         // It's an object reference. For convenience, just use the same trace table
         // as a tuple containing an object reference.
-        traceTable = getTraceTable(TupleType::get(Builtins::typeObject.get()));
+        traceTable = getTraceTable(TupleType::get(QualifiedType(Builtins::typeObject.get())));
         DASSERT(traceTable != NULL);
         TRACE_ROOTS << "Adding static object reference root " << gv->getName();
       } else {

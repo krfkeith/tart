@@ -45,6 +45,9 @@ public:
   /** Construct a type from an AST. */
   Type * typeFromAST(const ASTNode * ast);
 
+  /** Construct a qualified type from an AST. */
+  QualifiedType qualifiedTypeFromAST(const ASTNode * ast);
+
   /** Given an AST, find all type definitions. */
   bool typeDefnListFromAST(const ASTNode * ast, DefnList & defns);
 
@@ -53,7 +56,7 @@ public:
 
   virtual Type * reduceTypeVariable(const ASTTypeVariable * ast);
 
-  bool getUnionTypes(const ASTNode * ast, ConstTypeList & result);
+  bool getUnionTypes(const ASTNode * ast, QualifiedTypeList & result);
 
 protected:
   void undefinedType(const ASTNode * ast);

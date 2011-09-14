@@ -43,7 +43,7 @@ namespace {
 // -------------------------------------------------------------------
 // UnionType
 
-UnionType * UnionType::get(const ConstTypeList & members) {
+UnionType * UnionType::get(const QualifiedTypeList & members) {
   if (!initFlag) {
     initFlag = true;
     GC::registerUninitCallback(&hook);
@@ -51,14 +51,14 @@ UnionType * UnionType::get(const ConstTypeList & members) {
 
   // Make sure that the set of types is disjoint, meaning that there are no types
   // in the set which are subtypes of one another.
-  TypeList combined;
-  for (ConstTypeList::const_iterator it = members.begin(); it != members.end(); ++it) {
-    const Type * type = dealias(*it);
+  QualifiedTypeList combined;
+  for (QualifiedTypeList::const_iterator it = members.begin(); it != members.end(); ++it) {
+    QualifiedType type = dealias(*it);
 
     bool addNew = true;
 
     // TODO: Flatten union types.
-    for (TypeList::iterator m = combined.begin(); m != combined.end();) {
+    for (QualifiedTypeList::iterator m = combined.begin(); m != combined.end();) {
       if (type->typeClass() == Type::Primitive || type->typeClass() == Type::Enum) {
         // Primitive types and enum types are not combined.
         addNew = *m != type;
@@ -73,7 +73,7 @@ UnionType * UnionType::get(const ConstTypeList & members) {
     }
 
     if (addNew) {
-      combined.push_back(const_cast<Type *>(type));
+      combined.push_back(type);
     }
   }
 
@@ -99,8 +99,8 @@ UnionType::UnionType(TupleType * members)
   , hasVoidType_(false)
   , hasNullType_(false)
 {
-  for (ConstTypeList::const_iterator it = members->begin(); it != members->end(); ++it) {
-    const Type * memberType = dealias(*it);
+  for (QualifiedTypeList::const_iterator it = members->begin(); it != members->end(); ++it) {
+    QualifiedType memberType = dealias(*it);
     if (memberType->isVoidType()) {
       hasVoidType_ = true;
     } else if (memberType->isNullType()) {
@@ -117,7 +117,7 @@ size_t UnionType::numTypeParams() const {
   return members_->size();
 }
 
-const Type * UnionType::typeParam(int index) const {
+QualifiedType UnionType::typeParam(int index) const {
   return (*members_)[index];
 }
 
@@ -145,9 +145,9 @@ bool UnionType::isSingleNullableType() const {
 
 const Type * UnionType::getFirstNonVoidType() const {
   for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    const Type * memberType = *it;
+    QualifiedType memberType = *it;
     if (!memberType->isVoidType() && !memberType->isNullType()) {
-      return memberType;
+      return memberType.type();
     }
   }
 
@@ -160,7 +160,7 @@ llvm::Type * UnionType::createIRType() const {
   shape_ = Shape_Large_Value;
 
   if (!hasRefTypesOnly()) {
-    for (ConstTypeList::const_iterator it = members().begin(); it != members().end(); ++it) {
+    for (QualifiedTypeList::const_iterator it = members().begin(); it != members().end(); ++it) {
       const Type * type = dealias(*it);
 
       if (!type->isVoidType()) {
@@ -205,8 +205,8 @@ llvm::Type * UnionType::createIRType() const {
   shape_ = Shape_Large_Value;
 
   // Create an array representing all of the IR types that correspond to the Tart types.
-  for (ConstTypeList::const_iterator it = members().begin(); it != members().end(); ++it) {
-    const Type * type = dealias(*it);
+  for (QualifiedTypeList::const_iterator it = members().begin(); it != members().end(); ++it) {
+    QualifiedType type = dealias(*it);
 
     llvm::Type * irType = type->irEmbeddedType();
     irTypes_.push_back(irType);
@@ -218,7 +218,7 @@ llvm::Type * UnionType::createIRType() const {
     size_t size = estimateTypeSize(irType);
     if (size > largestSize) {
       largestSize = size;
-      largestType = type;
+      largestType = type.type();
     }
   }
 
@@ -350,12 +350,12 @@ int UnionType::getTypeIndex(const Type * type) const {
   // Otherwise, calculate the type index.
   int index = 0;
   for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    const Type * memberType = *it;
-    if (const TypeAssignment * ta = dyn_cast<TypeAssignment>(memberType)) {
-      if (TypeRelation::isEqual(ta, type)) {
-        return index;
-      }
-    }
+    QualifiedType memberType = *it;
+//    if (Qualified<TypeAssignment> ta = memberType.dyn_cast<TypeAssignment>()) {
+//      if (TypeRelation::isEqual(memberType, type)) {
+//        return index;
+//      }
+//    }
     if (TypeRelation::isEqual(type, memberType)) {
       return index;
     }
@@ -393,7 +393,7 @@ Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
   // Determine all of the possible member types that could represent an object of
   // type 'toType'.
   for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    const Type * memberType = *it;
+    QualifiedType memberType = *it;
     if (TypeConversion::check(memberType, toType)) {
       // TODO: Add additional cast if toType is not exactly the same type as the member.
       return new CastExpr(Expr::CheckedUnionMemberCast, from->location(), toType, from);
@@ -407,8 +407,8 @@ Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
 
 bool UnionType::isSubtypeOfOfAnyMembers(const CompositeType * toType) const {
   for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    if (const CompositeType * ctype = dyn_cast<CompositeType>(*it)) {
-      if (toType->isSubclassOf(ctype)) {
+    if (Qualified<CompositeType> ctype = it->dyn_cast<CompositeType>()) {
+      if (toType->isSubclassOf(ctype.type())) {
         return true;
       }
     }
@@ -419,8 +419,8 @@ bool UnionType::isSubtypeOfOfAnyMembers(const CompositeType * toType) const {
 
 bool UnionType::isSupertypeOfAllMembers(const CompositeType * toType) const {
   for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    const Type * memberType = *it;
-    if (const CompositeType * ctype = dyn_cast<CompositeType>(memberType)) {
+    QualifiedType memberType = *it;
+    if (Qualified<CompositeType> ctype = memberType.dyn_cast<CompositeType>()) {
       if (!ctype->isSubclassOf(toType)) {
         return false;
       }

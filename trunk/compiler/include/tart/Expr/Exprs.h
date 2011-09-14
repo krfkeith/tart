@@ -411,6 +411,13 @@ public:
   {
   }
 
+  /** Constructor. */
+  CastExpr(ExprType k, const SourceLocation & loc, QualifiedType type, Expr * a)
+    : UnaryExpr(k, loc, type.type(), a)
+    , typeIndex_(0)
+  {
+  }
+
   // Type discriminator index used in union types
   int typeIndex() const { return typeIndex_; }
   void setTypeIndex(int index) { typeIndex_ = index; }

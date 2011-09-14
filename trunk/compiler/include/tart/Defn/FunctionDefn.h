@@ -119,6 +119,7 @@ public:
     ExplicitFinal = (1<<11),    // Function was explicitly declared as final (for doc purposes)
     Intrinsic = (1<<12),        // This function is an intrinsic
     TraceMethod = (1<<13),      // This overrides the compiler-generated trace strategy
+    SelfIsReadOnly = (1<<14),   // Mutations to 'self' are not allowed.
     //Commutative = (1<<6),  // A function whose order of arguments can be reversed
     //Associative = (1<<7),  // A varargs function that can be combined with itself.
   };

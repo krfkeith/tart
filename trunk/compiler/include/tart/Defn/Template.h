@@ -71,6 +71,7 @@ private:
 
 typedef llvm::SmallVector<TypeVariable *, 4> TypeVariableList;
 typedef llvm::DenseMap<const TypeVariable *, const Type *> TypeVarMap;
+typedef llvm::DenseMap<const TypeVariable *, QualifiedType> QualifiedTypeVarMap;
 
 /// -------------------------------------------------------------------
 /// Defines the parameters of a template. Also used as a record of
@@ -83,6 +84,10 @@ public:
   };
 
   static uint32_t expectedTraits(const Type * ty) {
+    return (ty->isSingular() ? Singular : 0) | (ty->isScaffold() ? 0 : NonScaffold);
+  }
+
+  static uint32_t expectedTraits(QualifiedType ty) {
     return (ty->isSingular() ? Singular : 0) | (ty->isScaffold() ? 0 : NonScaffold);
   }
 
@@ -99,12 +104,15 @@ public:
   const TupleType * typeParams() const { return typeParams_; }
   void setTypeParams(const TupleType * typeParams);
 
+  /** Return true if the parameter at 'index' is a variadic parameter. */
+  bool isVariadicParam(int index) const;
+
   /** Return the default values for the type parameters. */
   const TypeList & typeParamDefaults() const { return typeParamDefaults_; }
   TypeList & typeParamDefaults() { return typeParamDefaults_; }
 
   /** Return the Nth type param. */
-  const Type * typeParam(int index) const;
+  QualifiedType typeParam(int index) const;
 
   /** Return the list of requirements. */
   const TemplateConditionList & conditions() const { return conditions_; }
@@ -130,17 +138,21 @@ public:
   /** Find a specialization with the specified type arguments. */
   Defn * findSpecialization(const TupleType * tv) const;
 
+//  /** Return a specialization of this template. */
+//  Defn * instantiate(const SourceLocation & loc, const TypeVarMap & varValues,
+//      uint32_t expectedTraits = 0);
+
   /** Return a specialization of this template. */
-  Defn * instantiate(const SourceLocation & loc, const TypeVarMap & varValues,
+  Defn * instantiate(const SourceLocation & loc, const QualifiedTypeVarMap & varValues,
       uint32_t expectedTraits = 0);
 
   /** Special version of instantiate for types. */
-  Type * instantiateType(const SourceLocation & loc, const TypeVarMap & varValues,
+  Type * instantiateType(const SourceLocation & loc, const QualifiedTypeVarMap & varValues,
       uint32_t expectedTraits = 0);
 
   /** Basic unification check - may produce false positives, but is cheap to run. */
   bool canUnify(const TupleType * args) const;
-  bool canUnify(const Type * param, const Type * value) const;
+  bool canUnify(QualifiedType param, QualifiedType value) const;
 
   /** Returns true if this template has a variadic argument. */
   bool isVariadic() const { return isVariadic_; }
@@ -184,7 +196,7 @@ public:
 
   /** The template arguments for this template. */
   const TupleType * typeArgs() const { return typeArgs_; }
-  const Type * typeArg(int index) const;
+  QualifiedType typeArg(int index) const;
 
   /** The template variable values for this template instance. */
   const TupleType * patternVarValues() const { return patternVarValues_; }

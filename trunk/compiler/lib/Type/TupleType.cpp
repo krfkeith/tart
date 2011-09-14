@@ -34,9 +34,8 @@ namespace {
       for (TupleType::const_iterator it = key.first; it != key.second; ++it) {
         result *= 0x5bd1e995;
         result ^= result >> 24;
-        result ^= Type::KeyInfo::getHashValue(*it);
+        result ^= QualifiedType::KeyInfo::getHashValue(*it);
       }
-
       return result;
     }
 
@@ -47,28 +46,26 @@ namespace {
         TupleType::const_iterator li = lhs.first;
         TupleType::const_iterator ri = rhs.first;
         for (; li != lhs.second; ++li, ++ri) {
-          if (!Type::KeyInfo::isEqual(*li, *ri)) {
+          if (!QualifiedType::KeyInfo::isEqual(*li, *ri)) {
             return false;
           }
         }
-
         return true;
       }
-
       return false;
     }
 
     static bool isPod() { return false; }
-    static Type * const emptyKey;
-    static Type * const tombstoneKey;
+    static QualifiedType emptyKey;
+    static QualifiedType tombstoneKey;
   };
 
   TypeTupleKey iterPair(TupleType * tv) {
     return TypeTupleKey(tv->begin(), tv->end());
   }
 
-  Type * const TypeTupleKeyInfo ::emptyKey = NULL;
-  Type * const TypeTupleKeyInfo ::tombstoneKey = NULL;
+  QualifiedType TypeTupleKeyInfo::emptyKey;
+  QualifiedType TypeTupleKeyInfo::tombstoneKey;
 
   class TupleTypeWeakPtr : public GCWeakPtr<TupleType> {
   public:
@@ -111,9 +108,9 @@ namespace {
 // -------------------------------------------------------------------
 // TupleType
 
-TupleType * TupleType::get(const Type * typeArg) {
-  return get(const_cast<const_iterator>(&typeArg), const_cast<const_iterator>(&typeArg + 1));
-}
+//TupleType * TupleType::get(const Type * typeArg) {
+//  return get(const_cast<const_iterator>(&typeArg), const_cast<const_iterator>(&typeArg + 1));
+//}
 
 TupleType * TupleType::get(TupleType::const_iterator first, TupleType::const_iterator last) {
   // Make the type map a garbage collection root.
@@ -232,7 +229,9 @@ void TupleType::format(FormatStream & out) const {
 }
 
 void TupleType::trace() const {
-  markList(members_.begin(), members_.end());
+  for (QualifiedTypeList::const_iterator it = members_.begin(); it != members_.end(); ++it) {
+    it->type()->mark();
+  }
 }
 
 bool TupleType::containsBadType() const {

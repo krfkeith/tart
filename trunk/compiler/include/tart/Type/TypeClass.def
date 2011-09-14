@@ -15,14 +15,6 @@ TYPE_CLASS(FlexibleArray)     // Zero-length array for object epilogue
 TYPE_CLASS(Unit)              // A type which consists of a single constant value
 TYPE_CLASS(TypeLiteral)       // A type of a type literal.
 
-// Type modifiers
-TYPE_CLASS(ModVariadic)       // Modifier for variadic types.
-TYPE_CLASS(ModVolatile)       // Modifier for volatile types.
-TYPE_CLASS(ModMutable)        // Modifier for mutable types.
-TYPE_CLASS(ModImmutable)      // Modifier for immutable types.
-TYPE_CLASS(ModReadOnly)       // Modifier for read-only types.
-TYPE_CLASS(ModAdopted)        // Modifier for adopted types.
-
 // Non-type placeholders for types.
 TYPE_CLASS(Alias)             // A named alias for a type expression
 TYPE_CLASS(TypeVar)           // A type variable
@@ -35,6 +27,5 @@ TYPE_CLASS(AmbiguousPhi)      // Unresolved possible alternate values
 TYPE_CLASS(AmbiguousTypeParam)// Unresolved param of template
 
 TYPE_RANGE(Composites, Class, Protocol)
-TYPE_RANGE(Modifiers, ModVariadic, ModAdopted)
 TYPE_RANGE(AmbiguousTypes, AmbiguousResult, AmbiguousTypeParam)
 TYPE_RANGE(TypeConstraints, AmbiguousResult, AmbiguousTypeParam)

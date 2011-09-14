@@ -17,28 +17,24 @@ typedef llvm::SmallVector<llvm::Type *, 16> IRTypeList;
 /// Represents a tuple of values which may have different types.
 class TupleType : public TypeImpl {
 public:
-  typedef ConstTypeList::iterator iterator;
-  typedef ConstTypeList::const_iterator const_iterator;
+  typedef QualifiedTypeList::iterator iterator;
+  typedef QualifiedTypeList::const_iterator const_iterator;
 
   /** Construct a tuple of the given member types. */
-  static TupleType * get(const Type * singleTypeArg);
   static TupleType * get(const_iterator first, const_iterator last);
-  static TupleType * get(const TypeList & members) {
-    return get(members.begin(), members.end());
-  }
-  static TupleType * get(llvm::ArrayRef<const Type *> members) {
+  static TupleType * get(llvm::ArrayRef<QualifiedType> members) {
     return get(members.begin(), members.end());
   }
 
   /** Return the list of possible types for this union. */
-  const ConstTypeList & members() const { return members_; }
+  const QualifiedTypeList & members() const { return members_; }
 
   const_iterator begin() const { return members_.begin(); }
   const_iterator end() const { return members_.end(); }
   size_t size() const { return members_.size(); }
 
-  const Type * operator[](int index) const { return members_[index]; }
-  const Type * member(int index) const { return members_[index]; }
+  QualifiedType operator[](int index) const { return members_[index]; }
+  QualifiedType member(int index) const { return members_[index]; }
 
   /** True if this contains an error type. */
   bool containsBadType() const;
@@ -54,7 +50,7 @@ public:
   void format(FormatStream & out) const;
   void trace() const;
   size_t numTypeParams() const { return members_.size(); }
-  const Type * typeParam(int index) const { return members_[index]; }
+  QualifiedType typeParam(int index) const { return members_[index].type(); }
   Expr * nullInitValue() const;
   bool containsReferenceType() const { return containsReferenceType_; }
 
@@ -67,7 +63,7 @@ protected:
   /** Construct a tuple type */
   TupleType(const_iterator first, const_iterator last);
 
-  ConstTypeList members_;
+  QualifiedTypeList members_;
   bool containsReferenceType_;
 };
 

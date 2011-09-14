@@ -147,10 +147,10 @@ public:
   virtual size_t numTypeParams() const { return 0; }
 
   /** Return the Nth type parameter. */
-  virtual const Type * typeParam(int index) const;
+  virtual QualifiedType typeParam(int index) const;
 
   /** Return the list of all type parameters for this type. */
-  void getTypeParams(ConstTypeList & out) const;
+  void getTypeParams(QualifiedTypeList & out) const;
 
   /** Return true if this type supports the specified protocol. */
   bool supports(const Type * protocol) const;
@@ -301,7 +301,7 @@ public:
   size_t numTypeParams() const;
 
   /** Return the Nth type parameter. */
-  const Type * typeParam(int index) const;
+  QualifiedType typeParam(int index) const;
 
   // Overrides
 
@@ -376,9 +376,11 @@ void compatibilityWarning(const SourceLocation & loc, ConversionRank tc,
 
 // Given a type, append the linkage name of that type to the output buffer.
 void typeLinkageName(llvm::SmallVectorImpl<char> & out, const Type * ty);
+void typeLinkageName(llvm::SmallVectorImpl<char> & out, QualifiedType ty);
 
-// Given a type, append the linkage name of that type to the output buffer.
+// Given a type, append the linkage name of that type to the stream.
 void typeLinkageName(llvm::raw_ostream & out, const Type * ty);
+void typeLinkageName(llvm::raw_ostream & out, QualifiedType ty);
 
 /** Given two types, try and find the narrowest type that both
     can be converted to.
@@ -389,6 +391,7 @@ const Type * findCommonType(const Type * t0, const Type * t1);
     real underlying type. */
 const Type * dealias(const Type * t);
 Type * dealias(Type * t);
+QualifiedType dealias(QualifiedType t);
 
 /** Stream operator for type class names. */
 inline FormatStream & operator<<(FormatStream & out, Type::TypeClass tc) {

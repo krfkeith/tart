@@ -142,7 +142,7 @@ public:
 
   /** Given an element type, return the corresponding array type. The element
       type must already have been fully resolved. */
-  static CompositeType * getArrayTypeForElement(const Type * elementType);
+  static CompositeType * getArrayTypeForElement(QualifiedType elementType);
 
   /** Create an empty array literal, with elements of the specified type.
       Also add to the given module the external symbols needed to support

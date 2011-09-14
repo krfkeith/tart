@@ -101,22 +101,12 @@ StringRef Defn::linkageName() const {
       int index = 0;
       Template * tsig = tinst_->templateDefn()->templateSignature();
       for (TupleType::const_iterator it = typeArgs->begin(); it != typeArgs->end(); ++it, ++index) {
-        const TupleType * variadicArgs = NULL;
-        if (const TypeVariable * tv = dyn_cast<TypeVariable>(tsig->typeParam(index))) {
-          if (tv->isVariadic()) {
-            variadicArgs = cast<TupleType>(*it);
-            if (variadicArgs->size() == 0) {
-              break;
-            }
-          }
-        }
-
         if (it != typeArgs->begin()) {
           lnkName += ",";
         }
 
-        // Special formatting for variadic template params
-        if (variadicArgs != NULL) {
+        if (tsig->isVariadicParam(index)) {
+          Qualified<TupleType> variadicArgs = it->as<TupleType>();
           for (TupleType::const_iterator t = variadicArgs->begin(); t != variadicArgs->end(); ++t) {
             if (t != variadicArgs->begin()) {
               lnkName += ",";

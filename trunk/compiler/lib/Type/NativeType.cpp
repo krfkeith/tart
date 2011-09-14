@@ -53,7 +53,7 @@ void AddressType::initBuiltin() {
   // Make the type map a garbage collection root
   static TypeMapRoot<TypeMap> root(uniqueTypes_);
 
-  TypeList typeParams;
+  QualifiedTypeList typeParams;
   typeParams.push_back(new TypeVariable(SourceLocation(), "Target"));
 
   // Create type parameters
@@ -69,8 +69,8 @@ void AddressType::initBuiltin() {
   prototype.elementType_ = tm->typeParam(0);
 }
 
-AddressType * AddressType::get(const Type * elemType) {
-  if (elemType == NULL) {
+AddressType * AddressType::get(QualifiedType elemType) {
+  if (elemType.isNull()) {
     return NULL;
   }
   elemType = dealias(elemType);
@@ -84,11 +84,11 @@ AddressType * AddressType::get(const Type * elemType) {
   return addrType;
 }
 
-AddressType::AddressType(const Type * elemType)
+AddressType::AddressType(QualifiedType elemType)
   : TypeImpl(Type::NAddress, Shape_Primitive)
   , elementType_(elemType)
 {
-  DASSERT_OBJ(!isa<UnitType>(elemType), elemType);
+  DASSERT(!elemType.isa<UnitType>());
 }
 
 AddressType::AddressType() : TypeImpl(Type::NAddress, Shape_Primitive) {}
@@ -96,7 +96,7 @@ AddressType::AddressType() : TypeImpl(Type::NAddress, Shape_Primitive) {}
 AddressType::~AddressType() {}
 
 llvm::Type * AddressType::createIRType() const {
-  DASSERT_OBJ(elementType_ != NULL, this);
+  DASSERT_OBJ(!elementType_.isNull(), this);
   if (elementType_->isVoidType()) {
     return llvm::Type::getInt8PtrTy(llvm::getGlobalContext());
   }
@@ -118,7 +118,7 @@ void AddressType::format(FormatStream & out) const {
 
 void AddressType::trace() const {
   Type::trace();
-  safeMark(elementType_);
+  safeMark(elementType_.type());
 }
 
 // -------------------------------------------------------------------
@@ -132,7 +132,7 @@ void NativeArrayType::initBuiltin() {
   // Make the type map a garbage collection root
   static TypeMapRoot<TypeMap> root(uniqueTypes_);
 
-  TypeList typeParams;
+  QualifiedTypeList typeParams;
   typeParams.push_back(new TypeVariable(SourceLocation(), "ElementType"));
   typeParams.push_back(new TypeVariable(SourceLocation(), "Length", &Int32Type::instance));
 
@@ -163,20 +163,18 @@ NativeArrayType * NativeArrayType::get(const TupleType * typeArgs) {
 NativeArrayType::NativeArrayType(const TupleType * typeArgs)
   : TypeImpl(Type::NArray, Shape_Large_Value)
   , typeArgs_(typeArgs)
-//  , size_(sz)
 {
-  DASSERT(!isa<UnitType>((*typeArgs)[0]));
-  size_ = cast<ConstantInteger>(cast<UnitType>((*typeArgs)[1])->value())->value()->getZExtValue();
-  //DFAIL("Implement sz");
+  DASSERT(!(*typeArgs)[0].isa<UnitType>());
+  size_ = cast<ConstantInteger>((*typeArgs)[1].cast<UnitType>()->value())->value()->getZExtValue();
 }
 
 NativeArrayType::NativeArrayType() : TypeImpl(Type::NArray, Shape_Large_Value) {}
 
-const Type * NativeArrayType::typeParam(int index) const {
+QualifiedType NativeArrayType::typeParam(int index) const {
   return (*typeArgs_)[index];
 }
 
-const Type * NativeArrayType::elementType() const {
+QualifiedType NativeArrayType::elementType() const {
   return (*typeArgs_)[0];
 }
 
@@ -212,7 +210,7 @@ void FlexibleArrayType::initBuiltin() {
   // Make the type map a garbage collection root
   static TypeMapRoot<TypeMap> root(uniqueTypes_);
 
-  TypeList typeParams;
+  QualifiedTypeList typeParams;
   typeParams.push_back(new TypeVariable(SourceLocation(), "ElementType"));
 
   // Create type parameters
@@ -243,16 +241,16 @@ FlexibleArrayType::FlexibleArrayType(const TupleType * typeArgs)
   : TypeImpl(Type::FlexibleArray, Shape_Large_Value)
   , typeArgs_(typeArgs)
 {
-  DASSERT(!isa<UnitType>((*typeArgs)[0]));
+  DASSERT(!(*typeArgs)[0].isa<UnitType>());
 }
 
 FlexibleArrayType::FlexibleArrayType() : TypeImpl(Type::FlexibleArray, Shape_Large_Value) {}
 
-const Type * FlexibleArrayType::typeParam(int index) const {
+QualifiedType FlexibleArrayType::typeParam(int index) const {
   return (*typeArgs_)[index];
 }
 
-const Type * FlexibleArrayType::elementType() const {
+QualifiedType FlexibleArrayType::elementType() const {
   return (*typeArgs_)[0];
 }
 

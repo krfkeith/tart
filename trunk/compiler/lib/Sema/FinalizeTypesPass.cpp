@@ -159,7 +159,7 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
     bool isTemplateMethod = method->isTemplate() || method->isTemplateMember();
     if (isTemplateMethod) {
       GC * context = in->singularCandidate();
-      TypeVarMap varValues;
+      QualifiedTypeVarMap varValues;
       env_.toTypeVarMap(varValues, context);
       method = cast_or_null<FunctionDefn>(
           doPatternSubstitutions(in->location(), method, varValues));
@@ -408,7 +408,7 @@ bool FinalizeTypesPassImpl::coerceArgs(
 }
 
 Defn * FinalizeTypesPassImpl::doPatternSubstitutions(SLC & loc, Defn * def,
-    const TypeVarMap & varValues)
+    const QualifiedTypeVarMap & varValues)
 {
   // First perform pattern substitutions on the parent definition.
   Defn * parent = def->parentDefn();
@@ -461,13 +461,13 @@ Defn * FinalizeTypesPassImpl::doPatternSubstitutions(SLC & loc, Defn * def,
     size_t numVars = tm->patternVarCount();
     for (size_t i = 0; i < numVars; ++i) {
       const TypeVariable * var = tm->patternVar(i);
-      TypeVarMap::const_iterator it = varValues.find(var);
+      QualifiedTypeVarMap::const_iterator it = varValues.find(var);
       if (it == varValues.end()) {
         diag.fatal(loc) << "Unable to deduce template parameter '" << var << "' for '" <<
             Format_Verbose << def << "' in environment " << env_;
         return NULL;
       } else {
-        const Type * value = it->second;
+        const Type * value = it->second.type();
         if (!value->isSingular()) {
           value = NormalizeTransform().transform(value);
           if (!value->isSingular()) {
@@ -624,7 +624,7 @@ Expr * FinalizeTypesPassImpl::visitUnionTest(InstanceOfExpr * in, Expr * value,
   TypeList matchingTypes;
   ConversionRank bestRank = Incompatible;
   for (TupleType::const_iterator it = from->members().begin(); it != from->members().end(); ++it) {
-    Type * memberType = const_cast<Type *>(dealias(*it));
+    Type * memberType = const_cast<Type *>(dealias(it->type()));
     // TODO: Should this use conversion test, or subtype test?
     ConversionRank rank = TypeConversion::check(memberType, to);
     if (rank >= ExactConversion) {
@@ -724,7 +724,7 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
     in->setSecond(addCastIfNeeded(in->second(), tr));
     return in;
   } else if (isa<AddressType>(t1)) {
-    const Type * e0 = t1->typeParam(0);
+    QualifiedType e0 = t1->typeParam(0);
     if (isa<AddressType>(t2)) {
       if (TypeRelation::isEqual(e0, t2->typeParam(0))) {
         in->setSecond(addCastIfNeeded(in->second(), t1));
@@ -771,7 +771,7 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
 
 Expr * FinalizeTypesPassImpl::visitTupleCtor(TupleCtorExpr * in) {
   ExprList & args = in->args();
-  ConstTypeList types;
+  QualifiedTypeList types;
   DASSERT(args.size() > 0);
   for (ExprList::iterator it = args.begin(); it != args.end(); ++it) {
     Expr * arg = visitExpr(*it);

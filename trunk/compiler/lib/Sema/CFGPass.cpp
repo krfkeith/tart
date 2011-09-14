@@ -400,7 +400,7 @@ Expr * CFGPass::visitTupleCtor(TupleCtorExpr * in) {
   }
 
   if (typeChanged) {
-    ConstTypeList argTypes;
+    QualifiedTypeList argTypes;
     for (ExprList::iterator it = in->begin(); it != in->end(); ++it) {
       argTypes.push_back((*it)->type());
     }

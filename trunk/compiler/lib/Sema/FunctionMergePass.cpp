@@ -641,7 +641,7 @@ bool FunctionMergePass::areTypesCompatible(const Type * from, const Type * to) {
 
       size_t memberSize = ttFrom->members().size();
       for (size_t i = 0; i < memberSize; ++i) {
-        if (!areTypesCompatible(ttFrom->members()[i], ttTo->members()[i])) {
+        if (!areTypesCompatible(ttFrom->members()[i].type(), ttTo->members()[i].type())) {
           return false;
         }
       }

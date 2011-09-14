@@ -30,8 +30,11 @@
 
 namespace tart {
 
-static bool isEqualTuple(const TupleType * ltt, const TupleType * rtt) {
-  if (ltt == rtt) {
+static bool isEqualTuple(Qualified<TupleType> ltt, Qualified<TupleType> rtt) {
+  if (ltt.qualifiers() != rtt.qualifiers()) {
+    return false;
+  }
+  if (ltt.type() == rtt.type()) {
     return true;
   }
   if (ltt->size() == rtt->size()) {
@@ -46,7 +49,10 @@ static bool isEqualTuple(const TupleType * ltt, const TupleType * rtt) {
   return false;
 }
 
-static bool isEqualComposite(const CompositeType * lct, const CompositeType * rct) {
+static bool isEqualComposite(Qualified<CompositeType> lct, Qualified<CompositeType> rct) {
+  if (lct.qualifiers() != rct.qualifiers()) {
+    return false;
+  }
   // Check if both classes derive from the same AST.
   TypeDefn * ldef = lct->typeDefn();
   TypeDefn * rdef = rct->typeDefn();
@@ -76,7 +82,10 @@ static bool isEqualComposite(const CompositeType * lct, const CompositeType * rc
   return false;
 }
 
-static bool isEqualFunction(const FunctionType * lfn, const FunctionType * rfn) {
+static bool isEqualFunction(Qualified<FunctionType> lfn, Qualified<FunctionType> rfn) {
+  if (lfn.qualifiers() != rfn.qualifiers()) {
+    return false;
+  }
   if (lfn->params().size() != rfn->params().size() ||
       lfn->isStatic() != rfn->isStatic()) {
     return false;
@@ -108,7 +117,10 @@ static bool isEqualFunction(const FunctionType * lfn, const FunctionType * rfn) 
   return true;
 }
 
-static bool isEqualUnion(const UnionType * lut, const UnionType * rut) {
+static bool isEqualUnion(Qualified<UnionType> lut, Qualified<UnionType> rut) {
+  if (lut.qualifiers() != rut.qualifiers()) {
+    return false;
+  }
   if (isEqualTuple(lut->typeArgs(), rut->typeArgs())) {
     return true;
   }
@@ -132,15 +144,15 @@ static bool isEqualUnion(const UnionType * lut, const UnionType * rut) {
   return false;
 }
 
-bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
+bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
   // Early out
-  if (lt == rt) {
+  if (lt.type() == rt.type() && lt.qualifiers() == rt.qualifiers()) {
     return true;
   }
 
   switch (rt->typeClass()) {
     case Type::Alias:
-      return isEqual(lt, static_cast<const TypeAlias *>(rt)->value());
+      return isEqual(lt, rt.as<TypeAlias>()->qualifiedValue());
 
     case Type::AmbiguousParameter:
     case Type::AmbiguousPhi:
@@ -160,7 +172,7 @@ bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
     }
 
     case Type::Assignment: {
-      const TypeAssignment * ta = static_cast<const TypeAssignment *>(rt);
+      Qualified<TypeAssignment> ta = rt.as<TypeAssignment>();
       if (ta->value() != NULL) {
         return isEqual(lt, ta->value());
       }
@@ -173,12 +185,14 @@ bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
 
   switch (lt->typeClass()) {
     case Type::Alias:
-      return isEqual(static_cast<const TypeAlias *>(lt)->value(), rt);
+      return isEqual(lt.as<TypeAlias>()->qualifiedValue() | lt.qualifiers(), rt);
 
     case Type::Primitive:
       if (lt->isUnsizedIntType() && rt->isUnsizedIntType()) {
-        const UnsizedIntType * lint = static_cast<const UnsizedIntType *>(lt);
-        const UnsizedIntType * rint = static_cast<const UnsizedIntType *>(rt);
+        DASSERT(lt.qualifiers() == 0) << "Qualifiers not allowed on integer constants";
+        DASSERT(rt.qualifiers() == 0) << "Qualifiers not allowed on integer constants";
+        Qualified<UnsizedIntType> lint = lt.as<UnsizedIntType>();
+        Qualified<UnsizedIntType> rint = rt.as<UnsizedIntType>();
         return lint->intVal() == rint->intVal();
       }
       // Primitive types are unique by reference, except for unsized.
@@ -193,74 +207,70 @@ bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
     case Type::Struct:
     case Type::Interface:
     case Type::Protocol: {
-      const CompositeType * lct = static_cast<const CompositeType *>(lt);
-      if (const CompositeType * rct = dyn_cast<CompositeType>(rt)) {
-        return isEqualComposite(lct, rct);
+      if (rt.isa<CompositeType>()) {
+        return isEqualComposite(lt.as<CompositeType>(), rt.as<CompositeType>());
       }
 
       return false;
     }
 
     case Type::NAddress: {
-      const AddressType * lat = static_cast<const AddressType *>(lt);
-      if (const AddressType * rat = dyn_cast<AddressType>(rt)) {
-        return isEqual(lat->typeParam(0), rat->typeParam(0));
+      if (rt.isa<AddressType>()) {
+        return isEqual(lt->typeParam(0), rt->typeParam(0)) && lt.qualifiers() == rt.qualifiers();
       }
       return false;
     }
 
     case Type::NArray: {
-      const NativeArrayType * lnat = static_cast<const NativeArrayType *>(lt);
-      if (const NativeArrayType * rnat = dyn_cast<NativeArrayType>(rt)) {
-        return isEqual(lnat->typeParam(0), rnat->typeParam(0)) && lnat->size() == rnat->size();
+      if (rt.isa<NativeArrayType>()) {
+        Qualified<NativeArrayType> lnat = lt.as<NativeArrayType>();
+        Qualified<NativeArrayType> rnat = rt.as<NativeArrayType>();
+        return isEqual(lnat->typeParam(0), rnat->typeParam(0))
+            && lt.qualifiers() == rt.qualifiers()
+            && lnat->size() == rnat->size();
       }
       return false;
     }
 
     case Type::FlexibleArray: {
-      const FlexibleArrayType * lfat = static_cast<const FlexibleArrayType *>(lt);
-      if (const FlexibleArrayType * rfat = dyn_cast<FlexibleArrayType>(rt)) {
-        return isEqual(lfat->typeParam(0), rfat->typeParam(0));
+      if (rt.isa<FlexibleArrayType>()) {
+        return isEqual(lt->typeParam(0), rt->typeParam(0)) && lt.qualifiers() == rt.qualifiers();
       }
       return false;
     }
 
     case Type::Function: {
-      const FunctionType * lfn = static_cast<const FunctionType *>(lt);
-      if (const FunctionType * rfn = dyn_cast<FunctionType>(rt)) {
-        return isEqualFunction(lfn, rfn);
+      if (rt.isa<FunctionType>()) {
+        return isEqualFunction(lt.as<FunctionType>(), rt.as<FunctionType>());
       }
       return false;
     }
 
     case Type::Unit: {
-      const UnitType * lu = static_cast<const UnitType *>(lt);
-      if (const UnitType * ru = dyn_cast<UnitType>(rt)) {
-        return lu->value()->isEqual(ru->value());
+      if (rt.isa<UnitType>()) {
+        return lt.as<UnitType>()->value()->isEqual(rt.as<UnitType>()->value());
       }
       return false;
     }
 
     case Type::Tuple: {
-      const TupleType * ltt = static_cast<const TupleType *>(lt);
-      if (const TupleType * rtt = dyn_cast<TupleType>(rt)) {
-        return isEqualTuple(ltt, rtt);
+      if (rt.isa<TupleType>()) {
+        return isEqualTuple(lt.as<TupleType>(), rt.as<TupleType>());
       }
       return false;
     }
 
     case Type::Union: {
-      const UnionType * lut = static_cast<const UnionType *>(lt);
-      if (const UnionType * rut = dyn_cast<UnionType>(rt)) {
-        return isEqualUnion(lut, rut);
+      if (rt.isa<UnionType>()) {
+        return isEqualUnion(lt.as<UnionType>(), rt.as<UnionType>());
       }
       return false;
     }
 
     case Type::TypeLiteral: {
-      const TypeLiteralType * ltl = static_cast<const TypeLiteralType *>(lt);
-      if (const TypeLiteralType * rtl = dyn_cast<TypeLiteralType>(rt)) {
-        return isEqual(ltl->literalType(), rtl->literalType());
+      if (rt.isa<TypeLiteralType>()) {
+        return isEqual(
+            lt.as<TypeLiteralType>()->literalType(), rt.as<TypeLiteralType>()->literalType());
       }
       return false;
     }
@@ -283,19 +293,13 @@ bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
     }
 
     case Type::Assignment: {
-      const TypeAssignment * ta = static_cast<const TypeAssignment *>(lt);
+      Qualified<TypeAssignment> ta = lt.as<TypeAssignment>();
       if (ta->value() != NULL) {
         return isEqual(ta->value(), rt);
       }
       return false;
     }
 
-    case Type::ModVariadic:
-    case Type::ModMutable:
-    case Type::ModImmutable:
-    case Type::ModReadOnly:
-    case Type::ModAdopted:
-    case Type::ModVolatile:
     case Type::KindCount:
       DASSERT(false) << "Type class not supported by isEqual(): " << lt->typeClass();
       break;
@@ -303,19 +307,19 @@ bool TypeRelation::isEqual(const Type * lt, const Type * rt) {
   return false;
 }
 
-bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
-  if (ty == base) {
+bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
+  if (ty.type() == base.type() && ty.qualifiers() == base.qualifiers()) {
     return true;
   }
 
   // Special cases for ambiguous base types.
   switch (base->typeClass()) {
     case Type::Alias:
-      return isSubtype(ty, static_cast<const TypeAlias *>(base)->value());
+      return isSubtype(ty, base.as<TypeAlias>()->qualifiedValue() | base.qualifiers());
 
     case Type::Protocol:
       // Special case for protocols - implicit inheritance
-      if (static_cast<const CompositeType *>(base)->isSupportedBy(ty)) {
+      if (base.as<CompositeType>()->isSupportedBy(ty.type())) {
         return true;
       }
       // Fall through and treat as a regular type
@@ -339,7 +343,7 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
     }
 
     case Type::Assignment: {
-      const TypeAssignment * ta = static_cast<const TypeAssignment *>(base);
+      Qualified<TypeAssignment> ta = base.as<TypeAssignment>();
       if (ta->value() != NULL) {
         return isSubtype(ty, ta->value());
       } else {
@@ -373,11 +377,12 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
 
   switch (ty->typeClass()) {
     case Type::Alias:
-      return isSubtype(static_cast<const TypeAlias *>(ty)->value(), base);
+      return isSubtype(ty.as<TypeAlias>()->qualifiedValue() | ty.qualifiers(), base);
 
     case Type::Primitive: {
-      const PrimitiveType * pType = static_cast<const PrimitiveType *>(ty);
-      if (const PrimitiveType * pBase = dyn_cast<PrimitiveType>(base)) {
+      // TODO: Factor in qualifiers
+      const PrimitiveType * pType = static_cast<const PrimitiveType *>(ty.type());
+      if (const PrimitiveType * pBase = dyn_cast<PrimitiveType>(base.type())) {
         return pType->isSubtypeOf(pBase);
       }
       return false;
@@ -387,8 +392,9 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
     case Type::Struct:
     case Type::Interface:
     case Type::Protocol: {
-      const CompositeType * ctType = static_cast<const CompositeType *>(ty);
-      if (const CompositeType * ctBase = dyn_cast<CompositeType>(base)) {
+      // TODO: Factor in qualifiers
+      const CompositeType * ctType = static_cast<const CompositeType *>(ty.type());
+      if (const CompositeType * ctBase = dyn_cast<CompositeType>(base.type())) {
         if (isEqualComposite(ctType, ctBase)) {
           return true;
         }
@@ -411,8 +417,9 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
     }
 
     case Type::Enum: {
-      const EnumType * eTy = static_cast<const EnumType *>(ty);
-      if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(base)) {
+      // TODO: Factor in qualifiers
+      const EnumType * eTy = static_cast<const EnumType *>(ty.type());
+      if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(base.type())) {
         return isSubtype(eTy->baseType(), ptype);
       }
       return false;
@@ -448,7 +455,7 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
     }
 
     case Type::Assignment: {
-      const TypeAssignment * ta = static_cast<const TypeAssignment *>(ty);
+      Qualified<TypeAssignment> ta = ty.as<TypeAssignment>();
       if (ta->value() != NULL) {
         return isSubtype(ta->value(), base);
       } else {
@@ -477,12 +484,6 @@ bool TypeRelation::isSubtype(const Type * ty, const Type * base) {
       return false;
     }
 
-    case Type::ModVariadic:
-    case Type::ModMutable:
-    case Type::ModImmutable:
-    case Type::ModReadOnly:
-    case Type::ModAdopted:
-    case Type::ModVolatile:
     case Type::KindCount:
       DFAIL("Type class not supported by isSubtype()");
       break;
