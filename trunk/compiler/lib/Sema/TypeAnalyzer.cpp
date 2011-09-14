@@ -17,11 +17,11 @@
 #include "tart/Defn/Module.h"
 
 #include "tart/Type/CompositeType.h"
-#include "tart/Type/PrimitiveType.h"
 #include "tart/Type/FunctionType.h"
 #include "tart/Type/NativeType.h"
-#include "tart/Type/UnionType.h"
+#include "tart/Type/PrimitiveType.h"
 #include "tart/Type/TupleType.h"
+#include "tart/Type/UnionType.h"
 
 #include "tart/Objects/Builtins.h"
 
@@ -86,7 +86,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     }
 
     case ASTNode::LogicalOr: {
-      ConstTypeList unionTypes;
+      QualifiedTypeList unionTypes;
       if (getUnionTypes(ast, unionTypes)) {
         return UnionType::get(unionTypes);
       }
@@ -97,7 +97,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     case ASTNode::Tuple: {
       const ASTOper * tupleOp = static_cast<const ASTOper *>(ast);
       const ASTNodeList & args = tupleOp->args();
-      ConstTypeList fieldTypes;
+      QualifiedTypeList fieldTypes;
       for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
         Type * fieldType = typeFromAST(*it);
         if (isErrorResult(fieldType)) {
@@ -158,19 +158,62 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
 
     case ASTNode::FlexArray: {
        const ASTOper * op = static_cast<const ASTOper *>(ast);
-       Type * ty = typeFromAST(op->arg(0));
-       if (ty != NULL) {
+       QualifiedType ty = qualifiedTypeFromAST(op->arg(0));
+       if (!ty.isNull()) {
          ty = FlexibleArrayType::get(TupleType::get(ty));
        }
-       return ty;
+       return const_cast<Type *>(ty.type());
      }
 
     case ASTNode::TypeAlias:
       DFAIL("Implement");
+      break;
+
+    case ASTNode::TypeModReadOnly:
+    case ASTNode::TypeModMutable:
+    case ASTNode::TypeModImmutable:
+    case ASTNode::TypeModAdopted:
+    case ASTNode::TypeModVolatile:
+      diag.error(ast) << "Type modifier not valid in this context " <<
+          nodeTypeName(ast->nodeType());
+      break;
 
     default:
       diag.fatal(ast) << "invalid node type " << nodeTypeName(ast->nodeType());
-      DFAIL("Unsupported node type");
+      break;
+  }
+  return NULL;
+}
+
+QualifiedType TypeAnalyzer::qualifiedTypeFromAST(const ASTNode * ast) {
+  if (ast == NULL) {
+    return QualifiedType(NULL);
+  }
+
+  switch (ast->nodeType()) {
+    case ASTNode::TypeModReadOnly:
+    case ASTNode::TypeModMutable:
+    case ASTNode::TypeModImmutable:
+    case ASTNode::TypeModAdopted:
+    case ASTNode::TypeModVolatile: {
+      const ASTOper * op = static_cast<const ASTOper *>(ast);
+      QualifiedType baseType = qualifiedTypeFromAST(op->arg(0));
+      if (isErrorResult(baseType)) {
+        return baseType;
+      }
+
+      switch (int(ast->nodeType())) {
+        case ASTNode::TypeModReadOnly:  return baseType | QualifiedType::READONLY;
+        case ASTNode::TypeModMutable:   return baseType | QualifiedType::MUTABLE;
+        case ASTNode::TypeModImmutable: return baseType | QualifiedType::IMMUTABLE;
+        case ASTNode::TypeModAdopted:   return baseType | QualifiedType::ADOPTED;
+        case ASTNode::TypeModVolatile:  return baseType | QualifiedType::VOLATILE;
+      }
+      return &BadType::instance;
+    }
+
+    default:
+      return typeFromAST(ast);
   }
 }
 
@@ -220,7 +263,7 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
           // TODO - give each param a name.
           // TODO - make an alias for the params that can be used within the function body
           // accessible as an array.
-          const Type * ptype = *it;
+          const Type * ptype = it->type();
           ParameterDefn * param = new ParameterDefn(module_, "");
           param->setType(ptype);
           param->setInternalType(ptype);
@@ -235,10 +278,10 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
     } else {
       // Note that type might be NULL if not specified. We'll pick it up
       // later from the default value.
-      Type * paramType = typeFromAST(aparam->type());
+      QualifiedType paramType = qualifiedTypeFromAST(aparam->type());
       ParameterDefn * param = new ParameterDefn(module_, aparam);
-      param->setType(paramType);
-      param->setInternalType(paramType);
+      param->setType(paramType.type());
+      param->setInternalType(paramType.type());
       params.push_back(param);
       if (aparam->flags() & Param_Variadic) {
         param->setFlag(ParameterDefn::Variadic, true);
@@ -258,7 +301,7 @@ Type * TypeAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
   return &BadType::instance;
 }
 
-bool TypeAnalyzer::getUnionTypes(const ASTNode * ast, ConstTypeList & result) {
+bool TypeAnalyzer::getUnionTypes(const ASTNode * ast, QualifiedTypeList & result) {
   if (ast->nodeType() == ASTNode::LogicalOr) {
     const ASTOper * unionOp = static_cast<const ASTOper *>(ast);
     const ASTNodeList & args = unionOp->args();

@@ -152,7 +152,7 @@ FunctionDefn * ExprAnalyzer::coerceToObjectFn(const Type * type) {
     da.analyzeTemplateSignature(coerceFn);
   }
 
-  TypeVarMap vars;
+  QualifiedTypeVarMap vars;
   vars[coerceTemplate->patternVar(0)] = type;
   FunctionDefn * coercer = cast<FunctionDefn>(coerceTemplate->instantiate(SourceLocation(), vars));
   analyzeFunction(coercer, Task_PrepTypeComparison);
@@ -193,7 +193,7 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
   analyzeDefn(Builtins::nsRefs, Task_PrepMemberLookup);
   findInScope(methods, "valueOf", &Builtins::nsRefs->memberScope(), NULL, loc, NO_PREFERENCE);
   DASSERT(!methods.empty());
-  Expr * valueOf = specialize(loc, methods, TupleType::get(toType));
+  Expr * valueOf = specialize(loc, methods, TupleType::get(QualifiedType(toType)));
   FunctionDefn * valueOfMethod;
   if (SpecializeExpr * spe = dyn_cast<SpecializeExpr>(valueOf)) {
     valueOfMethod = cast_or_null<FunctionDefn>(findBestSpecialization(spe));
@@ -227,7 +227,7 @@ FunctionDefn * ExprAnalyzer::getDowncastFn(SLC & loc, const Type * toType) {
   analyzeTypeDefn(Builtins::typeObject->typeDefn(), Task_PrepMemberLookup);
   findInScope(methods, "__downcast", Builtins::typeObject->memberScope(), NULL, loc, NO_PREFERENCE);
   DASSERT(!methods.empty());
-  Expr * downCast = specialize(loc, methods, TupleType::get(toType));
+  Expr * downCast = specialize(loc, methods, TupleType::get(QualifiedType(toType)));
   FunctionDefn * downCastMethod;
   if (SpecializeExpr * spe = dyn_cast<SpecializeExpr>(downCast)) {
     downCastMethod = cast_or_null<FunctionDefn>(findBestSpecialization(spe));
@@ -336,7 +336,7 @@ Defn * ExprAnalyzer::findBestSpecialization(SpecializeExpr * spe) {
   }
 
   SpCandidate * spBest = *bestCandidates.begin();
-  TypeVarMap vars;
+  QualifiedTypeVarMap vars;
   env.updateAssignments(SourceLocation(), spBest);
   env.toTypeVarMap(vars, spBest);
   if (spBest->def()->hasUnboundTypeParams()) {

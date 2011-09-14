@@ -19,11 +19,11 @@ typedef llvm::SmallVector<llvm::Type *, 16> IRTypeList;
 // Disjoint or union type.
 class UnionType : public TypeImpl {
 public:
-  typedef ConstTypeList::iterator iterator;
-  typedef ConstTypeList::const_iterator const_iterator;
+  typedef QualifiedTypeList::iterator iterator;
+  typedef QualifiedTypeList::const_iterator const_iterator;
 
   /** Return a union of the given element types. */
-  static UnionType * get(const ConstTypeList & members);
+  static UnionType * get(const QualifiedTypeList & members);
 
   /** Return the list of possible types for this union. */
   const TupleType & members() const { return *members_; }
@@ -45,7 +45,7 @@ public:
   size_t numReferenceTypes() const { return numReferenceTypes_; }
 
   /** Return the Nth type parameter. */
-  const Type * typeParam(int index) const;
+  QualifiedType typeParam(int index) const;
 
   /** Given a type, return the index of this type. */
   int getTypeIndex(const Type * type) const;

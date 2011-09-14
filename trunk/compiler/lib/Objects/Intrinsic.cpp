@@ -95,10 +95,11 @@ Expr * TypecastIntrinsic::eval(const SourceLocation & loc, Module * m, const Fun
   DASSERT(method->isTemplateInstance());
   DASSERT(method->templateInstance()->typeArgs()->size() == 1);
   Expr * fromExpr = args[0];
-  const Type * fromType = dealias(fromExpr->type());
-  const Type * toType = dealias(method->templateInstance()->typeArg(0));
-  if (const UnionType * utFrom = dyn_cast<UnionType>(fromType)) {
-    Expr * castExpr = utFrom->createDynamicCast(fromExpr, toType);
+  QualifiedType fromType = dealias(fromExpr->type());
+  QualifiedType toType = dealias(method->templateInstance()->typeArg(0));
+  if (fromType.isa<UnionType>()) {
+    // TODO: QualifiedType: Preserve qualifiers.
+    Expr * castExpr = fromType.as<UnionType>()->createDynamicCast(fromExpr, toType.type());
     if (castExpr != NULL) {
       return castExpr;
     }
@@ -473,7 +474,7 @@ Expr * DerefIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
     const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   DASSERT(args.size() == 1);
   Expr * arg = args[0];
-  return new UnaryExpr(Expr::PtrDeref, loc, dealias(arg->type())->typeParam(0), arg);
+  return new UnaryExpr(Expr::PtrDeref, loc, dealias(arg->type())->typeParam(0).type(), arg);
 }
 
 // -------------------------------------------------------------------
@@ -602,7 +603,7 @@ Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
   const Expr * count = call->arg(2);
 
   DASSERT_OBJ(TypeRelation::isEqual(srcArray->type(), dstArray->type()), call);
-  const Type * elemType = srcArray->type()->typeParam(0);
+  QualifiedType elemType = srcArray->type()->typeParam(0);
   Value * srcPtr = cg.genExpr(srcArray);
   Value * dstPtr = cg.genExpr(dstArray);
   Value * length = cg.genExpr(count);

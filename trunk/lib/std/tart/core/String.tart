@@ -7,7 +7,7 @@ import tart.text.encodings.InvalidCharacterError;
 import tart.text.Character;
 
 /** The built-in string class. Strings are immutable. */
-public final class String : Iterable[char] {
+public final immutable class String : Iterable[char] {
   private {
     /** The length of the string, in bytes. */
     var _size:int;
@@ -40,7 +40,7 @@ public final class String : Iterable[char] {
       Parameters:
         bytes: The byte array.
    */
-  static def create(bytes:ubyte[]) -> String {
+  static def create(bytes:readonly(ubyte[])) -> String {
     let self = alloc(bytes.size);
     bytes.copyElements(addressOf(self._data[0]), 0, bytes.size);
     return self;
@@ -51,7 +51,7 @@ public final class String : Iterable[char] {
       Parameters:
         from: The container.
    */
-  static def fromBytes(from:Copyable[ubyte]) -> String {
+  static def fromBytes(from:readonly(Copyable[ubyte])) -> String {
     let self = alloc(from.size);
     from.copyElements(addressOf(self._data[0]), 0, from.size);
     return self;
@@ -68,7 +68,7 @@ public final class String : Iterable[char] {
         IndexError - if 'start' is less than zero.
         ArgumentError - if 'count' is less than zero.
    */
-  static def fromBytes(from:Copyable[ubyte], start:int, count:int) -> String {
+  static def fromBytes(from:readonly(Copyable[ubyte]), start:int, count:int) -> String {
     Preconditions.checkIndex(start >= 0);
     Preconditions.checkArgument(count >= 0);
     start = Math.min(start, from.size);
@@ -113,7 +113,7 @@ public final class String : Iterable[char] {
         ArgumentError - if 'count' is less than zero.
         tart.text.encodings.InvalidCharacterError if an unencodable character was encountered.
    */
-  static def create(chars:char[], start:int = 0, count:int = int.maxVal) -> String {
+  static def create(chars:readonly(char[]), start:int = 0, count:int = int.maxVal) -> String {
     let result = Codecs.UTF_8.encodedLength(chars, start, count);
     if result.state != Codec.CodecState.OK {
       throw InvalidCharacterError();
@@ -291,7 +291,7 @@ public final class String : Iterable[char] {
         args - the values to be substituted into the format string.
       Returns: the result of the format operation.
    */
-  static def format(formatString:String, args:Object[]) -> String {
+  static def format(formatString:String, args:readonly(Object[])) -> String {
     return formatString.format(args);
   }
 
@@ -309,7 +309,7 @@ public final class String : Iterable[char] {
         args - the values to be substituted into the format string.
       Returns: the result of the format operation.
    */
-  def format(args:Object[]) -> String {
+  def format(args:readonly(Object[])) -> String {
     return StringFormatter(self, args).toString();
   }
 

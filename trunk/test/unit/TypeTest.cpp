@@ -26,10 +26,10 @@ public:
   TypeDefn * testTypeDefn;
   Type * testClass;
 
-  Type * intTypes[4];
-  Type * shortTypes[4];
-  Type * testClassTypes[1];
-  Type * intAndTestClass[4];
+  QualifiedType intTypes[4];
+  QualifiedType shortTypes[4];
+  QualifiedType testClassTypes[1];
+  QualifiedType intAndTestClass[4];
 
   TupleTest() {
     // Set up test class.
@@ -76,9 +76,9 @@ TEST(TypeTest, TypePairTest) {
 TEST_F(TupleTest, TupleTypeTest) {
   //typedef TypeRefIterPairKeyInfo TRIPKI;
 
-  TupleType * t0 = TupleType::get(&Int32Type::instance);
-  TupleType * t1 = TupleType::get(&Int32Type::instance);
-  TupleType * t2 = TupleType::get(&Int16Type::instance);
+  TupleType * t0 = TupleType::get(QualifiedType(&Int32Type::instance));
+  TupleType * t1 = TupleType::get(QualifiedType(&Int32Type::instance));
+  TupleType * t2 = TupleType::get(QualifiedType(&Int16Type::instance));
 
   //ASSERT_TRUE(TRIPKI::getHashValue(t0->iterPair()) == TRIPKI::getHashValue(t1->iterPair()));
   //ASSERT_FALSE(TRIPKI::getHashValue(t0->iterPair()) == TRIPKI::getHashValue(t2->iterPair()));

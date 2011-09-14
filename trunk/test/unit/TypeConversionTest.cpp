@@ -65,8 +65,8 @@ TEST_F(TypeConversionTest, EnumConversion) {
 }
 
 TEST_F(TypeConversionTest, TupleConversion) {
-  const Type * args1[2] = { &Int32Type::instance, &Int32Type::instance };
-  const Type * args2[2] = { &Int32Type::instance, &Int16Type::instance };
+  QualifiedType args1[2] = { &Int32Type::instance, &Int32Type::instance };
+  QualifiedType args2[2] = { &Int32Type::instance, &Int16Type::instance };
   TupleType * tt1 = TupleType::get(args1);
   TupleType * tt2 = TupleType::get(args2);
 

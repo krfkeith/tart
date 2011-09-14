@@ -16,8 +16,10 @@ class Type;
 class LexicalTypeOrdering {
 public:
   bool operator()(const Type * t0, const Type * t1) const;
+  bool operator()(const QualifiedType & t0, const QualifiedType & t1) const;
 
   static int compare(const Type * t0, const Type * t1);
+  static int compare(const QualifiedType & t0, const QualifiedType & t1);
 
   template <class T>
   static int compare(T t0, T t1) {

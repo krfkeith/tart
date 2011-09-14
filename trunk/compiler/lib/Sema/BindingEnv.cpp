@@ -47,7 +47,14 @@ const Type * dereferenceAlias(const Type * type) {
     type = alias->value();
     DASSERT_OBJ(type != NULL, alias);
   }
+  return type;
+}
 
+QualifiedType dereferenceAlias(QualifiedType type) {
+  if (type.isa<TypeAlias>()) {
+    type = type.as<TypeAlias>()->value();
+    DASSERT(!type.isNull());
+  }
   return type;
 }
 
@@ -67,7 +74,7 @@ void findTypeAssignments(TypeAssignmentSet & result, const Type * ty) {
     }
   } else if (ty->numTypeParams() > 0) {
     for (size_t i = 0, numTypeParams = ty->numTypeParams(); i < numTypeParams; ++i) {
-      findTypeAssignments(result, ty->typeParam(i));
+      findTypeAssignments(result, ty->typeParam(i).type());
     }
   }
 }
@@ -81,6 +88,12 @@ extern bool unifyVerbose;
 
 void BindingEnv::reset() {
   backtrack(0);
+}
+
+/** Perform unification from a pattern type to a value type. */
+bool BindingEnv::unify(SourceContext * source, QualifiedType left, QualifiedType right,
+    Constraint::Kind kind, const ProvisionSet & provisions) {
+  return unify(source, left.type(), right.type(), kind, provisions);
 }
 
 bool BindingEnv::unify(SourceContext * source, const Type * left, const Type * right,
@@ -417,13 +430,13 @@ bool BindingEnv::unifyUnionType(
     return false;
   }
 
-  TypeSet membersLeft;
+  QualifiedTypeSet membersLeft;
   for (TupleType::const_iterator it = left->members().begin(); it != left->members().end();
       ++it) {
     membersLeft.insert(dereferenceAlias(*it));
   }
 
-  TypeSet memberRight;
+  QualifiedTypeSet memberRight;
   for (TupleType::const_iterator it = right->members().begin(); it != right->members().end();
       ++it) {
     memberRight.insert(dereferenceAlias(*it));
@@ -697,7 +710,7 @@ bool BindingEnv::reconcileConstraints(GC * context) {
   return unsolvedCount == 0;
 }
 
-void BindingEnv::toTypeVarMap(TypeVarMap & map, GC * context) {
+void BindingEnv::toTypeVarMap(QualifiedTypeVarMap & map, GC * context) {
   for (TypeAssignment * ta = assignments_; ta != NULL; ta = ta->next()) {
     if (ta->scope() == context && ta->value() != NULL) {
       DASSERT_OBJ(ta->value() != NULL, ta);

@@ -177,6 +177,13 @@ ASTWriter & ASTWriter::write(const Type * ty) {
   return *this;
 }
 
+ASTWriter & ASTWriter::write(QualifiedType ty) {
+  if (ty.qualifiers() != 0) {
+    DFAIL("Implement");
+  }
+  return write(ty.type());
+}
+
 ASTWriter & ASTWriter::write(const Expr * in) {
   switch (in->exprType()) {
   default:

@@ -333,7 +333,7 @@ Value * MDWriter::templateSignature(const Defn * de) {
   size_t numTypeParams = typeParams->size();
   ASTWriter writer;
   for (size_t i = 0; i < numTypeParams; ++i) {
-    const Type * param = typeParams->member(i);
+    QualifiedType param = typeParams->member(i);
     const Type * paramDefault = typeParamDefaults[i];
     if (paramDefault != NULL) {
       writer.write(meta::AST::ASSIGN);

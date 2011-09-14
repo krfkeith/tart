@@ -33,7 +33,7 @@ protected:
 };
 
 TEST_F(UnionTest, CreateUnion) {
-  ConstTypeList memberTypes;
+  QualifiedTypeList memberTypes;
   memberTypes.push_back(&Int32Type::instance);
   memberTypes.push_back(&FloatType::instance);
   UnionType * utype = UnionType::get(memberTypes);
@@ -41,8 +41,8 @@ TEST_F(UnionTest, CreateUnion) {
   ASSERT_EQ(2u, utype->members().size());
   ASSERT_EQ(2u, utype->typeArgs()->size());
   ASSERT_EQ(2u, utype->numTypeParams());
-  ASSERT_EQ(&Int32Type::instance, utype->typeParam(0));
-  ASSERT_EQ(&FloatType::instance, utype->typeParam(1));
+  ASSERT_EQ(QualifiedType(&Int32Type::instance), utype->typeParam(0));
+  ASSERT_EQ(QualifiedType(&FloatType::instance), utype->typeParam(1));
   ASSERT_FALSE(utype->hasVoidType());
   ASSERT_FALSE(utype->hasNullType());
   ASSERT_FALSE(utype->isSingleOptionalType());
@@ -52,7 +52,7 @@ TEST_F(UnionTest, CreateUnion) {
 }
 
 TEST_F(UnionTest, GetTypeIndex) {
-  ConstTypeList memberTypes;
+  QualifiedTypeList memberTypes;
   memberTypes.push_back(&Int32Type::instance);
   memberTypes.push_back(&FloatType::instance);
   UnionType * utype = UnionType::get(memberTypes);
@@ -62,7 +62,7 @@ TEST_F(UnionTest, GetTypeIndex) {
 }
 
 TEST_F(UnionTest, GetTypeSorting) {
-  ConstTypeList memberTypes;
+  QualifiedTypeList memberTypes;
   memberTypes.push_back(&FloatType::instance);
   memberTypes.push_back(&Int32Type::instance);
   UnionType * utype = UnionType::get(memberTypes);
@@ -72,7 +72,7 @@ TEST_F(UnionTest, GetTypeSorting) {
 }
 
 TEST_F(UnionTest, FloatOrVoidUnion) {
-  ConstTypeList memberTypes;
+  QualifiedTypeList memberTypes;
   memberTypes.push_back(&FloatType::instance);
   memberTypes.push_back(&VoidType::instance);
   UnionType * utype = UnionType::get(memberTypes);
@@ -85,7 +85,7 @@ TEST_F(UnionTest, FloatOrVoidUnion) {
 }
 
 TEST_F(UnionTest, IntOrRefTypeUnion) {
-  ConstTypeList memberTypes;
+  QualifiedTypeList memberTypes;
   memberTypes.push_back(&Int32Type::instance);
   memberTypes.push_back(testClass);
   UnionType * utype = UnionType::get(memberTypes);
@@ -98,7 +98,7 @@ TEST_F(UnionTest, IntOrRefTypeUnion) {
 }
 
 TEST_F(UnionTest, NullOrRefTypeUnion) {
-  ConstTypeList memberTypes;
+  QualifiedTypeList memberTypes;
   memberTypes.push_back(&NullType::instance);
   memberTypes.push_back(testClass);
   UnionType * utype = UnionType::get(memberTypes);
@@ -111,7 +111,7 @@ TEST_F(UnionTest, NullOrRefTypeUnion) {
 }
 
 TEST_F(UnionTest, Coalesce) {
-  ConstTypeList memberTypes;
+  QualifiedTypeList memberTypes;
   memberTypes.push_back(&Int32Type::instance);
   memberTypes.push_back(&FloatType::instance);
   UnionType * utype1 = UnionType::get(memberTypes);

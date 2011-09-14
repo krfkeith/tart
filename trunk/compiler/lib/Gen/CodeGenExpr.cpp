@@ -1373,14 +1373,14 @@ llvm::Constant * CodeGenerator::genConstantEmptyArray(const CompositeType * arra
   if (GlobalVariable * gv = irModule_->getGlobalVariable(arrayNameStr, true)) {
     return gv;
   }
-  const Type * elementType = arrayType->typeParam(0);
+  QualifiedType elementType = arrayType->typeParam(0);
 
   DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::RecursiveFieldTypePass), arrayType);
 
   StructBuilder sb(*this);
   sb.createObjectHeader(arrayType);
   sb.addField(getIntVal(0));
-  sb.addArrayField(elementType, ConstantList());
+  sb.addArrayField(elementType.type(), ConstantList());
 
   llvm::Constant * arrayStruct = sb.build(arrayType->irType());
   GlobalVariable * array = new GlobalVariable(*irModule_,

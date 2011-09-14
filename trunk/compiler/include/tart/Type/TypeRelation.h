@@ -31,18 +31,21 @@ enum Options {
 
 /** Returns true if the type on the left is equal to the type on
     the right. */
-bool isEqual(const Type * lhs, const Type * rhs);
+bool isEqual(QualifiedType lhs, QualifiedType rhs);
 
 /** Returns true if the type on the left is either the same as,
     or is a subtype of, the type on the right. Note that in the case of
     ambiguous types, all possibilities must pass the subclass test
     in order for the whole to be considered a subtype. */
-bool isSubtype(const Type * lhs, const Type * rhs);
+bool isSubtype(QualifiedType lhs, QualifiedType rhs);
 
 /** Type equality functor. */
 class Equal {
 public:
   bool operator()(const Type * t0, const Type * t1) {
+    return isEqual(t0, t1);
+  }
+  bool operator()(QualifiedType t0, QualifiedType t1) {
     return isEqual(t0, t1);
   }
 };

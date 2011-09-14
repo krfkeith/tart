@@ -9,6 +9,10 @@
 #include "tart/Type/Type.h"
 #endif
 
+#ifndef TART_TYPE_QUALIFIEDTYPE_H
+#include "tart/Type/QualifiedType.h"
+#endif
+
 namespace tart {
 
 /// -------------------------------------------------------------------
@@ -19,8 +23,10 @@ public:
   TypeAlias(const Type * val, TypeDefn * defn);
 
   /** The target of this alias. */
-  const Type * value() const { return value_; }
+  const Type * value() const { return value_.type(); }
+  QualifiedType qualifiedValue() const { return value_; }
   void setValue(const Type * value) { value_ = value; }
+  void setValue(QualifiedType value) { value_ = value; }
 
   // Overrides
 
@@ -44,7 +50,7 @@ public:
   }
 
 private:
-  const Type * value_;
+  QualifiedType value_;
   TypeDefn * defn_;
 };
 

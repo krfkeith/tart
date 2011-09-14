@@ -6,7 +6,7 @@ import tart.gc.TraceDescriptor;
 /** All objects contain a pointer to a TypeInfoBlock, which contains the
     pointer to the type object and the method table.
  */
-struct TypeInfoBlock {
+immutable struct TypeInfoBlock {
   /** Pointer to the compressed reflection data for this type. */
   let type:CompositeType;
 

@@ -312,7 +312,7 @@ Expr * ExprAnalyzer::reduceForEachStmt(const ForEachStmt * st, const Type * expe
   const Type * iterVarType;
   for (TupleType::const_iterator it = utype->members().begin(); it != utype->members().end();
       ++it) {
-    const Type * ty = *it;
+    const Type * ty = it->type();
     if (!ty->isVoidType()) {
       iterVarType = ty;
     }
@@ -353,7 +353,7 @@ Expr * ExprAnalyzer::reduceForEachStmt(const ForEachStmt * st, const Type * expe
       iterValue = SharedValueExpr::get(iterValue);
       for (size_t i = 0; i < numVars; ++i) {
         VariableDefn * var = cast<VariableDefn>(vars[i]);
-        const Type * elementType = tt->member(i);
+        const Type * elementType = tt->member(i).type();
         if (var->type() == NULL) {
           var->setType(elementType);
         }
@@ -840,7 +840,7 @@ bool ExprAnalyzer::reduceDeclStmt(const DeclStmt * st, const Type * expected, Ex
     }
 
     // Gather up the types of each var. If a var has no type, then use the 'any' type.
-    ConstTypeList varTypes;
+    QualifiedTypeList varTypes;
     for (DefnList::const_iterator it = vars.begin(); it != vars.end(); ++it) {
       VariableDefn * var = static_cast<VariableDefn *>(*it);
       const ASTVarDecl * varDecl = static_cast<const ASTVarDecl *>(var->ast());
@@ -876,7 +876,7 @@ bool ExprAnalyzer::reduceDeclStmt(const DeclStmt * st, const Type * expected, Ex
       for (DefnList::const_iterator it = vars.begin(); it != vars.end(); ++it, ++memberIndex) {
         VariableDefn * var = static_cast<VariableDefn *>(*it);
         Expr * initVal = new BinaryExpr(Expr::ElementRef, var->ast()->location(), tt->member(
-            memberIndex), initExpr, ConstantInteger::getUInt32(memberIndex));
+            memberIndex).type(), initExpr, ConstantInteger::getUInt32(memberIndex));
         exprs.push_back(new InitVarExpr(st->location(), var, initVal));
         if (var->type() == NULL) {
           DASSERT(initVal->canonicalType() != &AnyType::instance);

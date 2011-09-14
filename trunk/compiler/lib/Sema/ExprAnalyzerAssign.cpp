@@ -56,7 +56,7 @@ Expr * ExprAnalyzer::reducePostAssign(const ASTOper * ast) {
 
 Expr * ExprAnalyzer::reduceMultipleAssign(const ASTOper * ast) {
   const ASTOper * lhs = static_cast<const ASTOper *>(ast->arg(0));
-  ConstTypeList varTypes;
+  QualifiedTypeList varTypes;
   ExprList dstVars;
   for (ASTNodeList::const_iterator it = lhs->args().begin(); it != lhs->args().end(); ++it) {
     Expr * dstLVal = reduceValueRef(*it, true);
@@ -85,7 +85,7 @@ Expr * ExprAnalyzer::reduceMultipleAssign(const ASTOper * ast) {
     rhs = SharedValueExpr::get(rhs);
     for (size_t i = 0; i < dstVars.size(); ++i) {
       Expr * srcVal = new BinaryExpr(
-          Expr::ElementRef, rhs->location(), tt->member(i),
+          Expr::ElementRef, rhs->location(), tt->member(i).type(),
           rhs, ConstantInteger::getUInt32(i));
 
       ma->appendArg(reduceStoreValue(ast->location(), dstVars[i], srcVal));

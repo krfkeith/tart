@@ -18,7 +18,7 @@ TypeAlias::TypeAlias(const Type * val, TypeDefn * defn)
 }
 
 llvm::Type * TypeAlias::irType() const {
-  DASSERT(value_ != NULL);
+  DASSERT(!value_.isNull());
   return value_->irType();
 }
 
@@ -35,12 +35,11 @@ llvm::Type * TypeAlias::irReturnType() const {
 }
 
 void TypeAlias::format(FormatStream & out) const {
-  DASSERT(value_ != NULL);
-  return value_->format(out);
+  out << value_;
 }
 
 void TypeAlias::trace() const {
-  safeMark(value_);
+  safeMark(value_.type());
 }
 
 } // namespace tart

@@ -136,6 +136,12 @@ void typeLinkageName(llvm::SmallVectorImpl<char> & out, const Type * ty) {
   strm.flush();
 }
 
+void typeLinkageName(llvm::SmallVectorImpl<char> & out, QualifiedType ty) {
+  llvm::raw_svector_ostream strm(out);
+  typeLinkageName(strm, ty);
+  strm.flush();
+}
+
 void typeLinkageName(llvm::raw_ostream & out, const Type * ty) {
   ty = dealias(ty);
   if (TypeDefn * td = ty->typeDefn()) {
@@ -212,6 +218,54 @@ void typeLinkageName(llvm::raw_ostream & out, const Type * ty) {
   }
 }
 
+void typeLinkageName(llvm::raw_ostream & out, QualifiedType ty) {
+  if (ty.qualifiers() & QualifiedType::MUTABLE) {
+    out << "mutable(";
+  }
+
+  if (ty.qualifiers() & QualifiedType::IMMUTABLE) {
+    out << "immutable(";
+  }
+
+  if (ty.qualifiers() & QualifiedType::READONLY) {
+    out << "readonly(";
+  }
+
+  if (ty.qualifiers() & QualifiedType::ADOPTED) {
+    out << "adopted(";
+  }
+
+  if (ty.qualifiers() & QualifiedType::VOLATILE) {
+    out << "volatile(";
+  }
+
+  typeLinkageName(out, ty.type());
+
+  if (ty.qualifiers() & QualifiedType::VARIADIC) {
+    out << " ... ";
+  }
+
+  if (ty.qualifiers() & QualifiedType::MUTABLE) {
+    out << ")";
+  }
+
+  if (ty.qualifiers() & QualifiedType::IMMUTABLE) {
+    out << ")";
+  }
+
+  if (ty.qualifiers() & QualifiedType::READONLY) {
+    out << ")";
+  }
+
+  if (ty.qualifiers() & QualifiedType::ADOPTED) {
+    out << ")";
+  }
+
+  if (ty.qualifiers() & QualifiedType::VOLATILE) {
+    out << ")";
+  }
+}
+
 // -------------------------------------------------------------------
 // Represents a type conversion operation.
 
@@ -246,7 +300,7 @@ const char * Type::typeClassName(TypeClass tc) {
   return "<Invalid Type>";
 }
 
-void Type::getTypeParams(ConstTypeList & out) const {
+void Type::getTypeParams(QualifiedTypeList & out) const {
   for (int i = 0, end = numTypeParams(); i < end; ++i) {
     out.push_back(typeParam(i));
   }
@@ -332,7 +386,7 @@ bool Type::isScaffold() const {
   return de != NULL && de->hasTrait(Defn::Scaffold);
 }
 
-const Type * Type::typeParam(int index) const {
+QualifiedType Type::typeParam(int index) const {
   diag.debug() << "Type " << this << " does not have type parameters.";
   DFAIL("No type params");
 }
@@ -445,7 +499,7 @@ size_t DeclaredType::numTypeParams() const {
   return 0;
 }
 
-const Type * DeclaredType::typeParam(int index) const {
+QualifiedType DeclaredType::typeParam(int index) const {
   Template * tm = defn_->templateSignature();
   if (tm != NULL) {
     return tm->typeParam(index);
@@ -519,6 +573,10 @@ const Type * dealias(const Type * t) {
 
 Type * dealias(Type * t) {
   return dealiasImpl(t);
+}
+
+QualifiedType dealias(QualifiedType t) {
+  return QualifiedType(dealias(t.type()), t.qualifiers());
 }
 
 #if 0

@@ -13,6 +13,10 @@
 #include "tart/CFG/CFG.h"
 #endif
 
+#ifndef TART_DEFN_TEMPLATE_H
+#include "tart/Defn/Template.h"
+#endif
+
 #ifndef TART_SEMA_INFER_CONSTRAINTSET_H
 #include "tart/Sema/Infer/ConstraintSet.h"
 #endif
@@ -38,8 +42,6 @@ class NativeArrayType;
 class FlexibleArrayType;
 class UnionType;
 
-typedef llvm::DenseMap<const TypeVariable *, const Type *> TypeVarMap;
-
 /// -------------------------------------------------------------------
 /// Performs unification between types and produces a set of type
 /// bindings.
@@ -58,6 +60,10 @@ public:
   void reset();
 
   /** Perform unification from a pattern type to a value type. */
+  bool unify(SourceContext * source, QualifiedType left, QualifiedType right,
+      Constraint::Kind kind, const ProvisionSet & provisions = ProvisionSet());
+
+  /** Perform unification from a pattern type to a value type. */
   bool unify(SourceContext * source, const Type * left, const Type * right,
       Constraint::Kind kind, const ProvisionSet & provisions = ProvisionSet());
 
@@ -71,7 +77,7 @@ public:
 
   /** Convert the current type assignments to a type variable map, only using type
       assignments from the specified context. */
-  void toTypeVarMap(TypeVarMap & map, GC * context);
+  void toTypeVarMap(QualifiedTypeVarMap & map, GC * context);
 
   /** Assign 'value' to the type variable 'var'. This will create a new type assignment
       in the environment. */

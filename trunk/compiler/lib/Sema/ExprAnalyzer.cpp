@@ -397,7 +397,7 @@ Expr * ExprAnalyzer::reduceLogicalOper(const ASTOper * ast) {
   args.push_back(const_cast<ASTNode *>(ast->arg(1)));
   Expr * result = callName(ast->location(), opIdent, args, NULL, true);
   if (op == ASTNode::LogicalOr) {
-    ConstTypeList types;
+    QualifiedTypeList types;
     if (getUnionTypeArgs(result, types)) {
       const UnionType * ut = UnionType::get(types);
       return new TypeLiteralExpr(ast->location(), ut);
@@ -406,7 +406,7 @@ Expr * ExprAnalyzer::reduceLogicalOper(const ASTOper * ast) {
   return result;
 }
 
-bool ExprAnalyzer::getUnionTypeArgs(Expr * ex, ConstTypeList & types) {
+bool ExprAnalyzer::getUnionTypeArgs(Expr * ex, QualifiedTypeList & types) {
   if (CallExpr * call = dyn_cast_or_null<CallExpr>(ex)) {
     FunctionDefn * fn = NULL;
     if (LValueExpr * lval = dyn_cast_or_null<LValueExpr>(call->function())) {

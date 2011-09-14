@@ -24,7 +24,7 @@ class AddressType : public TypeImpl {
 public:
 
   /** Construct a native pointer type for the specified element type. */
-  static AddressType * get(const Type * elemType);
+  static AddressType * get(QualifiedType elemType);
 
   ~AddressType();
 
@@ -34,7 +34,7 @@ public:
   // Overrides
 
   size_t numTypeParams() const { return 1; }
-  virtual const Type * typeParam(int index) const { return elementType_; }
+  QualifiedType typeParam(int index) const { return elementType_.type(); }
   llvm::Type * irType() const { return createIRType(); }
   llvm::Type * createIRType() const;
   bool isSingular() const;
@@ -54,13 +54,13 @@ public:
   static ASTBuiltIn biDef;
 
 private:
-  typedef llvm::DenseMap<const Type * , AddressType *, Type::KeyInfo> TypeMap;
+  typedef llvm::DenseMap<QualifiedType, AddressType *, QualifiedType::KeyInfo> TypeMap;
   static TypeMap uniqueTypes_;
 
-  AddressType(const Type * elemType);
+  AddressType(QualifiedType elemType);
   AddressType();
 
-  const Type* elementType_;
+  QualifiedType elementType_;
 };
 
 // -------------------------------------------------------------------
@@ -75,7 +75,7 @@ public:
   static void initBuiltin();
 
   /** The element type of the array. */
-  const Type * elementType() const;
+  QualifiedType elementType() const;
 
   /** The fixed length of the array. */
   uint64_t size() const { return size_; }
@@ -86,7 +86,7 @@ public:
   // Overrides
 
   size_t numTypeParams() const { return 2; }
-  virtual const Type * typeParam(int index) const;
+  QualifiedType typeParam(int index) const;
 
   llvm::Type * irType() const { return createIRType(); }
   llvm::Type * createIRType() const;
@@ -128,14 +128,14 @@ public:
   static void initBuiltin();
 
   /** The element type of the array. */
-  const Type * elementType() const;
+  QualifiedType elementType() const;
 
   const TupleType * typeArgs() const { return typeArgs_; }
 
   // Overrides
 
   size_t numTypeParams() const { return 1; }
-  virtual const Type * typeParam(int index) const;
+  QualifiedType typeParam(int index) const;
 
   llvm::Type * irType() const { return createIRType(); }
   llvm::Type * createIRType() const;

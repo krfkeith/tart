@@ -2,7 +2,6 @@
     TART - A Sweet Programming Language.
  * ================================================================ */
 
-#include "tart/Type/LexicalTypeOrdering.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/CompositeType.h"
 #include "tart/Type/EnumType.h"
@@ -11,7 +10,7 @@
 #include "tart/Type/TupleType.h"
 #include "tart/Type/UnionType.h"
 #include "tart/Type/UnitType.h"
-//#include "tart/Type/TypeConstraint.h"
+#include "tart/Type/LexicalTypeOrdering.h"
 
 #include "tart/Defn/Template.h"
 
@@ -26,6 +25,25 @@ namespace tart {
 
 bool LexicalTypeOrdering::operator()(const Type * t0, const Type * t1) const {
   return compare(t0, t1) < 0;
+}
+
+bool LexicalTypeOrdering::operator()(const QualifiedType & t0, const QualifiedType & t1) const {
+  return compare(t0, t1) < 0;
+}
+
+int LexicalTypeOrdering::compare(const QualifiedType & t0, const QualifiedType & t1) {
+  int result = compare(t0.type(), t1.type());
+  if (result != 0) {
+    return result;
+  }
+
+  if (t0.qualifiers() < t1.qualifiers()) {
+    return -1;
+  } else if (t0.qualifiers() > t1.qualifiers()) {
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 int LexicalTypeOrdering::compare(const Type * t0, const Type * t1) {

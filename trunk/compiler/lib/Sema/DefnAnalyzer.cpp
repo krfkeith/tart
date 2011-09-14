@@ -439,7 +439,7 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
   if (tm->typeParams() == NULL) {
     DASSERT_OBJ(de->definingScope() != NULL, de);
     const ASTNodeList & paramsAst = tm->ast()->params();
-    TypeList params;
+    QualifiedTypeList params;
     ASTConstNodeList defaults;
 
     TemplateParamAnalyzer tpa(de);
@@ -468,14 +468,14 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
     int argCount = 0;
     for (ASTConstNodeList::const_iterator it = defaults.begin(); it != defaults.end(); ++it) {
       const ASTNode * node = *it;
-      Type * param = params[argCount];
+      QualifiedType param = params[argCount];
       Type * paramDefault = NULL;
       if (node != NULL) {
         if (tm->isVariadic()) {
-          diag.error(node) << "default parameter values not allowed on variadic templates";
+          diag.error(node) << "default parameter values not allowed on variadic template";
         }
 
-        if (TypeVariable * tv = dyn_cast<TypeVariable>(param)) {
+        if (Qualified<TypeVariable> tv = param.dyn_cast<TypeVariable>()) {
           if (tv->valueType() != NULL) {
             ConstantExpr * defaultValue = dyn_cast_or_null<ConstantExpr>(
                 ea.reduceConstantExpr(node, tv->valueType()));
@@ -619,7 +619,7 @@ bool DefnAnalyzer::reflectType(const Type * type) {
     case Type::NAddress:
     case Type::NArray: {
       for (size_t i = 0; i < type->numTypeParams(); ++i) {
-        reflectType(type->typeParam(i));
+        reflectType(type->typeParam(i).type());
       }
       break;
     }
@@ -662,7 +662,7 @@ void DefnAnalyzer::reflectTypeMembers(CompositeType * type) {
   }
 
   for (size_t i = 0; i < type->numTypeParams(); ++i) {
-    reflectType(type->typeParam(i));
+    reflectType(type->typeParam(i).type());
   }
 
   if (type->noArgConstructor()) {

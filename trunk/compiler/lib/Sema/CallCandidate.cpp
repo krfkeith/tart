@@ -100,7 +100,7 @@ void CallCandidate::relabelTypeVars(BindingEnv & env) {
     // Normalize the return type and parameter types, replacing all type variables
     // with type assignments which will eventually contain the inferred type for that
     // variable.
-    TypeVarMap assignments;
+    QualifiedTypeVarMap assignments;
     for (Defn * def = method_; def != NULL && !def->isSingular(); def = def->parentDefn()) {
       Template * ts = def->templateSignature();
       if (ts != NULL) {
@@ -469,7 +469,7 @@ CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
         return NOT_MORE_SPECIFIC;
       }
 
-      return isMoreSpecific(lhs->typeParam(0), rhs->typeParam(0));
+      return isMoreSpecific(lhs->typeParam(0).type(), rhs->typeParam(0).type());
 
     default:
       if (lhs->typeClass() != rhs->typeClass()) {
@@ -521,7 +521,7 @@ void CallCandidate::trace() const {
 void CallCandidate::dumpTypeParams() const {
   if (typeParams_ != NULL) {
     for (TupleType::const_iterator it = typeParams_->begin(); it != typeParams_->end(); ++it) {
-      if (const TypeAssignment * ta = dyn_cast<TypeAssignment>(*it)) {
+      if (Qualified<TypeAssignment> ta = it->dyn_cast<TypeAssignment>()) {
         if (ta->constraints().empty()) {
           diag.debug() << "where " << ta << " == {} (empty set)";
         } else if (ta->constraints().size() == 1) {

@@ -329,7 +329,7 @@ bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, StringRef name, 
 
     // If it's a native pointer, then do an implicit dereference.
     if (const AddressType * nptype = dyn_cast<AddressType>(contextType)) {
-      contextType = nptype->typeParam(0);
+      contextType = nptype->typeParam(0).type();
     } else if (const UnionType * utype = dyn_cast<UnionType>(contextType)) {
       // See if an implicit conversion makes sense here.
       if (utype->isSingleOptionalType()) {
@@ -443,7 +443,7 @@ bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, Stri
 
 Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNodeList & args,
     bool inferArgTypes) {
-  ConstTypeList argList; // Template args, not function args.
+  QualifiedTypeList argList; // Template args, not function args.
   bool isSingularArgList = true;  // True if all args are fully resolved.
 
   // Resolve all the arguments. Note that we don't support type inference on template args,
@@ -548,7 +548,7 @@ void AnalyzerBase::addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * bas
       // Attempt to match the type args against the variadic type params.
       size_t variadicIndex = tm->typeParams()->size() - 1;
       if (args->size() >= variadicIndex) {
-        ConstTypeList typeArgs(args->begin(), args->begin() + variadicIndex);
+        QualifiedTypeList typeArgs(args->begin(), args->begin() + variadicIndex);
         typeArgs.push_back(TupleType::get(args->begin() + variadicIndex, args->end()));
         args = TupleType::get(typeArgs);
         if (tm->canUnify(args)) {
@@ -688,7 +688,7 @@ bool AnalyzerBase::getTypesFromExprs(SLC & loc, ExprList & in, TypeList & out) {
 const Type * AnalyzerBase::getTupleTypesFromTupleExpr(Expr * in) {
   if (TupleCtorExpr * tctor = dyn_cast<TupleCtorExpr>(in)) {
     // Check to see if all members are type literals.
-    ConstTypeList typeMembers;
+    QualifiedTypeList typeMembers;
     for (ExprList::const_iterator it = tctor->args().begin(); it != tctor->args().end(); ++it) {
       TypeLiteralExpr * tl = dyn_cast<TypeLiteralExpr>(*it);
       if (tl == NULL) {
@@ -754,7 +754,7 @@ bool AnalyzerBase::analyzeType(const Type * in, AnalysisTask task) {
 
         size_t numTypes = in->numTypeParams();
         for (size_t i = 0; i < numTypes; ++i) {
-          analyzeType(in->typeParam(i), task);
+          analyzeType(in->typeParam(i).type(), task);
         }
 
         break;
@@ -767,7 +767,7 @@ bool AnalyzerBase::analyzeType(const Type * in, AnalysisTask task) {
       case Type::Tuple: {
         size_t numTypes = in->numTypeParams();
         for (size_t i = 0; i < numTypes; ++i) {
-          analyzeType(in->typeParam(i), task);
+          analyzeType(in->typeParam(i).type(), task);
         }
 
         break;
@@ -866,15 +866,15 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
     case Type::NAddress:
     case Type::NArray:
     case Type::FlexibleArray: {
-      analyzeType(type->typeParam(0), task);
+      analyzeType(type->typeParam(0).type(), task);
       return true;
     }
 
     case Type::Alias: {
       TypeAlias * ta = cast<TypeAlias>(type);
       if (ta->value() == NULL) {
-        Type * targetType = TypeAnalyzer(in->module(), in->definingScope())
-            .typeFromAST(cast<ASTTypeDecl>(in->ast())->bases().front());
+        QualifiedType targetType = TypeAnalyzer(in->module(), in->definingScope())
+            .qualifiedTypeFromAST(cast<ASTTypeDecl>(in->ast())->bases().front());
         if (isErrorResult(targetType)) {
           return false;
         }
@@ -895,7 +895,7 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
   }
 }
 
-CompositeType * AnalyzerBase::getArrayTypeForElement(const Type * elementType) {
+CompositeType * AnalyzerBase::getArrayTypeForElement(QualifiedType elementType) {
   // Look up the array class
   Template * arrayTemplate = Builtins::typeArray->typeDefn()->templateSignature();
 
@@ -905,14 +905,14 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(const Type * elementType) {
     da.analyzeTemplateSignature(Builtins::typeArray->typeDefn());
   }
 
-  DASSERT_OBJ(arrayTemplate->paramScope().count() == 1, elementType);
+  DASSERT(arrayTemplate->paramScope().count() == 1);
 
   // Special case for when the elementType is Array.ElementType
-  if (elementType == arrayTemplate->typeParam(0)) {
+  if (elementType.type() == arrayTemplate->typeParam(0).type()) {
     return Builtins::typeArray.get();
   }
 
-  TypeVarMap vars;
+  QualifiedTypeVarMap vars;
   vars[arrayTemplate->patternVar(0)] = elementType;
   return cast<CompositeType>(cast<TypeDefn>(
       arrayTemplate->instantiate(
@@ -944,7 +944,7 @@ CompositeType * AnalyzerBase::getMutableRefType(const Type * valueType) {
 
   DASSERT_OBJ(refTemplate->paramScope().count() == 1, valueType);
 
-  TypeVarMap vars;
+  QualifiedTypeVarMap vars;
   vars[refTemplate->patternVar(0)] = valueType;
   return cast<CompositeType>(cast<TypeDefn>(
       refTemplate->instantiate(
@@ -963,7 +963,7 @@ CompositeType * AnalyzerBase::getFunctionInterfaceType(const FunctionType * ftyp
 
   DASSERT_OBJ(fnTemplate->paramScope().count() == 2, ftype);
 
-  TypeVarMap vars;
+  QualifiedTypeVarMap vars;
   vars[fnTemplate->patternVar(0)] = ftype->returnType();
   vars[fnTemplate->patternVar(1)] = ftype->paramTypes();
   return cast<CompositeType>(cast<TypeDefn>(

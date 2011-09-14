@@ -404,7 +404,7 @@ llvm::GlobalVariable * Reflector::getDerivedTypePtr(const Type * type) {
   typeExports_.append(type);
 
   for (size_t i = 0; i < type->numTypeParams(); ++i) {
-    getTypePtr(type->typeParam(i));
+    getTypePtr(type->typeParam(i).type());
   }
 
   return new GlobalVariable(*irModule_, Builtins::typeDerivedType->irTypeComplete(), true,
@@ -583,7 +583,7 @@ void Reflector::getRefs(const Defn * def) {
 
         if (td->isReflected()) {
           for (size_t i = 0; i < ctype->numTypeParams(); ++i) {
-            getTypePtr(ctype->typeParam(i));
+            getTypePtr(ctype->typeParam(i).type());
           }
         }
 
@@ -716,7 +716,7 @@ void Reflector::emitMethod(const FunctionDefn * fn) {
     const TupleType * typeArgs = fn->templateInstance()->typeArgs();
     sb.addPointerField(reflect::Method::typeParams, emitTypeList(typeArgs->members()));
   } else {
-    sb.addPointerField(reflect::Method::typeParams, emitTypeList(ConstTypeList()));
+    sb.addPointerField(reflect::Method::typeParams, emitTypeList(QualifiedTypeList()));
   }
 
   // Method._params
@@ -884,7 +884,7 @@ void Reflector::emitCompositeType(const CompositeType * type) {
   }
 
   // CompositeType._interfaces
-  ConstTypeList interfaceList;
+  QualifiedTypeList interfaceList;
   for (ClassList::const_iterator it = type->bases().begin(); it != type->bases().end(); ++it) {
     if ((*it)->typeClass() == Type::Interface) {
       interfaceList.push_back(*it);
@@ -893,7 +893,7 @@ void Reflector::emitCompositeType(const CompositeType * type) {
   sb.addPointerField(reflect::CompositeType::interfaces, emitTypeList(interfaceList));
 
   // CompositeType._typeParams
-  ConstTypeList typeParamList;
+  QualifiedTypeList typeParamList;
   if (td->isReflected()) {
     type->getTypeParams(typeParamList);
   }
@@ -976,7 +976,7 @@ void Reflector::emitDerivedType(const Type * type) {
   sb.addIntegerField(reflect::Type::typeKind.type(), typeKind(type->typeClass()));
   sb.combine(Builtins::typeType);
 
-  ConstTypeList typeParamList;
+  QualifiedTypeList typeParamList;
   type->getTypeParams(typeParamList);
   sb.addPointerField(reflect::DerivedType::typeParams, emitTypeList(typeParamList));
 
@@ -1032,7 +1032,7 @@ void Reflector::emitFunctionType(const FunctionType * type) {
 }
 
 llvm::Constant * Reflector::emitMemberTypes(const IterableScope * scope) {
-  ConstTypeList memberTypes;
+  QualifiedTypeList memberTypes;
 
   for (Defn * de = scope->firstMember(); de != NULL; de = de->nextInScope()) {
     if (de->isReflected() && isExport(de) && de->isSingular() && de->defnType() == Defn::Typedef) {
@@ -1108,7 +1108,7 @@ llvm::Constant * Reflector::emitFieldList(const IterableScope * scope, StringRef
       Builtins::typeFieldList, Builtins::typeField);
 }
 
-llvm::Constant * Reflector::emitTypeList(const ConstTypeList & types) {
+llvm::Constant * Reflector::emitTypeList(const QualifiedTypeList & types) {
   // Generate the symbolic name of the type list.
   llvm::SmallString<64> sym(".typelist.(");
   for (TupleType::const_iterator it = types.begin(); it != types.end(); ++it) {
@@ -1127,7 +1127,7 @@ llvm::Constant * Reflector::emitTypeList(const ConstTypeList & types) {
   llvm::Type * typePtrType = Builtins::typeType->irEmbeddedType();
   ConstantList typePtrList;
   for (TupleType::const_iterator it = types.begin(); it != types.end(); ++it) {
-    llvm::Constant * ptr = getTypePtr(*it);
+    llvm::Constant * ptr = getTypePtr(it->type());
     typePtrList.push_back(llvm::ConstantExpr::getPointerCast(ptr, typePtrType));
   }
 
@@ -1188,7 +1188,7 @@ llvm::Constant * Reflector::emitArray(
     varType = utype->getFirstNonVoidType();
   }
   const CompositeType * arrayType = cast<CompositeType>(varType);
-  const Type * elementType = arrayType->typeParam(0);
+  QualifiedType elementType = arrayType->typeParam(0);
   DASSERT_OBJ(arrayType->passes().isFinished(CompositeType::RecursiveFieldTypePass), var);
 
   if (values.empty()) {
@@ -1198,7 +1198,7 @@ llvm::Constant * Reflector::emitArray(
   StructBuilder sb(cg_);
   sb.createObjectHeader(arrayType);
   sb.addField(cg_.getIntVal(values.size()));
-  sb.addArrayField(elementType, values);
+  sb.addArrayField(elementType.type(), values);
 
   llvm::Constant * arrayStruct = sb.build(arrayType);
   GlobalVariable * array = new GlobalVariable(*irModule_,

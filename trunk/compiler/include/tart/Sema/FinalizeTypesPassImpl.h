@@ -56,7 +56,7 @@ private:
   //Expr * visitInitVar(InitVarExpr * in);
 
   bool coerceArgs(CallCandidate * cd, const ExprList & args, ExprList & coercedArgs);
-  Defn * doPatternSubstitutions(SLC & loc, Defn * def, const TypeVarMap & varValues);
+  Defn * doPatternSubstitutions(SLC & loc, Defn * def, const QualifiedTypeVarMap & varValues);
 
   Expr * addCastIfNeeded(Expr * in, const Type * toType, unsigned options = AO_IMPLICIT_CAST);
   Expr * handleUnboxCast(CastExpr * in);

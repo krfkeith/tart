@@ -139,8 +139,8 @@ bool PropertyAnalyzer::resolvePropertyType() {
   if (target->passes().begin(PropertyDefn::PropertyTypePass)) {
 
     // Evaluate the explicitly declared type, if any
-    const Type * type = target->type();
-    if (type == NULL) {
+    QualifiedType type = target->type();
+    if (type.isNull()) {
       if (target->mdNode() != NULL) {
         if (!MDReader(module_, target).readPropertyType(target)) {
           return false;
@@ -150,8 +150,8 @@ bool PropertyAnalyzer::resolvePropertyType() {
         DASSERT_OBJ(ast != NULL, target);
         DASSERT_OBJ(ast->type() != NULL, target);
         TypeAnalyzer ta(module(), target->definingScope());
-        type = ta.typeFromAST(ast->type());
-        if (type == NULL) {
+        type = ta.qualifiedTypeFromAST(ast->type());
+        if (type.isNull()) {
           return false;
         }
 

@@ -121,11 +121,11 @@ const Type * TypeTransform::visitUnionType(const UnionType * in) {
 }
 
 const Type * TypeTransform::visitTupleType(const TupleType * in) {
-  TypeList members;
+  QualifiedTypeList members;
   bool isSame = true;
   for (TupleType::const_iterator it = in->members().begin(); it != in->members().end(); ++it) {
-    const Type * ref = visit(*it);
-    members.push_back(const_cast<Type *>(ref));
+    QualifiedType ref = visit(*it);
+    members.push_back(ref);
     if (ref != *it) {
       isSame = false;
     }
@@ -140,11 +140,11 @@ const Type * TypeTransform::visitTupleType(const TupleType * in) {
 
 const Type * TypeTransform::visitAddressType(const AddressType * in) {
   const AddressType * np = static_cast<const AddressType *>(in);
-  if (np->typeParam(0) == NULL) {
+  if (np->typeParam(0).isNull()) {
     return in;
   }
 
-  const Type * elemType = visit(np->typeParam(0));
+  QualifiedType elemType = visit(np->typeParam(0));
   if (elemType == np->typeParam(0)) {
     return in;
   }
@@ -171,16 +171,16 @@ const Type * TypeTransform::visitFlexibleArrayType(const FlexibleArrayType * in)
 }
 
 const Type * TypeTransform::visitTypeLiteralType(const TypeLiteralType * in) {
-  if (in->typeParam(0) == NULL) {
+  if (in->typeParam(0).isNull()) {
     return in;
   }
 
-  const Type * elemType = visit(in->typeParam(0));
+  QualifiedType elemType = visit(in->typeParam(0));
   if (elemType == in->typeParam(0)) {
     return in;
   }
 
-  return TypeLiteralType::get(elemType);
+  return TypeLiteralType::get(elemType.type());
 }
 
 const Type * TypeTransform::visitUnitType(const UnitType * in) {
@@ -208,9 +208,9 @@ const Type * TypeTransform::visitTypeAlias(const TypeAlias * in) {
 // SubstitutionTransform
 
 const Type * SubstitutionTransform::visitTypeVariable(const TypeVariable * in) {
-  TypeVarMap::const_iterator it = vars_.find(in);
+  QualifiedTypeVarMap::const_iterator it = vars_.find(in);
   if (it != vars_.end()) {
-    return it->second;
+    return it->second.type();
   } else {
     return in;
   }
@@ -259,14 +259,14 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
       return in;
     }
     Template * tm = tinst->templateDefn()->templateSignature();
-    TypeVarMap varValues(vars_);
+    QualifiedTypeVarMap varValues(vars_);
     // Add type param mappings.
     size_t numVars = tm->patternVarCount();
     for (size_t i = 0; i < numVars; ++i) {
       TypeVariable * param = tm->patternVar(i);
-      const Type * value = tinst->typeArg(i);
-      const Type * svalue = visit(value);
-      if (svalue != NULL) {
+      QualifiedType value = tinst->typeArg(i);
+      QualifiedType svalue = visit(value);
+      if (!svalue.isNull()) {
         varValues[param] = svalue;
       }
     }
@@ -307,9 +307,9 @@ const Type * SubstitutionTransform::visitTypeConstraint(const TypeConstraint * i
 // RelabelTransform
 
 const Type * RelabelTransform::visitTypeVariable(const TypeVariable * in) {
-  TypeVarMap::const_iterator it = vars_.find(in);
+  QualifiedTypeVarMap::const_iterator it = vars_.find(in);
   DASSERT(it != vars_.end()) << "Type variable " << in << " not found!";
-  return it->second;
+  return it->second.type();
 }
 
 // -------------------------------------------------------------------

@@ -45,7 +45,7 @@ void TypeLiteralType::initBuiltin() {
   static TypeMapRoot<TypeMap> root(uniqueTypes_);
 
   // Create type parameters
-  TypeList typeParams;
+  QualifiedTypeList typeParams;
   typeParams.push_back(new TypeVariable(SourceLocation(), "T"));
   Template * tm = Template::get(&typedefn, &Builtins::module);
   tm->setTypeParams(TupleType::get(typeParams));
@@ -55,7 +55,7 @@ void TypeLiteralType::initBuiltin() {
   typedefn.setQualifiedName(typedefn.name());
   typedefn.setTypeValue(&prototype);
 
-  prototype.literalType_ = tm->typeParam(0);
+  prototype.literalType_ = tm->typeParam(0).type();
 }
 
 TypeLiteralType * TypeLiteralType::get(const Type * literalType) {
