@@ -15,7 +15,7 @@ bool AttributeInfo::canAttachTo(const Defn * de) const {
   switch (de->defnType()) {
     case Defn::Typedef: {
       const TypeDefn * type = static_cast<const TypeDefn *>(de);
-      switch (type->typeValue()->typeClass()) {
+      switch (type->value()->typeClass()) {
         case Type::Class:
           return (target_ & CLASS) != 0;
 

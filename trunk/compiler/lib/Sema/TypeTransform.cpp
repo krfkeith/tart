@@ -34,7 +34,7 @@ const Type * TypeTransform::visit(const Type * in) {
   }
 
   if (in->typeClass() == Type::Alias) {
-    return visit(static_cast<const TypeAlias *>(in)->value());
+    return visit(static_cast<const TypeAlias *>(in)->value().type());
   }
 
   switch (in->typeClass()) {
@@ -201,7 +201,7 @@ const Type * TypeTransform::visitTypeConstraint(const TypeConstraint * in) {
 
 const Type * TypeTransform::visitTypeAlias(const TypeAlias * in) {
   // TODO: This strips type modifiers.
-  return visit(static_cast<const TypeAlias *>(in)->value());
+  return visit(static_cast<const TypeAlias *>(in)->value().type());
 }
 
 // -------------------------------------------------------------------
@@ -228,14 +228,14 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
     Defn * def = in->typeDefn()->templateSignature()->instantiate(
         in->typeDefn()->location(), vars_);
     if (def != NULL) {
-      return cast<TypeDefn>(def)->typeValue();
+      return cast<TypeDefn>(def)->typePtr();
     } else {
       return NULL;
     }
   } else if (in->typeDefn()->isTemplateMember()) {
     if (const TypeDefn * td = dyn_cast_or_null<TypeDefn>(in->typeDefn()->parentDefn())) {
       // Transform the parent (recursively)
-      if (const CompositeType * parent = dyn_cast<CompositeType>(td->typeValue())) {
+      if (const CompositeType * parent = dyn_cast<CompositeType>(td->typePtr())) {
         const CompositeType * transformedParent = cast<CompositeType>(visitCompositeType(parent));
         // Now look for a matching entry
         DefnList defns;
@@ -246,7 +246,7 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
         // definition 'def'. This can be identified because it has the same value for 'ast'.
         for (DefnList::iterator it = defns.begin(); it != defns.end(); ++it) {
           if ((*it)->ast() == in->typeDefn()->ast()) {
-            return cast<TypeDefn>(*it)->typeValue();
+            return cast<TypeDefn>(*it)->typePtr();
           }
         }
       }
@@ -263,10 +263,10 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
     // Add type param mappings.
     size_t numVars = tm->patternVarCount();
     for (size_t i = 0; i < numVars; ++i) {
-      TypeVariable * param = tm->patternVar(i);
+      const TypeVariable * param = tm->patternVar(i);
       QualifiedType value = tinst->typeArg(i);
       QualifiedType svalue = visit(value);
-      if (!svalue.isNull()) {
+      if (svalue) {
         varValues[param] = svalue;
       }
     }
@@ -274,7 +274,7 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
     Defn * def = tm->instantiate(SourceLocation(), varValues);
     if (def != NULL) {
       //assureNoTypeVariables(cast<TypeDefn>(def)->typeValue());
-      return cast<TypeDefn>(def)->typeValue();
+      return cast<TypeDefn>(def)->typePtr();
     } else {
       return NULL;
     }

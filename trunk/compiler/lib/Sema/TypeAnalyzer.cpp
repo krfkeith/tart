@@ -72,13 +72,13 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
       const ASTOper * arrayOp = static_cast<const ASTOper *>(ast);
       Type * elementType = typeFromAST(arrayOp->arg(0));
       DASSERT(elementType != NULL);
-      return getArrayTypeForElement(elementType);
+      return const_cast<CompositeType *>(getArrayTypeForElement(elementType));
     }
 
     case ASTNode::BuiltIn: {
       Defn * def = static_cast<const ASTBuiltIn *>(ast)->value();
       if (TypeDefn * tdef = dyn_cast<TypeDefn>(def)) {
-        return tdef->typeValue();
+        return tdef->mutableTypePtr();
       } else {
         diag.fatal(ast) << "'" << def->name() << "' is not a type";
         return &BadType::instance;
@@ -124,7 +124,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
       if (fnDecl->modifiers().flags & Static) {
         ftype->setIsStatic(true);
       } else {
-        return getFunctionInterfaceType(ftype);
+        return const_cast<CompositeType *>(getFunctionInterfaceType(ftype));
       }
 
       return ftype;

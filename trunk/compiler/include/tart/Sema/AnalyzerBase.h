@@ -143,7 +143,7 @@ public:
 
   /** Given an element type, return the corresponding array type. The element
       type must already have been fully resolved. */
-  static CompositeType * getArrayTypeForElement(QualifiedType elementType);
+  static const CompositeType * getArrayTypeForElement(QualifiedType elementType);
 
   /** Create an empty array literal, with elements of the specified type.
       Also add to the given module the external symbols needed to support
@@ -154,10 +154,10 @@ public:
   static Expr * getEmptyArrayOfElementType(const Type * elementType);
 
   /** Given a value type, return the MutableRef[value] type. */
-  CompositeType * getMutableRefType(const Type * valueType);
+  const CompositeType * getMutableRefType(const Type * valueType);
 
   /** Given a function type, return the 'Function' interface that corresponds to that type. */
-  static CompositeType * getFunctionInterfaceType(const FunctionType * ftype);
+  static const CompositeType * getFunctionInterfaceType(const FunctionType * ftype);
 
   /** Determine if the target is able to be accessed from the current source defn. */
   void checkAccess(const SourceLocation & loc, Defn * target);

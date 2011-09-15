@@ -48,10 +48,10 @@ private:
 // TypeVariable
 
 TypeVariable::TypeVariable(const SourceLocation & location, StringRef name,
-    const Type * valueType)
+    QualifiedType value)
   : TypeImpl(TypeVar, Shape_Unset)
   , location_(location)
-  , valueType_(valueType)
+  , value_(value)
   , upperBound_(NULL)
   , name_(name)
   , isVariadic_(false)
@@ -63,15 +63,15 @@ llvm::Type * TypeVariable::createIRType() const {
 
 bool TypeVariable::canBindTo(const Type * value) const {
   if (const UnitType * nt = dyn_cast<UnitType>(value)) {
-    if (valueType_ == NULL) {
+    if (!value_) {
       return false;
     }
 
     ConstantExpr * expr = nt->value();
-    return TypeConversion::check(expr, valueType_);
+    return TypeConversion::check(expr, value_);
   } else if (value->typeClass() == Type::Assignment) {
     return true;
-  } else if (valueType_ == NULL) {
+  } else if (!value_) {
     return true;
   } else {
     return false;
@@ -130,7 +130,7 @@ void Template::setTypeParams(const TupleType * typeParams) {
   const TypeVariable * variadicParam;
   for (size_t i = 0; i < typeParams_->size(); ++i) {
     if (isVariadicParam(i)) {
-      const TypeVariable * tv = cast<TypeVariable>((*typeParams_)[i].type());
+      const TypeVariable * tv = cast<TypeVariable>((*typeParams_)[i].unqualified());
       if (i != typeParams_->size() - 1) {
         diag.error(tv) << "template variadic parameter must be last";
       }
@@ -161,16 +161,16 @@ bool Template::isVariadicParam(int index) const {
   return param.isa<TypeVariable>() && param.as<TypeVariable>()->isVariadic();
 }
 
-TypeVariable * Template::patternVar(const char * name) const {
+const TypeVariable * Template::patternVar(const char * name) const {
   Defn * de = paramScope_.lookupSingleMember(name);
   if (TypeDefn * tdef = dyn_cast_or_null<TypeDefn>(de)) {
-    return cast<TypeVariable>(tdef->typeValue());
+    return cast<TypeVariable>(tdef->typePtr());
   }
 
   return NULL;
 }
 
-TypeVariable * Template::patternVar(int index) const {
+const TypeVariable * Template::patternVar(int index) const {
   return vars_[index];
 }
 
@@ -227,7 +227,7 @@ Defn * Template::instantiate(const SourceLocation & loc, const QualifiedTypeVarM
     //DASSERT_OBJ(!value->isNullType(), var);
     if (!var->canBindTo(value)) {
       diag.error(loc) << "Type of expression " << value <<
-          " incompatible with template parameter " << var << ":" << var->valueType();
+          " incompatible with template parameter " << var << ":" << var->value();
       DASSERT(var->canBindTo(value));
     }
 
@@ -311,8 +311,8 @@ Defn * Template::instantiate(const SourceLocation & loc, const QualifiedTypeVarM
     Defn * argDefn;
     if (value.isa<UnitType>()) {
       Expr * cval = value.as<UnitType>()->value();
-      if (cval != NULL && var->valueType() != NULL) {
-        cval = var->valueType()->implicitCast(loc, cval);
+      if (cval != NULL && var->value()) {
+        cval = var->value()->implicitCast(loc, cval);
       }
       argDefn = new VariableDefn(Defn::Let, result->module(), var->name(), cval);
       argDefn->setStorageClass(Storage_Static);
@@ -332,7 +332,7 @@ Defn * Template::instantiate(const SourceLocation & loc, const QualifiedTypeVarM
 
   // One additional parameter, which is the name of the instantiated symbol.
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(result)) {
-    if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
+    if (const CompositeType * ctype = dyn_cast<CompositeType>(tdef->typePtr())) {
       TypeDefn * nameAlias = new TypeDefn(result->module(), tdef->name(), ctype);
       nameAlias->setSingular(ctype->isSingular());
       nameAlias->addTrait(Defn::Synthetic);
@@ -345,23 +345,23 @@ Defn * Template::instantiate(const SourceLocation & loc, const QualifiedTypeVarM
   return result;
 }
 
-Type * Template::instantiateType(
+const Type * Template::instantiateType(
     const SourceLocation & loc, const QualifiedTypeVarMap & varValues, uint32_t expectedTraits)
 {
   if (value_->ast() != NULL) {
     TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, varValues, expectedTraits));
-    return tdef->typeValue();
+    return tdef->typePtr();
   }
 
   // Create the definition
   TypeDefn * tdef = static_cast<TypeDefn *>(value_);
-  Type * proto = tdef->typeValue();
+  const Type * proto = tdef->typePtr();
   if (proto->typeClass() != Type::NAddress &&
       proto->typeClass() != Type::NArray &&
       proto->typeClass() != Type::FlexibleArray &&
       proto->typeClass() != Type::TypeLiteral) {
     TypeDefn * tdef = cast<TypeDefn>(instantiate(loc, varValues));
-    return tdef->typeValue();
+    return tdef->typePtr();
   }
 
   // TODO: Can TypeTransform do this?
@@ -374,7 +374,7 @@ Type * Template::instantiateType(
     DASSERT_OBJ(value != NULL, var);
     if (!var->canBindTo(value)) {
       diag.fatal(loc) << "Type of expression " << value <<
-          " incompatible with template parameter " << var << ":" << var->valueType();
+          " incompatible with template parameter " << var << ":" << var->value();
       DASSERT(var->canBindTo(value));
     }
 
@@ -388,7 +388,7 @@ Type * Template::instantiateType(
     paramValues.push_back(const_cast<Type *>(value));
   }
 
-  switch (tdef->typeValue()->typeClass()) {
+  switch (tdef->value()->typeClass()) {
     case Type::NAddress:
       return AddressType::get(paramValues[0]);
 

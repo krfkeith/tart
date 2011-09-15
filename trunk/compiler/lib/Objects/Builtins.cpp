@@ -136,12 +136,12 @@ Defn * Builtins::loadSystemDef(const char * name) {
 }
 
 Type * Builtins::loadSystemType(const char * name) {
-  Type * result = cast<TypeDefn>(loadSystemDef(name))->typeValue();
+  Type * result = cast<TypeDefn>(loadSystemDef(name))->mutableTypePtr();
   DASSERT(result != NULL);
   return result;
 }
 
-Defn * Builtins::getSingleMember(Scope * scope, const char * name) {
+Defn * Builtins::getSingleMember(const Scope * scope, const char * name) {
   DefnList defs;
   if (!scope->lookupMember(name, defs, false)) {
     diag.info() << "Couldn't find system definition for " << name;
@@ -189,10 +189,11 @@ void Builtins::loadSystemClasses() {
   funcUndefinedMethod = getMember<FunctionDefn>(typeObject.get(), "__undefinedMethod");
 
   // Get the low-level exception structure
-  typeUnwindException = getMember<TypeDefn>(typeThrowable.get(), "UnwindException")->typeValue();
+  typeUnwindException = getMember<TypeDefn>(
+      typeThrowable.get(), "UnwindException")->mutableTypePtr();
 
   // Set the aliases
-  typeAliasString.setValue(typeString);
+  typeAliasString.setValue(typeString.get());
 }
 
 bool Builtins::compileBuiltins(ProgramSource & source) {

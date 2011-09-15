@@ -548,7 +548,7 @@ const Type * findCommonType(const Type * t0, const Type * t1) {
 Type * dealiasImpl(Type * t) {
   while (t != NULL && t->typeClass() == Type::Alias) {
     if (TypeAlias * alias = dyn_cast<TypeAlias>(t)) {
-      t = const_cast<Type *>(alias->value());
+      t = const_cast<Type *>(alias->value().type());
       DASSERT_OBJ(t != NULL, alias);
     } else {
       break;

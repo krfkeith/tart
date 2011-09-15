@@ -158,7 +158,7 @@ private:
   /** Return whether lhs is equal, or more specific than, rhs. If neither of those
       is true, it does not mean that lhs is less specific - it may mean that the
       two types are incomparable. */
-  static RelativeSpecificity isMoreSpecific(const Type * lhs, const Type * rhs);
+  static RelativeSpecificity isMoreSpecific(QualifiedType lhs, QualifiedType rhs);
 
   CallExpr * callExpr_;
   Expr * base_;

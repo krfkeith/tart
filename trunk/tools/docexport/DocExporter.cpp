@@ -283,7 +283,7 @@ void DocExporter::writeMembers(const IterableScope * scope) {
     switch (de->defnType()) {
       case Defn::Typedef: {
         const TypeDefn * td = static_cast<const TypeDefn *>(de);
-        const Type * type = td->typeValue();
+        const Type * type = td->value().type();
         if (const CompositeType * cty = dyn_cast<CompositeType>(type)) {
           exportCompositeType(cty);
         } else if (const EnumType * ety = dyn_cast<EnumType>(type)) {

@@ -17,7 +17,7 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
   Defn * def = tsig_->paramScope().lookupSingleMember(ast->name());
   if (def != NULL) {
     if (TypeDefn * tdef = dyn_cast<TypeDefn>(defs.front())) {
-      tvar = dyn_cast<TypeVariable>(tdef->typeValue());
+      tvar = dyn_cast<TypeVariable>(tdef->mutableTypePtr());
     }
 
     if (tvar == NULL) {
@@ -47,9 +47,9 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
         TemplateCondition * condition = new IsSubtypeCondition(type, tvar);
         tsig_->conditions().push_back(condition);
       } else if (ast->constraint() == ASTTypeVariable::IS_INSTANCE) {
-        if (tvar->valueType() == NULL) {
+        if (!tvar->value()) {
           tvar->setValueType(type);
-        } else if (!TypeRelation::isEqual(tvar->valueType(), type)) {
+        } else if (!TypeRelation::isEqual(tvar->value(), type)) {
           diag.error(ast) << "Conflicting type declaration for pattern variable '" <<
               ast->name() << "'";
         }

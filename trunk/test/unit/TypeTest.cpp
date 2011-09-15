@@ -37,7 +37,7 @@ public:
     testTypeDefn = new TypeDefn(testModule, "test");
     testClass = new CompositeType(Type::Class, testTypeDefn, testModule);
     testTypeDefn->addTrait(Defn::Singular);
-    testTypeDefn->setTypeValue(testClass);
+    testTypeDefn->setValue(testClass);
 
     // Set up arrays of types
     intTypes[0] = intTypes[1] = intTypes[2] = intTypes[3] = &Int32Type::instance;

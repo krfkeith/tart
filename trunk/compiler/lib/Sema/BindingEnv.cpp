@@ -44,7 +44,7 @@ namespace {
 /** Special version of dealias that doesn't dereference type assignments. */
 const Type * dereferenceAlias(const Type * type) {
   if (const TypeAlias * alias = dyn_cast<TypeAlias>(type)) {
-    type = alias->value();
+    type = alias->value().type();
     DASSERT_OBJ(type != NULL, alias);
   }
   return type;

@@ -90,7 +90,7 @@ bool StmtAnalyzer::buildCFG() {
 #if IMPLICIT_SELF
     // Uncomment to allow 'self' to be searched implicitly.
     SelfScope * selfScope =
-        new SelfScope(selfType->typeValue()->memberScope(), function()->definingScope());
+        new SelfScope(selfType->value()->mutableMemberScope(), function()->definingScope());
     selfScope->setSelfParam(selfParam);
     parameterScope.setParentScope(selfScope);
 #endif

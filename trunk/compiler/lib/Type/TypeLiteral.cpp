@@ -53,7 +53,7 @@ void TypeLiteralType::initBuiltin() {
   // Add to builtin name space
   Builtins::module.addMember(&typedefn);
   typedefn.setQualifiedName(typedefn.name());
-  typedefn.setTypeValue(&prototype);
+  typedefn.setValue(&prototype);
 
   prototype.literalType_ = tm->typeParam(0).type();
 }

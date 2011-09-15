@@ -213,9 +213,9 @@ public:
 
   /** Generate IR types. */
   llvm::Type * genTypeDefn(TypeDefn * typeDef);
-  llvm::Type * genPrimitiveType(PrimitiveType * tdef);
+  llvm::Type * genPrimitiveType(const PrimitiveType * tdef);
   llvm::Type * genCompositeType(const CompositeType * tdef);
-  llvm::Type * genEnumType(EnumType * tdef);
+  llvm::Type * genEnumType(const EnumType * tdef);
 
     /** Generate the code that allocates storage for locals on the stack. */
   void genLocalStorage(LocalScopeList & lsl);

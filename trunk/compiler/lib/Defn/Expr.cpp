@@ -117,7 +117,7 @@ void Expr::format(FormatStream & out) const {
 }
 
 void Expr::trace() const {
-  safeMark(type_.type());
+  safeMark(type_.unqualified());
 }
 
 // -------------------------------------------------------------------

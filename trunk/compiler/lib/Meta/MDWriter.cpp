@@ -93,7 +93,7 @@ MDNode * MDWriter::scopeMembers(const IterableScope * scope) {
 }
 
 MDNode * MDWriter::typeDefn(const TypeDefn * td) {
-  const Type * type = td->typeValue();
+  const Type * type = td->value().type();
   MDNodeBuilder builder(context_);
   switch (type->typeClass()) {
     case Type::Class:
@@ -459,7 +459,7 @@ Value * MDWriter::modifiers(const Defn * de) {
   }
 
   if (const TypeDefn * td = dyn_cast<TypeDefn>(de)) {
-    if (const CompositeType * cty = dyn_cast<CompositeType>(td->typeValue())) {
+    if (const CompositeType * cty = dyn_cast<CompositeType>(td->typePtr())) {
       if (cty->isAbstract()) {
         mods |= meta::DefnFlag::ABSTRACT;
       }
@@ -469,7 +469,7 @@ Value * MDWriter::modifiers(const Defn * de) {
       if (cty->isAttribute()) {
         mods |= meta::DefnFlag::ATTRIBUTE;
       }
-    } else if (const EnumType * ety = dyn_cast<EnumType>(td->typeValue())) {
+    } else if (const EnumType * ety = dyn_cast<EnumType>(td->typePtr())) {
       if (ety->isFlags()) {
         mods |= meta::DefnFlag::FLAGS_ENUM;
       }
@@ -545,6 +545,12 @@ Value * MDWriter::expression(const Expr * in) {
       diag.error(in) << "Implement expr serialization for: " << exprTypeName(in->exprType());
       return NULL;
   }
+}
+
+Value * MDWriter::serializeType(QualifiedType ty) {
+  ASTWriter writer;
+  writer.write(ty.type());
+  return MDString::get(context_, writer.str());
 }
 
 Value * MDWriter::serializeType(const Type * ty) {

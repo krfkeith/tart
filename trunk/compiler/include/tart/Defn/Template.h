@@ -21,7 +21,7 @@ class TypeVariable : public TypeImpl, public Locatable {
 public:
 
   /** Construct a type pattern variable. */
-  TypeVariable(const SourceLocation & loc, StringRef name, const Type * valueType = NULL);
+  TypeVariable(const SourceLocation & loc, StringRef name, QualifiedType value = QualifiedType());
 
   /** Location where this variable was defined. */
   const SourceLocation & location() const { return location_; }
@@ -30,15 +30,15 @@ public:
   StringRef name() const { return name_; }
 
   /** The type of this variable, which will usually be 'Type' */
-  const Type * valueType() const { return valueType_; }
+  QualifiedType value() const { return value_; }
+
+  /** Set the type of values which can be bound to this variable. */
+  void setValueType(QualifiedType type) { value_ = type; }
 
   /** The upper bound of this type var - if non-null, any type bound to this type
       must be equal to upperBound or a subtype of it. */
-  const Type * upperBound() const { return upperBound_; }
-  void setUpperBound(const Type * ty) { upperBound_ = ty; }
-
-  /** Set the type of values which can be bound to this variable. */
-  void setValueType(Type * type) { valueType_ = type; }
+  QualifiedType upperBound() const { return upperBound_; }
+  void setUpperBound(QualifiedType ty) { upperBound_ = ty; }
 
   /** Whether this is a variadic template parameter. */
   bool isVariadic() const { return isVariadic_; }
@@ -53,7 +53,7 @@ public:
   void trace() const;
   bool isReferenceType() const;
   bool isSingular() const;
-  TypeShape typeShape() const { return valueType_ ? valueType_->typeShape() : Shape_None; }
+  TypeShape typeShape() const { return value_ ? value_->typeShape() : Shape_None; }
   void format(FormatStream & out) const;
 
   static inline bool classof(const TypeVariable *) { return true; }
@@ -63,8 +63,8 @@ public:
 
 private:
   const SourceLocation location_;
-  const Type * valueType_;
-  const Type * upperBound_;
+  QualifiedType value_;
+  QualifiedType upperBound_;
   StringRef name_;
   bool isVariadic_;
 };
@@ -122,10 +122,10 @@ public:
   size_t patternVarCount() const;
 
   /** Look up the specified pattern variable by name. */
-  TypeVariable * patternVar(const char * name) const;
+  const TypeVariable * patternVar(const char * name) const;
 
   /** Look up the specified pattern variable by index. */
-  TypeVariable * patternVar(int index) const;
+  const TypeVariable * patternVar(int index) const;
 
   /** The minimum number of required arguments (the rest have defaults.) */
   size_t numRequiredArgs() const { return numRequiredArgs_; }
@@ -138,16 +138,12 @@ public:
   /** Find a specialization with the specified type arguments. */
   Defn * findSpecialization(const TupleType * tv) const;
 
-//  /** Return a specialization of this template. */
-//  Defn * instantiate(const SourceLocation & loc, const TypeVarMap & varValues,
-//      uint32_t expectedTraits = 0);
-
   /** Return a specialization of this template. */
   Defn * instantiate(const SourceLocation & loc, const QualifiedTypeVarMap & varValues,
       uint32_t expectedTraits = 0);
 
   /** Special version of instantiate for types. */
-  Type * instantiateType(const SourceLocation & loc, const QualifiedTypeVarMap & varValues,
+  const Type * instantiateType(const SourceLocation & loc, const QualifiedTypeVarMap & varValues,
       uint32_t expectedTraits = 0);
 
   /** Basic unification check - may produce false positives, but is cheap to run. */

@@ -241,7 +241,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
             QualifiedTypeVarMap vars;
             env.toTypeVarMap(vars, spFinal);
             if (TypeDefn * tdef = dyn_cast<TypeDefn>(spFinal->def())) {
-              Type * type = tdef->templateSignature()->instantiateType(loc, vars);
+              const Type * type = tdef->templateSignature()->instantiateType(loc, vars);
               if (type != NULL) {
                 return new TypeLiteralExpr(loc, type);
               }

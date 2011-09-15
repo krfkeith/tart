@@ -23,7 +23,7 @@ namespace tart {
 // -------------------------------------------------------------------
 // FunctionType
 
-FunctionType::FunctionType(const Type * rtype, ParameterList & plist)
+FunctionType::FunctionType(QualifiedType rtype, ParameterList & plist)
   : Type(Function)
   , isStatic_(false)
   , returnType_(rtype)
@@ -39,7 +39,7 @@ FunctionType::FunctionType(const Type * rtype, ParameterList & plist)
   }
 }
 
-FunctionType::FunctionType(const Type * rtype, ParameterDefn ** plist, size_t pcount)
+FunctionType::FunctionType(QualifiedType rtype, ParameterDefn ** plist, size_t pcount)
   : Type(Function)
   , isStatic_(false)
   , returnType_(rtype)
@@ -56,7 +56,7 @@ FunctionType::FunctionType(const Type * rtype, ParameterDefn ** plist, size_t pc
 }
 
 FunctionType::FunctionType(
-    const Type * rtype, ParameterDefn * selfParam, ParameterDefn ** plist, size_t pcount)
+    QualifiedType rtype, ParameterDefn * selfParam, ParameterDefn ** plist, size_t pcount)
   : Type(Function)
   , isStatic_(false)
   , returnType_(rtype)
@@ -185,7 +185,7 @@ llvm::FunctionType * FunctionType::createIRFunctionType(
 }
 
 void FunctionType::trace() const {
-  safeMark(returnType_.type());
+  safeMark(returnType_.unqualified());
   safeMark(selfParam_);
   markList(params_.begin(), params_.end());
   safeMark(paramTypes_);

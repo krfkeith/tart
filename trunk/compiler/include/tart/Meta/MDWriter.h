@@ -76,6 +76,7 @@ private:
   llvm::Value * expression(const Expr * e);
   llvm::Value * serializeAst(const ASTNode * ast);
   llvm::Value * serializeType(const Type * ty);
+  llvm::Value * serializeType(QualifiedType ty);
 
   llvm::MDNode * imports(const ASTNodeList & imports);
 

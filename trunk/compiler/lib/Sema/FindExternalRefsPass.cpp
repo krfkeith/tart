@@ -40,7 +40,7 @@ void FindExternalRefsPass::visit(FunctionDefn * in) {
 
 Defn * FindExternalRefsPass::runImpl(Defn * in) {
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(in)) {
-    if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
+    if (const CompositeType * ctype = dyn_cast<CompositeType>(tdef->typePtr())) {
       if (ctype->typeClass() == Type::Interface || ctype->typeClass() == Type::Protocol) {
         return in;
       }

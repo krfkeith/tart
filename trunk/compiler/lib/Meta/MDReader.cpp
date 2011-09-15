@@ -208,7 +208,7 @@ bool MDReader::readMembers(Defn * parentDefn) {
   Scope * memberScope;
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(parentDefn)) {
     members = node.nodeArg(FIELD_TYPEDEF_MEMBERS);
-    memberScope = tdef->typeValue()->memberScope();
+    memberScope = tdef->typePtr()->mutableMemberScope();
   } else if (PropertyDefn * prop = dyn_cast<PropertyDefn>(parentDefn)) {
     members = node.nodeArg(FIELD_PROP_ACCESSORS);
     memberScope = &prop->accessorScope();
@@ -345,7 +345,7 @@ Defn * MDReader::readMember(NodeRef node, Scope * parent, StorageClass storage) 
         tdef->addTrait(Defn::Unsafe);
       }
 
-      tdef->setTypeValue(ctype);
+      tdef->setValue(ctype);
       tdef->setStorageClass(storage);
       tdef->setMDNode(node.node());
       return tdef;
@@ -357,7 +357,7 @@ Defn * MDReader::readMember(NodeRef node, Scope * parent, StorageClass storage) 
       tdef->setLocation(location);
 
       EnumType * etype = new EnumType(tdef, parent);
-      tdef->setTypeValue(etype);
+      tdef->setValue(etype);
       tdef->setStorageClass(storage);
       tdef->setMDNode(node.node());
 
@@ -378,7 +378,7 @@ Defn * MDReader::readMember(NodeRef node, Scope * parent, StorageClass storage) 
       if (type == NULL) {
         return NULL;
       }
-      tdef->setTypeValue(new TypeAlias(type, tdef));
+      tdef->setValue(new TypeAlias(type, tdef));
       return tdef;
     }
 
@@ -577,7 +577,7 @@ const Type * MDReader::readEnumBase(TypeDefn * ety) {
 }
 
 bool MDReader::readEnumConstants(TypeDefn * tdef) {
-  EnumType * ety = cast<EnumType>(tdef->typeValue());
+  const EnumType * ety = cast<EnumType>(tdef->typePtr());
   NodeRef node(tdef->mdNode());
   NodeRef members = node.nodeArg(FIELD_TYPEDEF_MEMBERS);
   unsigned numOperands = members.size();
@@ -605,7 +605,7 @@ bool MDReader::readEnumConstants(TypeDefn * tdef) {
     var->passes().finish(VariableDefn::VariableTypePass);
     var->passes().finish(VariableDefn::InitializerPass);
     var->passes().finish(VariableDefn::CompletionPass);
-    ety->memberScope()->addMember(var);
+    ety->mutableMemberScope()->addMember(var);
   }
 
   return true;

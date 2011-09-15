@@ -355,7 +355,7 @@ void DefnAnalyzer::handleAttributeAttribute(Defn * de, ConstantObjectRef * attrO
   int propagation = attrObj->memberValueAsInt("propagation");
 
   TypeDefn * targetTypeDefn = cast<TypeDefn>(de);
-  CompositeType * targetType = cast<CompositeType>(targetTypeDefn->typeValue());
+  CompositeType * targetType = cast<CompositeType>(targetTypeDefn->mutableTypePtr());
   targetType->setClassFlag(CompositeType::Attribute, true);
   targetType->attributeInfo().setTarget(target);
   targetType->attributeInfo().setRetention(retention);
@@ -476,9 +476,9 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
         }
 
         if (Qualified<TypeVariable> tv = param.dyn_cast<TypeVariable>()) {
-          if (tv->valueType() != NULL) {
+          if (tv->value()) {
             ConstantExpr * defaultValue = dyn_cast_or_null<ConstantExpr>(
-                ea.reduceConstantExpr(node, tv->valueType()));
+                ea.reduceConstantExpr(node, tv->value().type()));
             if (isErrorResult(defaultValue)) {
               break;
             }
@@ -517,10 +517,10 @@ void DefnAnalyzer::addReflectionInfo(Defn * in) {
   }
 
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(in)) {
-    switch (tdef->typeValue()->typeClass()) {
+    switch (tdef->value()->typeClass()) {
       case Type::Class:
       case Type::Interface: {
-        CompositeType * ctype = static_cast<CompositeType *>(tdef->typeValue());
+        const CompositeType * ctype = static_cast<const CompositeType *>(tdef->typePtr());
         if (ctype->isAttribute() && !ctype->attributeInfo().isRetained() &&
             ctype != Builtins::typeAttribute) {
           isExport = false;
@@ -619,7 +619,7 @@ bool DefnAnalyzer::reflectType(const Type * type) {
     case Type::NAddress:
     case Type::NArray: {
       for (size_t i = 0; i < type->numTypeParams(); ++i) {
-        reflectType(type->typeParam(i).type());
+        reflectType(type->typeParam(i));
       }
       break;
     }
@@ -635,7 +635,7 @@ bool DefnAnalyzer::reflectType(QualifiedType type) {
   return reflectType(type.type());
 }
 
-void DefnAnalyzer::reflectTypeMembers(CompositeType * type) {
+void DefnAnalyzer::reflectTypeMembers(const CompositeType * type) {
   analyzeTypeDefn(type->typeDefn(), Task_PrepCodeGeneration);
 
   if (type->typeDefn()->isReflected()) {
@@ -660,13 +660,13 @@ void DefnAnalyzer::reflectTypeMembers(CompositeType * type) {
     }
   }
 
-  ClassList & bases = type->bases();
-  for (ClassList::iterator it = bases.begin(); it != bases.end(); ++it) {
+  const ClassList & bases = type->bases();
+  for (ClassList::const_iterator it = bases.begin(); it != bases.end(); ++it) {
     reflectType(*it);
   }
 
   for (size_t i = 0; i < type->numTypeParams(); ++i) {
-    reflectType(type->typeParam(i).type());
+    reflectType(type->typeParam(i));
   }
 
   if (type->noArgConstructor()) {

@@ -34,7 +34,7 @@ static bool isEqualTuple(Qualified<TupleType> ltt, Qualified<TupleType> rtt) {
   if (ltt.qualifiers() != rtt.qualifiers()) {
     return false;
   }
-  if (ltt.type() == rtt.type()) {
+  if (ltt.unqualified() == rtt.unqualified()) {
     return true;
   }
   if (ltt->size() == rtt->size()) {
@@ -146,13 +146,13 @@ static bool isEqualUnion(Qualified<UnionType> lut, Qualified<UnionType> rut) {
 
 bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
   // Early out
-  if (lt.type() == rt.type() && lt.qualifiers() == rt.qualifiers()) {
+  if (lt.unqualified() == rt.unqualified() && lt.qualifiers() == rt.qualifiers()) {
     return true;
   }
 
   switch (rt->typeClass()) {
     case Type::Alias:
-      return isEqual(lt, rt.as<TypeAlias>()->qualifiedValue());
+      return isEqual(lt, rt.as<TypeAlias>()->value());
 
     case Type::AmbiguousParameter:
     case Type::AmbiguousPhi:
@@ -185,7 +185,7 @@ bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
 
   switch (lt->typeClass()) {
     case Type::Alias:
-      return isEqual(lt.as<TypeAlias>()->qualifiedValue() | lt.qualifiers(), rt);
+      return isEqual(lt.as<TypeAlias>()->value() | lt.qualifiers(), rt);
 
     case Type::Primitive:
       if (lt->isUnsizedIntType() && rt->isUnsizedIntType()) {
@@ -308,14 +308,14 @@ bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
 }
 
 bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
-  if (ty.type() == base.type() && ty.qualifiers() == base.qualifiers()) {
+  if (ty.unqualified() == base.unqualified() && ty.qualifiers() == base.qualifiers()) {
     return true;
   }
 
   // Special cases for ambiguous base types.
   switch (base->typeClass()) {
     case Type::Alias:
-      return isSubtype(ty, base.as<TypeAlias>()->qualifiedValue() | base.qualifiers());
+      return isSubtype(ty, base.as<TypeAlias>()->value() | base.qualifiers());
 
     case Type::Protocol:
       // Special case for protocols - implicit inheritance
@@ -377,7 +377,7 @@ bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
 
   switch (ty->typeClass()) {
     case Type::Alias:
-      return isSubtype(ty.as<TypeAlias>()->qualifiedValue() | ty.qualifiers(), base);
+      return isSubtype(ty.as<TypeAlias>()->value() | ty.qualifiers(), base);
 
     case Type::Primitive: {
       // TODO: Factor in qualifiers
@@ -393,8 +393,8 @@ bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
     case Type::Interface:
     case Type::Protocol: {
       // TODO: Factor in qualifiers
-      const CompositeType * ctType = static_cast<const CompositeType *>(ty.type());
-      if (const CompositeType * ctBase = dyn_cast<CompositeType>(base.type())) {
+      Qualified<CompositeType> ctType = ty.as<CompositeType>();
+      if (Qualified<CompositeType> ctBase = base.dyn_cast<CompositeType>()) {
         if (isEqualComposite(ctType, ctBase)) {
           return true;
         }
@@ -418,9 +418,9 @@ bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
 
     case Type::Enum: {
       // TODO: Factor in qualifiers
-      const EnumType * eTy = static_cast<const EnumType *>(ty.type());
-      if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(base.type())) {
-        return isSubtype(eTy->baseType(), ptype);
+      Qualified<EnumType> eTy = ty.as<EnumType>();
+      if (base.isa<PrimitiveType>()) {
+        return isSubtype(eTy->baseType(), base);
       }
       return false;
     }

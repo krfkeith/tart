@@ -40,13 +40,13 @@ void ScopeBuilder::createScopeMembers(Defn * parent, const ASTDeclList & decs) {
   switch (parent->defnType()) {
     case Defn::Typedef: {
       TypeDefn * tdef = static_cast<TypeDefn *>(parent);
-      Type * type = tdef->typeValue();
+      Type * type = tdef->mutableTypePtr();
       switch (type->typeClass()) {
         case Type::Class:
         case Type::Struct:
         case Type::Interface:
         case Type::Protocol:
-          createScopeMembers(type->memberScope(), parent, decs, Storage_Instance);
+          createScopeMembers(type->mutableMemberScope(), parent, decs, Storage_Instance);
           break;
 
         case Type::Primitive:
@@ -205,7 +205,7 @@ Defn * ScopeBuilder::createTemplateDefn(Scope * scope, Module * m, const ASTTemp
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(body)) {
     Template * tm = Template::get(body, NULL /*parentScope*/);
     tm->setAST(tp);
-    if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
+    if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->mutableTypePtr())) {
       ctype->auxScopes().insert(&tm->paramScope());
     }
   } else {
@@ -310,14 +310,14 @@ Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast,
       }
 
       CompositeType * ctype = new CompositeType(tc, tdef, parent, ast->modifiers().flags);
-      tdef->setTypeValue(ctype);
+      tdef->setValue(ctype);
       return tdef;
     }
 
     case ASTDecl::Enum: {
       TypeDefn * tdef = new TypeDefn(m, static_cast<const ASTTypeDecl *>(ast));
       tdef->setStorageClass(Storage_Static);
-      tdef->setTypeValue(new EnumType(tdef, parent));
+      tdef->setValue(new EnumType(tdef, parent));
       return tdef;
     }
 
@@ -376,7 +376,7 @@ Defn * ScopeBuilder::createDefn(Scope * parent, Module * m, const ASTDecl * ast,
     case ASTDecl::TypeAlias: {
       TypeDefn * tdef = new TypeDefn(m, static_cast<const ASTTypeDecl *>(ast));
       tdef->setStorageClass(Storage_Global);
-      tdef->setTypeValue(new TypeAlias(NULL, tdef));
+      tdef->setValue(new TypeAlias(NULL, tdef));
       return tdef;
     }
 

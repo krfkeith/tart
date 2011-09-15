@@ -40,11 +40,11 @@ ASTBuiltIn PrimitiveType::intDef(NULL);
 ASTBuiltIn PrimitiveType::uintDef(NULL);
 
 const Type * PrimitiveType::intType() {
-  return static_cast<TypeDefn *>(intDef.value())->typeValue();
+  return static_cast<TypeDefn *>(intDef.value())->typePtr();
 }
 
 const Type * PrimitiveType::uintType() {
-  return static_cast<TypeDefn *>(uintDef.value())->typeValue();
+  return static_cast<TypeDefn *>(uintDef.value())->typePtr();
 }
 
 PrimitiveType::PrimitiveType(TypeDefn * de) :
