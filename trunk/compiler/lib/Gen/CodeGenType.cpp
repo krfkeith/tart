@@ -49,19 +49,19 @@ SystemClassMember<VariableDefn> tib_idispatch(Builtins::typeTypeInfoBlock, "idis
 
 llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
   DASSERT_OBJ(tdef->isSingular(), tdef);
-  Type * type = tdef->typeValue();
+  const Type * type = tdef->typePtr();
   switch (type->typeClass()) {
     case Type::Primitive:
-      return genPrimitiveType(static_cast<PrimitiveType *>(type));
+      return genPrimitiveType(static_cast<const PrimitiveType *>(type));
 
     case Type::Class:
     case Type::Struct:
     case Type::Interface:
     case Type::Protocol:
-      return genCompositeType(static_cast<CompositeType *>(type));
+      return genCompositeType(static_cast<const CompositeType *>(type));
 
     case Type::Enum:
-      return genEnumType(static_cast<EnumType *>(type));
+      return genEnumType(static_cast<const EnumType *>(type));
 
     case Type::Alias:
       // No need to generate this.
@@ -74,7 +74,7 @@ llvm::Type * CodeGenerator::genTypeDefn(TypeDefn * tdef) {
   }
 }
 
-llvm::Type * CodeGenerator::genPrimitiveType(PrimitiveType * type) {
+llvm::Type * CodeGenerator::genPrimitiveType(const PrimitiveType * type) {
   DASSERT_OBJ(type->irType() != NULL, type);
   return type->irType();
 }
@@ -186,10 +186,10 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
     if (traceTable != NULL) {
       builder.addField(traceTable);
     } else {
-      builder.addNullField(tib_traceTable.type());
+      builder.addNullField(tib_traceTable);
     }
   } else {
-    builder.addNullField(tib_traceTable.type());
+    builder.addNullField(tib_traceTable);
   }
 
   builder.addField(baseClassArrayPtr);
@@ -197,7 +197,7 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
     builder.addField(idispatch);
     builder.addField(genMethodArray(type->instanceMethods_));
   } else {
-    builder.addNullField(tib_idispatch.type());
+    builder.addNullField(tib_idispatch);
     builder.addField(genMethodArray(MethodList()));
   }
 
@@ -222,11 +222,11 @@ bool CodeGenerator::createTypeInfoBlock(RuntimeTypeInfo * rtype) {
 //  if (!type->typeDefn()->isNonreflective() && reflector_.enabled()) {
 //    builder.addField(getCompositeTypeObjectPtr(type));
 //  } else {
-//    builder.addNullField(tib_type.type());
+//    builder.addNullField(tib_type);
 //  }
-//  builder.addNullField(tib_traceTable.type());
-//  builder.addNullField(tib_bases.type());
-//  builder.addNullField(tib_idispatch.type());
+//  builder.addNullField(tib_traceTable);
+//  builder.addNullField(tib_bases);
+//  builder.addNullField(tib_idispatch);
 //  builder.addField(genMethodArray(MethodList()));
 //  Constant * tibStruct = builder.build();
 //
@@ -384,7 +384,7 @@ RuntimeTypeInfo * CodeGenerator::getRTTypeInfo(const CompositeType * type) {
   return rtype;
 }
 
-llvm::Type * CodeGenerator::genEnumType(EnumType * type) {
+llvm::Type * CodeGenerator::genEnumType(const EnumType * type) {
   TypeDefn * enumDef = type->typeDefn();
   GlobalValue::LinkageTypes linkage = GlobalValue::ExternalLinkage;
   if (enumDef->module() != module_) {
@@ -610,7 +610,7 @@ llvm::Constant * CodeGenerator::getPrimitiveTypeObjectPtr(const PrimitiveType * 
 
 llvm::FunctionType * CodeGenerator::getCallAdapterFnType() {
   if (invokeFnType_ == NULL) {
-    const Type * invokeTypeDefn = reflect::FunctionType::CallAdapterFnType.get()->typeValue();
+    const Type * invokeTypeDefn = reflect::FunctionType::CallAdapterFnType.get()->value().type();
     invokeFnType_ = cast<llvm::FunctionType>(invokeTypeDefn->irType());
   }
 

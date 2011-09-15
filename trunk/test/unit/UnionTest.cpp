@@ -28,7 +28,7 @@ protected:
     TypeDefn * testClassDef = new TypeDefn(NULL, "Test");
     testClass = new CompositeType(Type::Class, testClassDef, &testModule);
     testClassDef->addTrait(Defn::Singular);
-    testClassDef->setTypeValue(testClass);
+    testClassDef->setValue(testClass);
   }
 };
 

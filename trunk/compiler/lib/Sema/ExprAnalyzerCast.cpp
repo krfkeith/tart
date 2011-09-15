@@ -160,7 +160,6 @@ FunctionDefn * ExprAnalyzer::coerceToObjectFn(const Type * type) {
   DASSERT(coercer->isSingular());
   Builtins::module.converters()[conversionKey] = coercer;
   module()->addSymbol(coercer);
-  //diag.info() << Format_Verbose << "Generated coercer " << coercer;
   return coercer;
 }
 

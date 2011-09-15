@@ -133,7 +133,7 @@ DILexicalBlock CodeGenerator::genLexicalBlock(const SourceLocation & loc) {
 DIDescriptor CodeGenerator::genDefnScope(const Defn * de) {
   TypeDefn * definingClass = de->enclosingClassDefn();
   if (definingClass != NULL) {
-    return genDIType(definingClass->typeValue());
+    return genDIType(definingClass->value());
   }
 
   // TODO: Namespace
@@ -246,7 +246,7 @@ void CodeGenerator::genDIGlobalVariable(const VariableDefn * var, GlobalVariable
   if (var->storageClass() == Storage_Static) {
     TypeDefn * definingClass = var->enclosingClassDefn();
     DASSERT(definingClass != NULL);
-    DIScope dbgContext = genDIType(definingClass->typeValue());
+    DIScope dbgContext = genDIType(definingClass->value());
     diBuilder_.createStaticVariable(
         dbgContext,
         var->name(),
@@ -541,7 +541,7 @@ DIType CodeGenerator::genDINativeArrayType(const NativeArrayType * type) {
   return diBuilder_.createArrayType(
       getSizeOfInBits(type->irEmbeddedType()),
       getAlignOfInBits(type->irEmbeddedType()),
-      genDIEmbeddedType(type->typeParam(0).type()),
+      genDIEmbeddedType(type->typeParam(0)),
       diBuilder_.getOrCreateArray(subrange));
 }
 
@@ -550,7 +550,7 @@ DIType CodeGenerator::genDIFlexibleArrayType(const FlexibleArrayType * type) {
   return diBuilder_.createArrayType(
       getSizeOfInBits(type->irEmbeddedType()),
       getAlignOfInBits(type->irEmbeddedType()),
-      genDIEmbeddedType(type->typeParam(0).type()),
+      genDIEmbeddedType(type->typeParam(0)),
       diBuilder_.getOrCreateArray(subrange));
 }
 
@@ -574,7 +574,7 @@ DIType CodeGenerator::genDIUnionType(const UnionType * type) {
     if (!memberType->isVoidType()) {
       char name[16];
       snprintf(name, 16, "t%d", memberIndex);
-      DIType memberDbgType = genDIEmbeddedType(memberType.type());
+      DIType memberDbgType = genDIEmbeddedType(memberType);
       unionMembers.push_back(diBuilder_.createMemberType(
           placeHolder,
           name,
@@ -654,7 +654,7 @@ DIType CodeGenerator::genDITupleType(const TupleType * type) {
         dbgFile_,
         0, // Source line
         memberSize, memberAlign, memberOffset, 0,
-        genDIEmbeddedType(memberType.type())));
+        genDIEmbeddedType(memberType)));
     memberOffset += memberSize;
   }
 

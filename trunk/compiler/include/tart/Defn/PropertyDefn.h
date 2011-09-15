@@ -46,8 +46,7 @@ public:
   const IterableScope & accessorScope() const { return accessorScope_; }
   IterableScope & accessorScope() { return accessorScope_; }
 
-  void setType(const Type * t) { type_ = t; }
-  void setType(QualifiedType t) { type_ = t.type(); }
+  void setType(QualifiedType t) { type_ = t; }
 
   /** Which analysis passes are running / have run. */
   const PassMgr & passes() const { return passes_; }
@@ -55,7 +54,7 @@ public:
 
   // Overrides
 
-  const Type * type() const { return type_; }
+  const Type * type() const { return type_.type(); }
   void trace() const;
   void format(FormatStream & out) const;
   void setDefiningScope(Scope * scope) {
@@ -69,7 +68,7 @@ public:
   }
 
 private:
-  const Type * type_;
+  QualifiedType type_;
   IterableScope accessorScope_;  // Scope in which getter/setter are defined.
   FunctionDefn * getter_;    // The getter method
   FunctionDefn * setter_;    // The setter method

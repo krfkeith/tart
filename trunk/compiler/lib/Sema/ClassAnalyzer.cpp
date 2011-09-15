@@ -117,11 +117,11 @@ ClassAnalyzer::ClassAnalyzer(TypeDefn * de)
   , trace_(isTraceEnabled(de))
 {
   DASSERT(de != NULL);
-  DASSERT(isa<CompositeType>(target->typeValue()));
+  DASSERT(isa<CompositeType>(target->typePtr()));
 }
 
 CompositeType * ClassAnalyzer::targetType() const {
-  return static_cast<CompositeType *>(target->typeValue());
+  return static_cast<CompositeType *>(target->mutableTypePtr());
 }
 
 bool ClassAnalyzer::analyze(AnalysisTask task) {
@@ -384,7 +384,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
   // Mark the base type pass as finished early, allowing inherited symbols from one
   // base to be used as template parameters for the next base.
   type->passes().finish(CompositeType::BaseTypesPass);
-  ta.setActiveScope(type->memberScope());
+  ta.setActiveScope(type->mutableMemberScope());
 
   TypeList bases;
   if (target->mdNode() != NULL) {
@@ -550,9 +550,9 @@ bool ClassAnalyzer::analyzeImports() {
 
 void ClassAnalyzer::analyzeImportsImpl(const ASTNodeList & imports) {
   CompositeType * type = targetType();
-  DefnAnalyzer da(target->module(), type->memberScope(), target, NULL);
+  DefnAnalyzer da(target->module(), type->mutableMemberScope(), target, NULL);
   for (ASTNodeList::const_iterator it = imports.begin(); it != imports.end(); ++it) {
-    da.importIntoScope(cast<ASTImport>(*it), type->memberScope());
+    da.importIntoScope(cast<ASTImport>(*it), type->mutableMemberScope());
   }
 }
 
@@ -605,7 +605,7 @@ bool ClassAnalyzer::analyzeMemberTypes() {
       if (TypeDefn * memberType = dyn_cast<TypeDefn>(member)) {
         // TODO: Copy attributes that are inherited.
         memberType->copyTrait(target, Defn::Reflect);
-        switch (memberType->typeValue()->typeClass()) {
+        switch (memberType->value()->typeClass()) {
           case Type::Class:
           case Type::Struct:
           case Type::Interface:

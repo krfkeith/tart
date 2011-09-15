@@ -40,6 +40,11 @@ StructBuilder & StructBuilder::addNullField(const Type * type) {
   return addField(ConstantPointerNull::get(irType));
 }
 
+/** Add a field containing a constant null pointer. */
+StructBuilder & StructBuilder::addNullField(VariableDefn * var) {
+  return addNullField(var->type());
+}
+
 StructBuilder & StructBuilder::addIntegerField(const Type * type, int32_t value) {
   members_.push_back(ConstantInt::get(cast<IntegerType>(type->irType()), value, true));
   return *this;
@@ -66,7 +71,7 @@ StructBuilder & StructBuilder::addArrayField(
 StructBuilder & StructBuilder::addArrayField(
     const VariableDefn * arrayVar, llvm::ArrayRef<llvm::Constant *> values) {
   if (const CompositeType * arrayType = dyn_cast<CompositeType>(arrayVar->type())) {
-    addArrayField(arrayType->typeParam(0).type(), values);
+    addArrayField(arrayType->typeParam(0).unqualified(), values);
   } else {
     DFAIL("Not an array type");
   }

@@ -63,7 +63,7 @@ TypeDefn * SystemClass::typeDefn() const {
 EnumType * SystemEnum::get() const {
   if (type_ == NULL) {
     TypeDefn * enumDef = Builtins::getMember<TypeDefn>(definingClass_.get(), typeName_);
-    type_ = cast<EnumType>(enumDef->typeValue());
+    type_ = cast<EnumType>(enumDef->mutableTypePtr());
   }
 
   return type_;

@@ -508,7 +508,7 @@ ASTWriter & ASTWriter::write(const ASTNode * ast) {
     case ASTNode::BuiltIn: {
       const ASTBuiltIn * builtIn = static_cast<const ASTBuiltIn *>(ast);
       TypeDefn * td = cast<TypeDefn>(builtIn->value());
-      if (const PrimitiveType * pt = dyn_cast<PrimitiveType>(td->typeValue())) {
+      if (const PrimitiveType * pt = dyn_cast<PrimitiveType>(td->typePtr())) {
         meta::AST::Tag tag;
         switch (int(pt->typeId())) {
           case TypeId_Void: tag = meta::AST::VOID; break;
@@ -529,7 +529,7 @@ ASTWriter & ASTWriter::write(const ASTNode * ast) {
             diag.fatal() << "Implement serial: " << pt;
         }
         write(tag);
-      } else if (const NativeArrayType * nat = dyn_cast<NativeArrayType>(td->typeValue())) {
+      } else if (const NativeArrayType * nat = dyn_cast<NativeArrayType>(td->typePtr())) {
         (void)nat;
         DFAIL("Implement");
       } else {

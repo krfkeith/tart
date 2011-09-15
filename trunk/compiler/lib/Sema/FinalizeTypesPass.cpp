@@ -432,7 +432,7 @@ Defn * FinalizeTypesPassImpl::doPatternSubstitutions(SLC & loc, Defn * def,
           return NULL;
         }
       }
-      tdef->typeValue()->memberScope()->lookupMember(def->name(), defns, false);
+      tdef->typePtr()->memberScope()->lookupMember(def->name(), defns, false);
     } else {
       DFAIL("Implement pattern substitutions for parent scopes other than types");
     }
@@ -467,7 +467,7 @@ Defn * FinalizeTypesPassImpl::doPatternSubstitutions(SLC & loc, Defn * def,
             Format_Verbose << def << "' in environment " << env_;
         return NULL;
       } else {
-        const Type * value = it->second.type();
+        QualifiedType value = it->second;
         if (!value->isSingular()) {
           value = NormalizeTransform().transform(value);
           if (!value->isSingular()) {

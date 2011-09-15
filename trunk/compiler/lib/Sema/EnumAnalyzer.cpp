@@ -167,7 +167,7 @@ public:
   }
 
   static FunctionType * createFunctionType(Module * m, EnumType * type) {
-    FunctionType * ft = new FunctionType(Builtins::typeString, NULL, 0);
+    FunctionType * ft = new FunctionType(Builtins::typeString.get(), NULL, 0);
     ft->setSelfParam(new ParameterDefn(m, "self", type, ParameterDefn::Reference));
     return ft;
   }
@@ -234,7 +234,7 @@ bool EnumAnalyzer::analyze(AnalysisTask task) {
 
 bool EnumAnalyzer::runPasses(EnumType::PassSet passesToRun) {
   // Work out what passes need to be run.
-  EnumType * type = cast<EnumType>(target_->typeValue());
+  EnumType * type = cast<EnumType>(target_->mutableTypePtr());
   passesToRun.removeAll(type->passes().finished());
   if (passesToRun.empty()) {
     return true;
@@ -279,7 +279,7 @@ bool EnumAnalyzer::runPasses(EnumType::PassSet passesToRun) {
 }
 
 bool EnumAnalyzer::analyzeBase() {
-  EnumType * enumType = cast<EnumType>(target_->typeValue());
+  EnumType * enumType = cast<EnumType>(target_->mutableTypePtr());
   enumType->passes().finish(EnumType::BaseTypePass);
 
   DASSERT_OBJ(enumType->isSingular(), enumType);
@@ -316,7 +316,7 @@ bool EnumAnalyzer::analyzeBase() {
 }
 
 bool EnumAnalyzer::createMembers() {
-  EnumType * enumType = cast<EnumType>(target_->typeValue());
+  EnumType * enumType = cast<EnumType>(target_->mutableTypePtr());
   bool success = true;
 
   // Mark as finished so that we don't recurse when referring to members.
@@ -327,7 +327,7 @@ bool EnumAnalyzer::createMembers() {
       success = false;
     }
   } else {
-    Scope * savedScope = setActiveScope(enumType->memberScope());
+    Scope * savedScope = setActiveScope(enumType->mutableMemberScope());
     const ASTTypeDecl * ast = cast<const ASTTypeDecl>(target_->ast());
     const ASTDeclList & members = ast->members();
     bool success = true;
@@ -375,7 +375,7 @@ bool EnumAnalyzer::createMembers() {
       minDef->passes().finish(VariableDefn::VariableTypePass);
       minDef->passes().finish(VariableDefn::InitializerPass);
       minDef->passes().finish(VariableDefn::CompletionPass);
-      enumType->memberScope()->addMember(minDef);
+      enumType->mutableMemberScope()->addMember(minDef);
 
       VariableDefn * maxDef = new VariableDefn(Defn::Let, module(), "maxVal", maxValue);
       maxDef->setType(enumType);
@@ -386,7 +386,7 @@ bool EnumAnalyzer::createMembers() {
       maxDef->passes().finish(VariableDefn::VariableTypePass);
       maxDef->passes().finish(VariableDefn::InitializerPass);
       maxDef->passes().finish(VariableDefn::CompletionPass);
-      enumType->memberScope()->addMember(maxDef);
+      enumType->mutableMemberScope()->addMember(maxDef);
     }
   }
 
@@ -401,7 +401,7 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
     return false;
   }
 
-  EnumType * enumType = cast<EnumType>(target_->typeValue());
+  EnumType * enumType = cast<EnumType>(target_->mutableTypePtr());
   llvm::Type * irType = enumType->irType();
   bool isFlags = enumType->isFlags();
   bool isSigned = !enumType->baseType()->isUnsignedType();
@@ -457,7 +457,7 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
   ec->passes().finish(VariableDefn::VariableTypePass);
   ec->passes().finish(VariableDefn::InitializerPass);
   ec->passes().finish(VariableDefn::CompletionPass);
-  enumType->memberScope()->addMember(ec);
+  enumType->mutableMemberScope()->addMember(ec);
 
   if (value == NULL) {
     return false;
@@ -469,15 +469,15 @@ bool EnumAnalyzer::createEnumConstant(const ASTVarDecl * ast) {
 
 void EnumAnalyzer::createOperators() {
   Module * m = target_->module();
-  EnumType * type = cast<EnumType>(target_->typeValue());
+  EnumType * type = cast<EnumType>(target_->mutableTypePtr());
   Scope * parentScope = target_->definingScope();
   DASSERT(parentScope != NULL);
 
   type->passes().finish(EnumType::OperatorCreationPass);
 
-  type->memberScope()->addMember(new EnumConstructor(m, type));
+  type->mutableMemberScope()->addMember(new EnumConstructor(m, type));
   if (type->isFlags()) {
-    type->memberScope()->addMember(new EnumContainsFunction(m, type));
+    type->mutableMemberScope()->addMember(new EnumContainsFunction(m, type));
     parentScope->addMember(
         new EnumBinaryFunction(m, type, &ASTIdent::operatorBitAnd, llvm::Instruction::And));
     parentScope->addMember(
@@ -485,7 +485,7 @@ void EnumAnalyzer::createOperators() {
     parentScope->addMember(
         new EnumBinaryFunction(m, type, &ASTIdent::operatorBitXor, llvm::Instruction::Xor));
   } else {
-    type->memberScope()->addMember(new EnumToStringMethod(m, type));
+    type->mutableMemberScope()->addMember(new EnumToStringMethod(m, type));
   }
 }
 

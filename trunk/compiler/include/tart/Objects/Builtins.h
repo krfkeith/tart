@@ -28,7 +28,7 @@ class SystemNamespace;
 class Builtins {
 private:
   static Module * loadSystemModule(const char * name);
-  static Defn * getSingleMember(Scope * scope, const char * name);
+  static Defn * getSingleMember(const Scope * scope, const char * name);
   static Defn * getSingleDefn(Type * tdef, const char * name);
   static Defn * getSingleDefn(NamespaceDefn * ns, const char * name);
 

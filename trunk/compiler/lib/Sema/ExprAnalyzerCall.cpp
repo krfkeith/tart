@@ -292,7 +292,7 @@ Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * callable, const ASTNodeList & ar
             ++it) {
           SpCandidate * sp = *it;
           if (TypeDefn * tdef = dyn_cast<TypeDefn>(sp->def())) {
-            if (!AnalyzerBase::analyzeType(tdef->typeValue(), Task_PrepConstruction)) {
+            if (!AnalyzerBase::analyzeType(tdef->value(), Task_PrepConstruction)) {
               return &Expr::ErrorVal;
             }
 
@@ -329,8 +329,8 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, const Type *
   }
 
   TypeDefn * enclosingClassDefn = currentFunction_->enclosingClassDefn();
-  CompositeType * enclosingClass = cast<CompositeType>(enclosingClassDefn->typeValue());
-  CompositeType * superClass = enclosingClass->super();
+  const CompositeType * enclosingClass = cast<CompositeType>(enclosingClassDefn->typePtr());
+  const CompositeType * superClass = enclosingClass->super();
 
   if (superClass == NULL) {
     diag.fatal(loc) << "class '" << enclosingClass << "' has no super class";
@@ -381,7 +381,7 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, const Type *
 }
 
 Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeList & args) {
-  Type * type = tdef->typeValue();
+  const Type * type = tdef->typePtr();
   checkAccess(loc, tdef);
 
   // First thing we need to know is how much tdef has been analyzed.
@@ -406,7 +406,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
 
 bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDefn * tdef,
     const ASTNodeList & args, SpCandidate * sp) {
-  Type * type = tdef->typeValue();
+  const Type * type = tdef->typePtr();
   DefnList methods;
   if (tdef->isTemplate() && tdef->hasUnboundTypeParams()) {
     analyzeType(type, Task_PrepConstruction);

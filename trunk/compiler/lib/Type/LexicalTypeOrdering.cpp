@@ -32,7 +32,7 @@ bool LexicalTypeOrdering::operator()(const QualifiedType & t0, const QualifiedTy
 }
 
 int LexicalTypeOrdering::compare(const QualifiedType & t0, const QualifiedType & t1) {
-  int result = compare(t0.type(), t1.type());
+  int result = compare(t0.unqualified(), t1.unqualified());
   if (result != 0) {
     return result;
   }

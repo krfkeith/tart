@@ -34,7 +34,7 @@ PropertyDefn::PropertyDefn(DefnType dtype, Module * m, StringRef name)
 void PropertyDefn::trace() const {
   ValueDefn::trace();
   accessorScope_.trace();
-  safeMark(type_);
+  safeMark(type_.unqualified());
   safeMark(getter_);
   safeMark(setter_);
 }

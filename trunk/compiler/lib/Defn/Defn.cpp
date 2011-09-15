@@ -184,7 +184,7 @@ void Defn::dumpHierarchy(bool full) const {
   const char * kind;
   switch (defnType_) {
     case Defn::Typedef: {
-      const Type * ty = static_cast<const TypeDefn *>(this)->typeValue();
+      QualifiedType ty = static_cast<const TypeDefn *>(this)->value();
       switch (ty->typeClass()) {
         case Type::Primitive: kind = "type"; break;
         case Type::Class: kind = "class"; break;
@@ -245,19 +245,10 @@ void Defn::trace() const {
 // -------------------------------------------------------------------
 // ValueDefn
 
-CompositeType * ValueDefn::definingClass() {
-  TypeDefn * enclosingType = enclosingClassDefn();
-  if (enclosingType != NULL) {
-    return dyn_cast<CompositeType>(enclosingType->typeValue());
-  }
-
-  return NULL;
-}
-
 const CompositeType * ValueDefn::definingClass() const {
   TypeDefn * enclosingType = enclosingClassDefn();
   if (enclosingType != NULL) {
-    return dyn_cast<CompositeType>(enclosingType->typeValue());
+    return dyn_cast<CompositeType>(enclosingType->typePtr());
   }
 
   return NULL;

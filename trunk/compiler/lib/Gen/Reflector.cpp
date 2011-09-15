@@ -528,7 +528,7 @@ void Reflector::emitNameTable(Module * module) {
           true, GlobalValue::InternalLinkage, encodedStrings, encodedStringsSymbol);
       sb.addField(llvm::ConstantExpr::getPointerCast(encodedStringsVar, builder_.getInt8PtrTy()));
     } else {
-      sb.addNullField(reflect::NameTable::nameStrmSimple.type());
+      sb.addNullField(reflect::NameTable::nameStrmSimple);
     }
 
     // Write out encoded compound name stream
@@ -548,12 +548,12 @@ void Reflector::emitNameTable(Module * module) {
         sb.addField(llvm::ConstantExpr::getPointerCast(encodedNamesVar, builder_.getInt8PtrTy()));
       }
     } else {
-      sb.addNullField(reflect::NameTable::nameStrmSimple.type());
+      sb.addNullField(reflect::NameTable::nameStrmSimple);
     }
 
-    sb.addNullField(reflect::NameTable::simpleNames.type());
-    sb.addNullField(reflect::NameTable::compoundNames.type());
-    sb.addNullField(reflect::NameTable::compoundNameStrings.type());
+    sb.addNullField(reflect::NameTable::simpleNames);
+    sb.addNullField(reflect::NameTable::compoundNames);
+    sb.addNullField(reflect::NameTable::compoundNameStrings);
 
     nameTablePtr->setInitializer(sb.build(Builtins::typeNameTable));
     cg_.addStaticRoot(nameTablePtr, Builtins::typeNameTable);
@@ -573,7 +573,7 @@ void Reflector::getRefs(const Defn * def) {
   switch (def->defnType()) {
     case Defn::Typedef: {
       const TypeDefn * td = static_cast<const TypeDefn *>(def);
-      const Type * type = td->typeValue();
+      const Type * type = td->value().type();
       getTypePtr(type);
       if (const CompositeType * ctype = dyn_cast<CompositeType>(type)) {
         for (ClassList::const_iterator it = ctype->bases().begin();
@@ -721,7 +721,7 @@ void Reflector::emitMethod(const FunctionDefn * fn) {
 
   // Method._params
   // TODO - implement
-  sb.addNullField(reflect::Method::params.type());
+  sb.addNullField(reflect::Method::params);
 
   // Method._methodPointer
   sb.addPointerField(reflect::Method::methodPointer, cg_.genCallableDefn(fn));
@@ -747,7 +747,7 @@ void Reflector::emitField(const VariableDefn * field) {
   sb.addField(emitMember(field, Builtins::typeField, field->qualifiedName()));
 
   // DataMember._selfType
-  sb.addNullField(reflect::DataMember::selfType.type());
+  sb.addNullField(reflect::DataMember::selfType);
   sb.combine(Builtins::typeDataMember);
 
   // Field._offset, Field._addr
@@ -759,7 +759,7 @@ void Reflector::emitField(const VariableDefn * field) {
             llvm::ConstantExpr::getOffsetOf(clsType, field->memberIndex()),
             reflect::Field::offset.type()->irType(),
             false));
-    sb.addNullField(reflect::Field::addr.type());
+    sb.addNullField(reflect::Field::addr);
   } else {
     sb.addIntegerField(reflect::Field::offset, 0);
     sb.addPointerField(reflect::Field::addr, cg_.genGlobalVar(field));
@@ -1036,7 +1036,7 @@ llvm::Constant * Reflector::emitMemberTypes(const IterableScope * scope) {
 
   for (Defn * de = scope->firstMember(); de != NULL; de = de->nextInScope()) {
     if (de->isReflected() && isExport(de) && de->isSingular() && de->defnType() == Defn::Typedef) {
-      memberTypes.push_back(static_cast<const TypeDefn *>(de)->typeValue());
+      memberTypes.push_back(static_cast<const TypeDefn *>(de)->value().type());
     }
   }
 

@@ -5,6 +5,10 @@
 #ifndef TART_GEN_STRUCTBUILDER_H
 #define TART_GEN_STRUCTBUILDER_H
 
+#ifndef TART_TYPE_QUALIFIEDTYPE_H
+#include "tart/Type/QualifiedType.h"
+#endif
+
 #ifndef LLVM_ADT_SMALLVECTOR_H
 #include "llvm/ADT/SmallVector.h"
 #endif
@@ -38,6 +42,14 @@ public:
 
   /** Add a field containing a constant null pointer. */
   StructBuilder & addNullField(const Type * type);
+
+  /** Add a field containing a constant null pointer. */
+  StructBuilder & addNullField(QualifiedType type) {
+    return addNullField(type.unqualified());
+  }
+
+  /** Add a field containing a constant null pointer. */
+  StructBuilder & addNullField(VariableDefn * var);
 
   /** Add an integer field of the specified type. */
   StructBuilder & addIntegerField(const Type * type, int32_t value);

@@ -113,7 +113,7 @@ Type * SpCandidate::toType(SourceContext * source, BindingEnv & env) {
       env.updateAssignments(source->location());
       QualifiedTypeVarMap vars;
       env.toTypeVarMap(vars, this);
-      return tdef->templateSignature()->instantiateType(source->location(), vars);
+      return const_cast<Type *>(tdef->templateSignature()->instantiateType(source->location(), vars));
     } else {
       unify(&candidateSite, env);
       DFAIL("Unify failed...");
@@ -137,7 +137,7 @@ ConversionRank SpCandidate::updateConversionRank() {
   for (size_t i = 0; i < args_->size(); ++i) {
     QualifiedType pattern = (*params_)[i];
     QualifiedType value = (*args_)[i];
-    AnalyzerBase::analyzeType(value.type(), Task_PrepTypeComparison);
+    AnalyzerBase::analyzeType(value, Task_PrepTypeComparison);
     conversionRank_ = std::min(conversionRank_, TypeConversion::check(value, pattern));
   }
 

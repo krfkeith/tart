@@ -12,7 +12,7 @@ namespace tart {
 
 Expr * TypeDefn::asExpr() {
   if (expr_ == NULL) {
-    expr_ = new TypeLiteralExpr(ast_ ? ast_->location() : SourceLocation(), value);
+    expr_ = new TypeLiteralExpr(ast_ ? ast_->location() : SourceLocation(), typePtr());
   }
 
   return expr_;
@@ -20,7 +20,7 @@ Expr * TypeDefn::asExpr() {
 
 void TypeDefn::trace() const {
   Defn::trace();
-  value->mark();
+  value_.type()->mark();
   safeMark(expr_);
 }
 

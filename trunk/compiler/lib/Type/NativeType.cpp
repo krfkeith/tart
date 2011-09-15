@@ -63,7 +63,7 @@ void AddressType::initBuiltin() {
   // Add to builtin name space
   Builtins::module.addMember(&typedefn);
   typedefn.setQualifiedName(typedefn.name());
-  typedefn.setTypeValue(&prototype);
+  typedefn.setValue(&prototype);
   typedefn.addTrait(Defn::Unsafe);
 
   prototype.elementType_ = tm->typeParam(0);
@@ -118,7 +118,7 @@ void AddressType::format(FormatStream & out) const {
 
 void AddressType::trace() const {
   Type::trace();
-  safeMark(elementType_.type());
+  safeMark(elementType_.unqualified());
 }
 
 // -------------------------------------------------------------------
@@ -143,7 +143,7 @@ void NativeArrayType::initBuiltin() {
   // Add to builtin name space
   Builtins::module.addMember(&typedefn);
   typedefn.setQualifiedName(typedefn.name());
-  typedefn.setTypeValue(&prototype);
+  typedefn.setValue(&prototype);
   typedefn.addTrait(Defn::Unsafe);
 
   prototype.typeArgs_ = tm->typeParams();
@@ -220,7 +220,7 @@ void FlexibleArrayType::initBuiltin() {
   // Add to builtin name space
   Builtins::module.addMember(&typedefn);
   typedefn.setQualifiedName(typedefn.name());
-  typedefn.setTypeValue(&prototype);
+  typedefn.setValue(&prototype);
   typedefn.addTrait(Defn::Unsafe);
 
   prototype.typeArgs_ = tm->typeParams();

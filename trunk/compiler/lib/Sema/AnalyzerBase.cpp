@@ -432,7 +432,7 @@ bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, Stri
     SLC & loc) {
   DASSERT(typeDef->isTemplate());
   AnalyzerBase::analyzeTypeDefn(typeDef, Task_PrepMemberLookup);
-  if (CompositeType * ctype = dyn_cast<CompositeType>(typeDef->typeValue())) {
+  if (const CompositeType * ctype = dyn_cast<CompositeType>(typeDef->typePtr())) {
     if (ctype->memberScope()->lookupMember(name, out, false)) {
       return true;
     }
@@ -467,15 +467,15 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
     }
 
     // Handle the case of a type argument that is a type literal.
-    const Type * typeArg = NULL;
+    QualifiedType typeArg;
     if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(cb)) {
       typeArg = dealias(ctype->value());
       if (TypeDefn * tdef = typeArg->typeDefn()) {
-        typeArg = tdef->typeValue();
+        typeArg = tdef->value();
       }
     }
 
-    if (typeArg == NULL) {
+    if (!typeArg) {
       if (!isa<ConstantExpr>(cb)) {
         diag.fatal(cb) << "Not a constant expression: " << *it;
       }
@@ -613,7 +613,7 @@ bool AnalyzerBase::getDefnListAsExprList(SLC & loc, DefnList & defs, Expr * cont
 
 Expr * AnalyzerBase::getDefnAsExpr(Defn * de, Expr * context, SLC & loc) {
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(de)) {
-    if (tdef->typeValue()->typeClass() == Type::Alias) {
+    if (tdef->value()->typeClass() == Type::Alias) {
       analyzeTypeDefn(tdef, Task_PrepTypeComparison);
     }
     return tdef->asExpr();
@@ -753,12 +753,12 @@ bool AnalyzerBase::analyzeType(const Type * in, AnalysisTask task) {
         }
 
         if (!ftype->returnType()->isVoidType()) {
-          analyzeType(ftype->returnType().type(), task);
+          analyzeType(ftype->returnType(), task);
         }
 
         size_t numTypes = in->numTypeParams();
         for (size_t i = 0; i < numTypes; ++i) {
-          analyzeType(in->typeParam(i).type(), task);
+          analyzeType(in->typeParam(i), task);
         }
 
         break;
@@ -771,7 +771,7 @@ bool AnalyzerBase::analyzeType(const Type * in, AnalysisTask task) {
       case Type::Tuple: {
         size_t numTypes = in->numTypeParams();
         for (size_t i = 0; i < numTypes; ++i) {
-          analyzeType(in->typeParam(i).type(), task);
+          analyzeType(in->typeParam(i), task);
         }
 
         break;
@@ -852,7 +852,7 @@ bool AnalyzerBase::analyzeDefn(Defn * in, AnalysisTask task) {
 bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
   RecursionGuard guard;
 
-  Type * type = in->typeValue();
+  Type * type = in->mutableTypePtr();
   switch (type->typeClass()) {
     case Type::Primitive:
       return true;
@@ -870,13 +870,13 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
     case Type::NAddress:
     case Type::NArray:
     case Type::FlexibleArray: {
-      analyzeType(type->typeParam(0).type(), task);
+      analyzeType(type->typeParam(0), task);
       return true;
     }
 
     case Type::Alias: {
       TypeAlias * ta = cast<TypeAlias>(type);
-      if (ta->value() == NULL) {
+      if (!ta->value()) {
         QualifiedType targetType = TypeAnalyzer(in->module(), in->definingScope())
             .qualifiedTypeFromAST(cast<ASTTypeDecl>(in->ast())->bases().front());
         if (isErrorResult(targetType)) {
@@ -896,10 +896,11 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
     default:
       diag.debug(in) << in;
       DFAIL("IllegalState");
+      break;
   }
 }
 
-CompositeType * AnalyzerBase::getArrayTypeForElement(QualifiedType elementType) {
+const CompositeType * AnalyzerBase::getArrayTypeForElement(QualifiedType elementType) {
   // Look up the array class
   Template * arrayTemplate = Builtins::typeArray->typeDefn()->templateSignature();
 
@@ -912,31 +913,31 @@ CompositeType * AnalyzerBase::getArrayTypeForElement(QualifiedType elementType) 
   DASSERT(arrayTemplate->paramScope().count() == 1);
 
   // Special case for when the elementType is Array.ElementType
-  if (elementType.type() == arrayTemplate->typeParam(0).type()) {
+  if (elementType == arrayTemplate->typeParam(0)) {
     return Builtins::typeArray.get();
   }
 
   QualifiedTypeVarMap vars;
   vars[arrayTemplate->patternVar(0)] = elementType;
-  return cast<CompositeType>(cast<TypeDefn>(
-      arrayTemplate->instantiate(
-          SourceLocation(), vars, Template::expectedTraits(elementType)))->typeValue());
+  return cast<CompositeType>(
+      arrayTemplate->instantiateType(
+          SourceLocation(), vars, Template::expectedTraits(elementType)));
 }
 
 Expr * AnalyzerBase::getEmptyArrayOfElementType(const Type * elementType) {
-  CompositeType * arrayType = getArrayTypeForElement(elementType);
+  const CompositeType * arrayType = getArrayTypeForElement(elementType);
   return new ConstantEmptyArray(SourceLocation(), arrayType);
 }
 
 ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(SLC & loc, const Type * elementType) {
-  CompositeType * arrayType = getArrayTypeForElement(elementType);
+  const CompositeType * arrayType = getArrayTypeForElement(elementType);
   ArrayLiteralExpr * array = new ArrayLiteralExpr(loc);
   array->setType(arrayType);
 
   return array;
 }
 
-CompositeType * AnalyzerBase::getMutableRefType(const Type * valueType) {
+const CompositeType * AnalyzerBase::getMutableRefType(const Type * valueType) {
   // Look up the MutableRef class
   Template * refTemplate = Builtins::typeMutableRef->typeDefn()->templateSignature();
 
@@ -950,12 +951,12 @@ CompositeType * AnalyzerBase::getMutableRefType(const Type * valueType) {
 
   QualifiedTypeVarMap vars;
   vars[refTemplate->patternVar(0)] = valueType;
-  return cast<CompositeType>(cast<TypeDefn>(
-      refTemplate->instantiate(
-          SourceLocation(), vars, Template::expectedTraits(valueType)))->typeValue());
+  return cast<CompositeType>(
+      refTemplate->instantiateType(
+          SourceLocation(), vars, Template::expectedTraits(valueType)));
 }
 
-CompositeType * AnalyzerBase::getFunctionInterfaceType(const FunctionType * ftype) {
+const CompositeType * AnalyzerBase::getFunctionInterfaceType(const FunctionType * ftype) {
   // Look up the Function interface
   Template * fnTemplate = Builtins::typeFunction->typeDefn()->templateSignature();
 
@@ -970,9 +971,8 @@ CompositeType * AnalyzerBase::getFunctionInterfaceType(const FunctionType * ftyp
   QualifiedTypeVarMap vars;
   vars[fnTemplate->patternVar(0)] = ftype->returnType();
   vars[fnTemplate->patternVar(1)] = ftype->paramTypes();
-  return cast<CompositeType>(cast<TypeDefn>(
-      fnTemplate->instantiate(SourceLocation(), vars,
-          Template::expectedTraits(ftype)))->typeValue());
+  return cast<CompositeType>(
+      fnTemplate->instantiateType(SourceLocation(), vars, Template::expectedTraits(ftype)));
 }
 
 // Determine if the target is able to be accessed from the current source defn.
@@ -1018,11 +1018,11 @@ bool AnalyzerBase::canAccess(Defn * source, Defn * target) {
 
       if (target->visibility() == Protected) {
         if (TypeDefn * dstTypeDef = dyn_cast<TypeDefn>(dstContext)) {
-          if (CompositeType * dstType = dyn_cast_or_null<CompositeType>(dstTypeDef->typeValue())) {
+          if (const CompositeType * dstType = dyn_cast_or_null<CompositeType>(dstTypeDef->typePtr())) {
             for (Defn * de = source; de != NULL; de = de->parentDefn()) {
               if (TypeDefn * srcTypeDef = dyn_cast<TypeDefn>(de)) {
-                if (CompositeType * srcType =
-                    dyn_cast_or_null<CompositeType>(srcTypeDef->typeValue())) {
+                if (const CompositeType * srcType =
+                    dyn_cast_or_null<CompositeType>(srcTypeDef->typePtr())) {
                   if (srcType->isSubclassOf(dstType)) {
                     return true;
                   }
@@ -1097,7 +1097,7 @@ Defn * AnalyzerBase::findDefnByAst(Defn * parent, Defn * toFind) {
   if (TypeDefn * tdef = dyn_cast<TypeDefn>(parent)) {
     DefnList cdefs;
     AnalyzerBase::analyzeTypeDefn(tdef, Task_PrepMemberLookup);
-    if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->typeValue())) {
+    if (const CompositeType * ctype = dyn_cast<CompositeType>(tdef->typePtr())) {
       if (!ctype->memberScope()->lookupMember(toFind->name(), cdefs, false)) {
         return NULL;
       }

@@ -126,7 +126,7 @@ bool FunctionAnalyzer::runPasses(FunctionDefn::PassSet passesToRun) {
     }
 
     if (target->isTraceMethod()) {
-      CompositeType * ctype = target->definingClass();
+      CompositeType * ctype = const_cast<CompositeType *>(target->definingClass());
       DASSERT_OBJ(ctype != NULL, target);
       ctype->traceMethods().push_back(target);
     }
@@ -267,7 +267,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
 
     TypeDefn * parentClass = target->enclosingClassDefn();
     if (parentClass != NULL) {
-      if (CompositeType * ctype = dyn_cast<CompositeType>(parentClass->typeValue())) {
+      if (const CompositeType * ctype = dyn_cast<CompositeType>(parentClass->typePtr())) {
         if (ctype->isFinal()) {
           target->setFlag(FunctionDefn::Final);
         }
@@ -278,10 +278,10 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       ParameterDefn * selfParam = new ParameterDefn(module(), "self");
       TypeDefn * selfType = target->enclosingClassDefn();
       DASSERT_OBJ(selfType != NULL, target);
-      analyzeType(selfType->typeValue(), Task_PrepMemberLookup);
+      analyzeType(selfType->typePtr(), Task_PrepMemberLookup);
       selfParam->setLocation(target->location());
-      selfParam->setType(selfType->typeValue());
-      selfParam->setInternalType(selfType->typeValue());
+      selfParam->setType(selfType->typePtr());
+      selfParam->setInternalType(selfType->typePtr());
       selfParam->addTrait(Defn::Singular);
       selfParam->addTrait(Defn::Synthetic);
       selfParam->setFlag(ParameterDefn::Reference);
@@ -340,8 +340,8 @@ bool FunctionAnalyzer::resolveModifiers() {
 
     // Functions defined in interfaces or protocols must not have a body.
     TypeDefn * enclosingClassDefn = target->enclosingClassDefn();
-    if (enclosingClassDefn != NULL && isa<CompositeType>(enclosingClassDefn->typeValue())) {
-      CompositeType * enclosingClass = cast<CompositeType>(enclosingClassDefn->typeValue());
+    if (enclosingClassDefn != NULL && isa<CompositeType>(enclosingClassDefn->typePtr())) {
+      const CompositeType * enclosingClass = cast<CompositeType>(enclosingClassDefn->typePtr());
 
       switch (enclosingClass->typeClass()) {
         case Type::Interface:
@@ -471,7 +471,7 @@ bool FunctionAnalyzer::createCFG() {
           // Make sure that the constructor calls the superclass and initializes all fields.
           if (target->isCtor() && target->isSingular()) {
             TypeDefn * clsDefn = cast<TypeDefn>(target->parentDefn());
-            CompositeType * cls = cast<CompositeType>(clsDefn->typeValue());
+            CompositeType * cls = cast<CompositeType>(clsDefn->mutableTypePtr());
             if (cls->typeClass() == Type::Class || cls->typeClass() == Type::Struct) {
               ConstructorAnalyzer(cls).run(target);
             }

@@ -838,7 +838,7 @@ Expr * EntryPointApplyIntrinsic::eval(const SourceLocation & loc, Module * calli
 
   TypeDefn * entryPointType = cast<TypeDefn>(method->parentDefn());
   FunctionDefn * programStartFn = cast<FunctionDefn>(
-      entryPointType->typeValue()->memberScope()->lookupSingleMember("programStart", false));
+      entryPointType->typePtr()->memberScope()->lookupSingleMember("programStart", false));
   DASSERT(programStartFn != NULL);
 
   Module * module = fn->module();

@@ -38,7 +38,7 @@ public:
 
   bool hasMember(Defn * de, const char * name) {
     if (TypeDefn * td = dyn_cast<TypeDefn>(de)) {
-        return td->typeValue()->memberScope()->lookupSingleMember(
+        return td->typePtr()->memberScope()->lookupSingleMember(
             name, false) != NULL;
     }
 

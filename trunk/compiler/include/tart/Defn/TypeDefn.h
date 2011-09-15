@@ -14,18 +14,11 @@ namespace tart {
 /// -------------------------------------------------------------------
 /// A definition of a named type, such as a class or struct.
 class TypeDefn : public Defn {
-protected:
-  Type * value;
-  Expr * expr_;
-  Scope * definingScope_;
-
-  Type::TypeClass defnType_ToTypeClass(DefnType dt);
-
 public:
   /** Constructor that takes a name */
-  TypeDefn(Module * m, StringRef name, Type * val = NULL)
+  TypeDefn(Module * m, StringRef name, QualifiedType value = QualifiedType())
     : Defn(Typedef, m, name)
-    , value(val)
+    , value_(value)
     , expr_(NULL)
     , definingScope_(NULL)
   {}
@@ -33,7 +26,6 @@ public:
   /** Constructor that takes an AST declaration. */
   TypeDefn(Module * m, const ASTDecl * de)
     : Defn(Typedef, m, de)
-    , value(NULL)
     , expr_(NULL)
     , definingScope_(NULL)
   {}
@@ -42,9 +34,13 @@ public:
   Expr * asExpr();
 
   /** Return the type expression defined by this definition. */
-  const Type * typeValue() const { return value; }
-  Type * typeValue() { return value; }
-  void setTypeValue(Type * type) { value = type; }
+  const Type * typePtr() const { return value_.type(); }
+  Type * mutableTypePtr() const { return const_cast<Type *>(value_.type()); }
+  void setTypePtr(Type * type) { value_ = QualifiedType(type, value_.qualifiers()); }
+
+  /** Return the type expression defined by this definition. */
+  QualifiedType value() const { return value_; }
+  void setValue(QualifiedType value) { value_ = value; }
 
   // Overrides
 
@@ -58,6 +54,13 @@ public:
   static inline bool classof(const Defn * de) {
     return de->defnType() == Typedef;
   }
+
+protected:
+  QualifiedType value_;
+  Expr * expr_;
+  Scope * definingScope_;
+
+  Type::TypeClass defnType_ToTypeClass(DefnType dt);
 };
 
 inline FormatStream & operator<<(FormatStream & out, const TypeDefn * type) {

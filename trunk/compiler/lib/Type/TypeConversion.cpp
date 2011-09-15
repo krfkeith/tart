@@ -464,8 +464,7 @@ ConversionRank convert(
 
     case Type::Alias:
       // Dealias srcType
-      return convert(
-          srcType.as<TypeAlias>()->qualifiedValue(), srcExpr, dstType, dstExpr, options);
+      return convert(srcType.as<TypeAlias>()->value(), srcExpr, dstType, dstExpr, options);
 
     case Type::AmbiguousParameter:
     case Type::AmbiguousResult:
@@ -554,8 +553,7 @@ ConversionRank convert(
   switch (dstType->typeClass()) {
     case Type::Alias:
       // Dealias dstType
-      return convert(srcType, srcExpr,
-          dstType.as<TypeAlias>()->qualifiedValue(), dstExpr, options);
+      return convert(srcType, srcExpr, dstType.as<TypeAlias>()->value(), dstExpr, options);
 
     case Type::Primitive:
       return convertToPrimitive(srcType.type(), srcExpr,

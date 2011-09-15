@@ -23,9 +23,7 @@ public:
   TypeAlias(const Type * val, TypeDefn * defn);
 
   /** The target of this alias. */
-  const Type * value() const { return value_.type(); }
-  QualifiedType qualifiedValue() const { return value_; }
-  void setValue(const Type * value) { value_ = value; }
+  QualifiedType value() const { return value_; }
   void setValue(QualifiedType value) { value_ = value; }
 
   // Overrides

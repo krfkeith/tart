@@ -5,6 +5,10 @@
 #ifndef TART_TYPE_QUALIFIEDTYPE_H
 #define TART_TYPE_QUALIFIEDTYPE_H
 
+#ifndef TART_COMMON_FORMATTABLE_H
+#include "tart/Common/Formattable.h"
+#endif
+
 #ifndef LLVM_SUPPORT_CASTING_H
 #include "llvm/Support/Casting.h"
 #endif

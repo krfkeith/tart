@@ -50,7 +50,7 @@ public:
   void format(FormatStream & out) const;
   void trace() const;
   size_t numTypeParams() const { return members_.size(); }
-  QualifiedType typeParam(int index) const { return members_[index].type(); }
+  QualifiedType typeParam(int index) const { return members_[index]; }
   Expr * nullInitValue() const;
   bool containsReferenceType() const { return containsReferenceType_; }
 

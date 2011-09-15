@@ -155,7 +155,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
       std::string closureName(llvm::itostr(currentFunction_->closureEnvs().size() + 1));
 
       // Use a composite type to represent the closure environment.
-      CompositeType * interfaceType = getFunctionInterfaceType(ftype);
+      CompositeType * interfaceType = const_cast<CompositeType *>(getFunctionInterfaceType(ftype));
       //DASSERT(interfaceType->isSingular());
 
       // The type definition of the environment object.
@@ -167,7 +167,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
       envTypeDef->setDefiningScope(activeScope());
 
       CompositeType * envType = new CompositeType(Type::Class, envTypeDef, activeScope());
-      envTypeDef->setTypeValue(envType);
+      envTypeDef->setValue(envType);
       envType->setClassFlag(CompositeType::Closure, true);
       envType->setSuper(static_cast<CompositeType *>(Builtins::typeObject));
       envType->bases().push_back(Builtins::typeObject);
@@ -217,7 +217,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
       fn->addTrait(Defn::Singular);
       fn->parameterScope().addMember(envParam);
 
-      envType->memberScope()->addMember(fn);
+      envType->mutableMemberScope()->addMember(fn);
       fn->setDefiningScope(env);
 
       // Prepare the environment for lookups

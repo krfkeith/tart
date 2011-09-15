@@ -51,7 +51,7 @@ TEST(TypeTest, PrimitiveDef) {
 
 TEST(TypeTest, DynCasting) {
   ASSERT_EQ(&DoubleType::instance,
-      dyn_cast<PrimitiveType>(DoubleType::typedefn.typeValue()));
+      dyn_cast<PrimitiveType>(DoubleType::typedefn.typePtr()));
 }
 
 TEST(TypeTest, SpecificityTests) {

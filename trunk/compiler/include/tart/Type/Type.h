@@ -141,7 +141,7 @@ public:
 
   /** Return the scope containing the members of this type. */
   virtual const IterableScope * memberScope() const { return NULL; }
-  virtual IterableScope * memberScope() { return NULL; }
+  virtual IterableScope * mutableMemberScope() const { return NULL; }
 
   /** Return the number of type parameters of this type. */
   virtual size_t numTypeParams() const { return 0; }
@@ -306,7 +306,7 @@ public:
   // Overrides
 
   const IterableScope * memberScope() const { return this; }
-  IterableScope * memberScope() { return this; }
+  IterableScope * mutableMemberScope() const { return const_cast<DeclaredType *>(this); }
   TypeDefn * typeDefn() const { return defn_; }
 
   void trace() const;

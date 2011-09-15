@@ -111,7 +111,7 @@ void CallCandidate::relabelTypeVars(BindingEnv & env) {
         size_t numParams = ts->typeParams()->size();
         // For each template parameter, create a TypeAssignment instance.
         for (size_t i = 0; i < numParams; ++i) {
-          TypeVariable * var = ts->patternVar(i);
+          const TypeVariable * var = ts->patternVar(i);
           if (assignments.count(var) == 0) {
             TypeAssignment * ta = env.assign(var, NULL, this);
             ta->setPrimaryProvision(primaryProvision_);
@@ -147,7 +147,7 @@ void CallCandidate::relabelTypeVars(BindingEnv & env) {
     // Substitute all occurrences of pattern vars in the result type
     // the corresponding pattern value.
     resultType_ = relabel(resultType_);
-    AnalyzerBase::analyzeType(resultType_.type(), Task_PrepTypeComparison);
+    AnalyzerBase::analyzeType(resultType_, Task_PrepTypeComparison);
 
     // Same with function parameter types.
     for (QualifiedTypeList::iterator pt = paramTypes_.begin(); pt != paramTypes_.end(); ++pt) {
@@ -227,7 +227,7 @@ bool CallCandidate::unify(CallExpr * callExpr, BindingEnv & env, FormatStream * 
       size_t numParams = ts->typeParams()->size();
       // For each template parameter, create a TypeAssignment instance.
       for (size_t i = 0; i < numParams; ++i) {
-        TypeVariable * var = ts->patternVar(i);
+        const TypeVariable * var = ts->patternVar(i);
         const TypeAssignment * ta = env.getAssignment(var, this);
         if (ta->constraints().empty()) {
           if (errStrm) {
@@ -317,7 +317,7 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
     QualifiedType t0 = paramType(i);
     QualifiedType t1 = other->paramType(i);
 
-    RelativeSpecificity rspec = isMoreSpecific(t0.type(), t1.type());
+    RelativeSpecificity rspec = isMoreSpecific(t0, t1);
     if (rspec == NOT_MORE_SPECIFIC) {
       return false;
     } else if (rspec == MORE_SPECIFIC) {
@@ -378,32 +378,32 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
 }
 
 CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
-    const Type * lhs, const Type * rhs) {
-  while (const TypeAlias * alias = dyn_cast<TypeAlias>(lhs)) {
-    lhs = alias->value();
-    DASSERT_OBJ(lhs != NULL, alias);
+    QualifiedType lhs, QualifiedType rhs) {
+  while (lhs.isa<TypeAlias>()) {
+    lhs = lhs.as<TypeAlias>()->value();
+    DASSERT(lhs);
   }
 
-  while (const TypeAlias * alias = dyn_cast<TypeAlias>(rhs)) {
-    rhs = alias->value();
-    DASSERT_OBJ(rhs != NULL, alias);
+  while (rhs.isa<TypeAlias>()) {
+    rhs = rhs.as<TypeAlias>()->value();
+    DASSERT(rhs);
   }
 
-  DASSERT(!isa<TypeConstraint>(lhs));
-  DASSERT(!isa<TypeConstraint>(rhs));
+  DASSERT(!lhs.isa<TypeConstraint>());
+  DASSERT(!rhs.isa<TypeConstraint>());
 
-  if (const TypeAssignment * lta = dyn_cast<TypeAssignment>(lhs)) {
-    const TypeVariable * ltv = lta->target();
-    if (const TypeAssignment * rta = dyn_cast<TypeAssignment>(rhs)) {
+  if (lhs.isa<TypeAssignment>()) {
+    const TypeVariable * ltv = lhs.as<TypeAssignment>()->target();
+    if (rhs.isa<TypeAssignment>()) {
       // Both sides are type variables. Check upper bounds.
-      const TypeVariable * rtv = rta->target();
-      if (ltv->upperBound() != NULL) {
-        if (rtv->upperBound() != NULL) {
+      const TypeVariable * rtv = rhs.as<TypeAssignment>()->target();
+      if (ltv->upperBound()) {
+        if (rtv->upperBound()) {
           return isMoreSpecific(ltv->upperBound(), rtv->upperBound());
         }
         // Both sides are type vars, but only lhs has an upper bound, so lhs is more specific.
         return MORE_SPECIFIC;
-      } else if (rtv->upperBound() != NULL) {
+      } else if (rtv->upperBound()) {
         // Both sides are type vars, but only rhs has an upper bound, so lhs is less specific.
         return NOT_MORE_SPECIFIC;
       } else {
@@ -411,7 +411,7 @@ CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
         return EQUAL_SPECIFICITY;
       }
     } else {
-      if (ltv->upperBound() != NULL &&
+      if (ltv->upperBound() &&
           TypeRelation::isSubtype(ltv->upperBound(), rhs) &&
           !TypeRelation::isEqual(ltv->upperBound(), rhs)) {
         // lhs is a type var whose upper bound is more specific than rhs, so lhs counts as
@@ -422,9 +422,9 @@ CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
         return NOT_MORE_SPECIFIC;
       }
     }
-  } else if (const TypeAssignment * rta = dyn_cast<TypeAssignment>(rhs)) {
-    const TypeVariable * rtv = rta->target();
-    if (rtv->upperBound() != NULL &&
+  } else if (rhs.isa<TypeAssignment>()) {
+    const TypeVariable * rtv = rhs.as<TypeAssignment>()->target();
+    if (rtv->upperBound() &&
         TypeRelation::isSubtype(rtv->upperBound(), lhs) &&
         !TypeRelation::isEqual(rtv->upperBound(), lhs)) {
       // rhs is a type var whose upper bound is more specific than lhs, so lhs counts as
@@ -469,7 +469,7 @@ CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
         return NOT_MORE_SPECIFIC;
       }
 
-      return isMoreSpecific(lhs->typeParam(0).type(), rhs->typeParam(0).type());
+      return isMoreSpecific(lhs->typeParam(0), rhs->typeParam(0));
 
     default:
       if (lhs->typeClass() != rhs->typeClass()) {
@@ -511,7 +511,7 @@ void CallCandidate::trace() const {
   safeMark(method_);
   safeMark(method_);
   safeMark(fnType_);
-  safeMark(resultType_.type());
+  safeMark(resultType_.unqualified());
   safeMark(typeParams_);
   safeMark(spCandidate_);
   markArray(llvm::ArrayRef<QualifiedType>(paramTypes_));

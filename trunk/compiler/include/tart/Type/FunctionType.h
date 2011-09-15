@@ -23,9 +23,9 @@ class FunctionDefn;
 // Type class for functions and macros.
 class FunctionType : public Type {
 public:
-  FunctionType(const Type * rtype, ParameterList & plist);
-  FunctionType(const Type * rtype, ParameterDefn ** plist, size_t pcount);
-  FunctionType(const Type * rtype, ParameterDefn * selfParam, ParameterDefn ** plist,
+  FunctionType(QualifiedType rtype, ParameterList & plist);
+  FunctionType(QualifiedType rtype, ParameterDefn ** plist, size_t pcount);
+  FunctionType(QualifiedType rtype, ParameterDefn * selfParam, ParameterDefn ** plist,
       size_t pcount);
 
   // isStatic
