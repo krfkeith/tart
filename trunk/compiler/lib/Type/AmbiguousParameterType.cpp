@@ -29,7 +29,7 @@ void AmbiguousParameterType::listProspects(ProspectList & out, const ProvisionSe
   }
 }
 
-void AmbiguousParameterType::expand(TypeExpansion & out) const {
+void AmbiguousParameterType::expand(QualifiedTypeSet & out) const {
   const Candidates & cd = callExpr_->candidates();
   for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
     if ((*it)->isCulled()) {

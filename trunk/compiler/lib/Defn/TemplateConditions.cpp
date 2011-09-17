@@ -29,8 +29,8 @@ bool IsSubtypeCondition::eval() const {
 }
 
 TemplateCondition * IsSubtypeCondition::transform(TypeTransform & transform) {
-  const Type * first = transform(first_);
-  const Type * second = transform(second_);
+  QualifiedType first = transform(first_);
+  QualifiedType second = transform(second_);
 
   if (first == first_ && second == second_) {
     return this;

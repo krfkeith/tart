@@ -416,55 +416,55 @@ TEST_F(ConstraintTest, GetSingularSolutiuon) {
   TypeAssignment ta(NULL, NULL);
   ConstraintSet & cs = ta.constraints();
 
-  const Type * t0 = ta.findSingularSolution();
-  EXPECT_TRUE(t0 == NULL);
+  QualifiedType t0 = ta.findSingularSolution();
+  EXPECT_TRUE(!t0);
 
   cs.clear();
   cs.insert(SourceLocation(), &Int32Type::instance, Constraint::EXACT);
   t0 = ta.findSingularSolution();
-  EXPECT_EQ(&Int32Type::instance, t0);
+  EXPECT_EQ(&Int32Type::instance, t0.type());
 
   cs.clear();
   cs.insert(SourceLocation(), &Int32Type::instance, Constraint::EXACT);
   cs.insert(SourceLocation(), &Int16Type::instance, Constraint::EXACT);
   t0 = ta.findSingularSolution();
-  EXPECT_TRUE(t0 == NULL);
+  EXPECT_TRUE(!t0);
 
   cs.clear();
   cs.insert(SourceLocation(), &Int32Type::instance, Constraint::LOWER_BOUND);
   cs.insert(SourceLocation(), &Int16Type::instance, Constraint::LOWER_BOUND);
   t0 = ta.findSingularSolution();
-  EXPECT_EQ(&Int32Type::instance, t0);
+  EXPECT_EQ(&Int32Type::instance, t0.type());
 
   cs.clear();
   cs.insert(SourceLocation(), &Int32Type::instance, Constraint::UPPER_BOUND);
   cs.insert(SourceLocation(), &Int16Type::instance, Constraint::UPPER_BOUND);
   t0 = ta.findSingularSolution();
-  EXPECT_EQ(&Int16Type::instance, t0);
+  EXPECT_EQ(&Int16Type::instance, t0.type());
 
   cs.clear();
   cs.insert(SourceLocation(), &Int32Type::instance, Constraint::EXACT);
   cs.insert(SourceLocation(), &Int16Type::instance, Constraint::LOWER_BOUND);
   t0 = ta.findSingularSolution();
-  EXPECT_EQ(&Int32Type::instance, t0);
+  EXPECT_EQ(&Int32Type::instance, t0.type());
 
   cs.clear();
   cs.insert(SourceLocation(), &Int32Type::instance, Constraint::UPPER_BOUND);
   cs.insert(SourceLocation(), &Int16Type::instance, Constraint::EXACT);
   t0 = ta.findSingularSolution();
-  EXPECT_EQ(&Int16Type::instance, t0);
+  EXPECT_EQ(&Int16Type::instance, t0.type());
 
   cs.clear();
   cs.insert(SourceLocation(), &Int32Type::instance, Constraint::LOWER_BOUND);
   cs.insert(SourceLocation(), &Int16Type::instance, Constraint::EXACT);
   t0 = ta.findSingularSolution();
-  EXPECT_TRUE(t0 == NULL);
+  EXPECT_TRUE(!t0);
 
   cs.clear();
   cs.insert(SourceLocation(), &Int32Type::instance, Constraint::EXACT);
   cs.insert(SourceLocation(), &Int16Type::instance, Constraint::UPPER_BOUND);
   t0 = ta.findSingularSolution();
-  EXPECT_TRUE(t0 == NULL);
+  EXPECT_TRUE(!t0);
 }
 
 TEST_F(ConstraintTest, Contradicts) {

@@ -409,22 +409,22 @@ Expr * Type::explicitCast(const SourceLocation & loc, Expr * from, int options) 
   return result;
 }
 
-const Type * Type::commonBase(const Type * lhs, const Type * rhs) {
+QualifiedType Type::commonBase(QualifiedType lhs, QualifiedType rhs) {
   if (TypeRelation::isSubtype(rhs, lhs)) {
     return lhs;
   }
 
-  const Type * result = NULL;
-  if (const CompositeType * ct = dyn_cast<CompositeType>(lhs)) {
+  QualifiedType result;
+  if (Qualified<CompositeType> ct = lhs.dyn_cast<CompositeType>()) {
     for (ClassList::const_iterator it = ct->bases().begin(); it != ct->bases().end(); ++it) {
       result = commonBase(*it, rhs);
-      if (result != NULL) {
+      if (result) {
         return result;
       }
     }
-  } else if (const EnumType * et = dyn_cast<EnumType>(lhs)) {
+  } else if (Qualified<EnumType> et = lhs.dyn_cast<EnumType>()) {
     return commonBase(et->baseType(), rhs);
-  } else if (const PrimitiveType * pt = dyn_cast<PrimitiveType>(lhs)) {
+  } else if (Qualified<PrimitiveType> pt = lhs.dyn_cast<PrimitiveType>()) {
     switch (pt->typeId()) {
       case TypeId_SInt8:
         return commonBase(&Int16Type::instance, rhs);
@@ -437,15 +437,15 @@ const Type * Type::commonBase(const Type * lhs, const Type * rhs) {
 
       case TypeId_UInt8:
         result = commonBase(&UInt16Type::instance, rhs);
-        return result != NULL ? result : commonBase(&Int16Type::instance, rhs);
+        return result ? result : commonBase(&Int16Type::instance, rhs);
 
       case TypeId_UInt16:
         result = commonBase(&UInt32Type::instance, rhs);
-        return result != NULL ? result : commonBase(&Int32Type::instance, rhs);
+        return result ? result : commonBase(&Int32Type::instance, rhs);
 
       case TypeId_UInt32:
         result = commonBase(&UInt64Type::instance, rhs);
-        return result != NULL ? result : commonBase(&Int64Type::instance, rhs);
+        return result ? result : commonBase(&Int64Type::instance, rhs);
 
       case TypeId_Float:
         return commonBase(&DoubleType::instance, rhs);
@@ -453,7 +453,7 @@ const Type * Type::commonBase(const Type * lhs, const Type * rhs) {
       default:
         break;
     }
-  } else if (const UnsizedIntType * uint = dyn_cast<UnsizedIntType>(lhs)) {
+  } else if (Qualified<UnsizedIntType> uint = lhs.dyn_cast<UnsizedIntType>()) {
     DASSERT(false) << "Implement commonBase for " << lhs << " and " << rhs;
     (void)uint;
   }
@@ -545,38 +545,40 @@ const Type * findCommonType(const Type * t0, const Type * t1) {
   }
 }
 
-Type * dealiasImpl(Type * t) {
-  while (t != NULL && t->typeClass() == Type::Alias) {
-    if (TypeAlias * alias = dyn_cast<TypeAlias>(t)) {
-      t = const_cast<Type *>(alias->value().type());
-      DASSERT_OBJ(t != NULL, alias);
+QualifiedType dealiasImpl(QualifiedType t) {
+  for (;;) {
+    if (t.isNull()) {
+      return t;
+    } else if (t.isa<TypeAlias>()) {
+      QualifiedType value = t.as<TypeAlias>()->value() | t.qualifiers();
+      DASSERT(value) << "NULL value type for alias: " << t;
+      t = value;
+    } else if (t.isa<TypeAssignment>()) {
+      QualifiedType value = t.as<TypeAssignment>()->value() | t.qualifiers();
+      if (!value) {
+        return t;
+      }
+      t = value;
     } else {
-      break;
+      return t;
     }
   }
-
-  while (const TypeAssignment * pval = dyn_cast_or_null<TypeAssignment>(t)) {
-    const Type * v = pval->value();
-    if (v != NULL) {
-      t = const_cast<Type *>(v);
-    } else {
-      break;
-    }
-  }
-
-  return t;
 }
 
 const Type * dealias(const Type * t) {
-  return dealiasImpl(const_cast<Type *>(t));
+  QualifiedType result = dealiasImpl(t);
+  DASSERT(result.qualifiers() == 0) << "loss of qualifiers for type " << t;
+  return result.unqualified();
 }
 
 Type * dealias(Type * t) {
-  return dealiasImpl(t);
+  QualifiedType result = dealiasImpl(t);
+  DASSERT(result.qualifiers() == 0) << "loss of qualifiers for type " << t;
+  return const_cast<Type *>(result.unqualified());
 }
 
 QualifiedType dealias(QualifiedType t) {
-  return QualifiedType(dealias(t.type()), t.qualifiers());
+  return dealiasImpl(t);
 }
 
 #if 0

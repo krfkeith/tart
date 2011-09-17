@@ -11,7 +11,7 @@ namespace tart {
 // ConstraintSet
 
 Constraint * ConstraintSet::insert(
-    SLC & loc, const Type * ty, unsigned state, Constraint::Kind kind,
+    SLC & loc, QualifiedType ty, unsigned state, Constraint::Kind kind,
     const ProvisionSet & provisions) {
   for (const_iterator ci = begin(), itEnd = end(); ci != itEnd; ++ci) {
     Constraint * s = *ci;
@@ -29,7 +29,7 @@ Constraint * ConstraintSet::insert(
 }
 
 Constraint * ConstraintSet::insert(
-    SLC & loc, const Type * ty, Constraint::Kind kind, const ProvisionSet & provisions) {
+    SLC & loc, QualifiedType ty, Constraint::Kind kind, const ProvisionSet & provisions) {
   for (const_iterator ci = begin(), itEnd = end(); ci != itEnd; ++ci) {
     Constraint * s = *ci;
     if (s->value() == ty && s->kind() == kind && s->provisions().equals(provisions)) {
@@ -54,7 +54,7 @@ Constraint * ConstraintSet::insert(Constraint * in) {
 }
 
 Constraint * ConstraintSet::insertAndOptimize(
-    SLC & loc, const Type * ty, Constraint::Kind kind, const ProvisionSet & provisions) {
+    SLC & loc, QualifiedType ty, Constraint::Kind kind, const ProvisionSet & provisions) {
   return insertAndOptimize(new Constraint(loc, ty, kind, provisions));
 }
 

@@ -18,7 +18,7 @@ namespace tart {
 
 class AmbiguousPhiType : public AmbiguousType {
 public:
-  AmbiguousPhiType(const Type * expected)
+  AmbiguousPhiType(QualifiedType expected)
     : AmbiguousType(AmbiguousPhi)
     , expected_(expected)
     , common_(NULL)
@@ -31,17 +31,17 @@ public:
   const ConstTypeList & types() const { return types_; }
 
   // The common type of the input types
-  const Type * common() const { return common_; }
-  void setCommon(const Type * ty) const { common_ = ty; }
+  QualifiedType common() const { return common_; }
+  void setCommon(QualifiedType ty) const { common_ = ty; }
 
   // The type we're attempting to assign to, which might be NULL.
-  const Type * expected() const { return expected_; }
+  QualifiedType expected() const { return expected_; }
 
   // Overrides
 
   void listProspects(ProspectList & out, const ProvisionSet & add) const;
-  void expand(TypeExpansion & out) const;
-  const Type * singularValue() const;
+  void expand(QualifiedTypeSet & out) const;
+  QualifiedType singularValue() const;
   bool isSingular() const;
   bool isReferenceType() const;
   void trace() const;
@@ -54,8 +54,8 @@ public:
 
 private:
   ConstTypeList types_;
-  const Type * expected_;
-  mutable const Type * common_;
+  QualifiedType expected_;
+  mutable QualifiedType common_;
 };
 
 } // namespace tart

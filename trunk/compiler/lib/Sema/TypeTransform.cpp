@@ -28,65 +28,87 @@ namespace tart {
 // -------------------------------------------------------------------
 // TypeTransform
 
-const Type * TypeTransform::visit(const Type * in) {
+QualifiedType TypeTransform::visit(QualifiedType in) {
   if (isErrorResult(in)) {
     return in;
   }
 
+  const Type * unqual = in.unqualified();
+  unsigned qualifiers = in.qualifiers();
   if (in->typeClass() == Type::Alias) {
-    return visit(static_cast<const TypeAlias *>(in)->value().type());
+    return visit(static_cast<const TypeAlias *>(unqual)->value()) | qualifiers;
   }
 
   switch (in->typeClass()) {
     case Type::Primitive:
-      return visitPrimitiveType(static_cast<const PrimitiveType *>(in));
+      return QualifiedType(
+          visitPrimitiveType(static_cast<const PrimitiveType *>(unqual)),
+          qualifiers);
 
     case Type::Struct:
     case Type::Class:
     case Type::Interface:
     case Type::Protocol:
-      return visitCompositeType(static_cast<const CompositeType *>(in));
+      return QualifiedType(
+          visitCompositeType(static_cast<const CompositeType *>(unqual)),
+          qualifiers);
 
     case Type::Enum:
-      return visitEnumType(static_cast<const EnumType *>(in));
+      return QualifiedType(
+          visitEnumType(static_cast<const EnumType *>(unqual)),
+          qualifiers);
 
     case Type::Function:
-      return visitFunctionType(static_cast<const FunctionType *>(in));
+      return QualifiedType(
+          visitFunctionType(static_cast<const FunctionType *>(unqual)),
+          qualifiers);
 
     case Type::Union:
-      return visitUnionType(static_cast<const UnionType *>(in));
+      return QualifiedType(
+          visitUnionType(static_cast<const UnionType *>(unqual)),
+          qualifiers);
 
     case Type::Tuple:
-      return visitTupleType(static_cast<const TupleType *>(in));
+      return QualifiedType(
+          visitTupleType(static_cast<const TupleType *>(unqual)),
+          qualifiers);
 
     case Type::NAddress:
-      return visitAddressType(static_cast<const AddressType *>(in));
+      return QualifiedType(
+          visitAddressType(static_cast<const AddressType *>(unqual)),
+          qualifiers);
 
     case Type::NArray:
-      return visitNativeArrayType(static_cast<const NativeArrayType *>(in));
+      return QualifiedType(
+          visitNativeArrayType(static_cast<const NativeArrayType *>(unqual)),
+          qualifiers);
 
     case Type::FlexibleArray:
-      return visitFlexibleArrayType(static_cast<const FlexibleArrayType *>(in));
+      return QualifiedType(
+          visitFlexibleArrayType(static_cast<const FlexibleArrayType *>(unqual)),
+          qualifiers);
 
     case Type::TypeLiteral:
-      return visitTypeLiteralType(static_cast<const TypeLiteralType *>(in));
+      return QualifiedType(
+          visitTypeLiteralType(static_cast<const TypeLiteralType *>(unqual)),
+          qualifiers);
 
     case Type::Unit:
-      return visitUnitType(static_cast<const UnitType *>(in));
+      return QualifiedType(visitUnitType(static_cast<const UnitType *>(unqual)), qualifiers);
 
     case Type::Alias:
-      return visitTypeAlias(static_cast<const TypeAlias *>(in));
+      return visitTypeAlias(static_cast<const TypeAlias *>(unqual)) | qualifiers;
 
     case Type::TypeVar:
-      return visitTypeVariable(static_cast<const TypeVariable *>(in));
+      return visitTypeVariable(static_cast<const TypeVariable *>(unqual)) | qualifiers;
 
     case Type::Assignment:
-      return visitTypeAssignment(static_cast<const TypeAssignment *>(in));
+      return visitTypeAssignment(static_cast<const TypeAssignment *>(unqual)) | qualifiers;
 
     case Type::AmbiguousResult:
     case Type::AmbiguousParameter:
     case Type::AmbiguousTypeParam:
-      return visitTypeConstraint(static_cast<const TypeConstraint *>(in));
+      return visitTypeConstraint(static_cast<const TypeConstraint *>(unqual)) | qualifiers;
 
     default:
       diag.fatal() << "Type class not handled: " << in->typeClass();
@@ -111,16 +133,15 @@ const Type * TypeTransform::visitFunctionType(const FunctionType * in) {
 }
 
 const Type * TypeTransform::visitUnionType(const UnionType * in) {
-  const TupleType * members = cast<TupleType>(visit(&in->members()));
-  if (members != &in->members()) {
-    // TODO: Need to sort the members.
-    return UnionType::get(members->members());
+  const TupleType * typeArgs = visitTupleType(in->typeArgs());
+  if (typeArgs != in->typeArgs()) {
+    return UnionType::get(typeArgs->members());
   }
 
   return in;
 }
 
-const Type * TypeTransform::visitTupleType(const TupleType * in) {
+const TupleType * TypeTransform::visitTupleType(const TupleType * in) {
   QualifiedTypeList members;
   bool isSame = true;
   for (TupleType::const_iterator it = in->members().begin(); it != in->members().end(); ++it) {
@@ -153,7 +174,7 @@ const Type * TypeTransform::visitAddressType(const AddressType * in) {
 }
 
 const Type * TypeTransform::visitNativeArrayType(const NativeArrayType * in) {
-  const TupleType * typeArgs = cast<TupleType>(visit(in->typeArgs()));
+  const TupleType * typeArgs = visitTupleType(in->typeArgs());
   if (typeArgs != in->typeArgs()) {
     return NativeArrayType::get(typeArgs);
   }
@@ -162,7 +183,7 @@ const Type * TypeTransform::visitNativeArrayType(const NativeArrayType * in) {
 }
 
 const Type * TypeTransform::visitFlexibleArrayType(const FlexibleArrayType * in) {
-  const TupleType * typeArgs = cast<TupleType>(visit(in->typeArgs()));
+  const TupleType * typeArgs = visitTupleType(in->typeArgs());
   if (typeArgs != in->typeArgs()) {
     return FlexibleArrayType::get(typeArgs);
   }
@@ -187,27 +208,27 @@ const Type * TypeTransform::visitUnitType(const UnitType * in) {
   return in;
 }
 
-const Type * TypeTransform::visitTypeVariable(const TypeVariable * in) {
+QualifiedType TypeTransform::visitTypeVariable(const TypeVariable * in) {
   return in;
 }
 
-const Type * TypeTransform::visitTypeAssignment(const TypeAssignment * in) {
+QualifiedType TypeTransform::visitTypeAssignment(const TypeAssignment * in) {
   return in;
 }
 
-const Type * TypeTransform::visitTypeConstraint(const TypeConstraint * in) {
+QualifiedType TypeTransform::visitTypeConstraint(const TypeConstraint * in) {
   return in;
 }
 
-const Type * TypeTransform::visitTypeAlias(const TypeAlias * in) {
+QualifiedType TypeTransform::visitTypeAlias(const TypeAlias * in) {
   // TODO: This strips type modifiers.
-  return visit(static_cast<const TypeAlias *>(in)->value().type());
+  return visit(static_cast<const TypeAlias *>(in)->value());
 }
 
 // -------------------------------------------------------------------
 // SubstitutionTransform
 
-const Type * SubstitutionTransform::visitTypeVariable(const TypeVariable * in) {
+QualifiedType SubstitutionTransform::visitTypeVariable(const TypeVariable * in) {
   QualifiedTypeVarMap::const_iterator it = vars_.find(in);
   if (it != vars_.end()) {
     return it->second.type();
@@ -216,9 +237,9 @@ const Type * SubstitutionTransform::visitTypeVariable(const TypeVariable * in) {
   }
 }
 
-const Type * SubstitutionTransform::visitTypeAssignment(const TypeAssignment * in) {
-  const Type * result = in->value();
-  return result != NULL ? result : in;
+QualifiedType SubstitutionTransform::visitTypeAssignment(const TypeAssignment * in) {
+  QualifiedType result = in->value();
+  return result ? result : in;
 }
 
 const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in) {
@@ -284,14 +305,14 @@ const Type * SubstitutionTransform::visitCompositeType(const CompositeType * in)
   return in;
 }
 
-const Type * SubstitutionTransform::visitTypeConstraint(const TypeConstraint * in) {
+QualifiedType SubstitutionTransform::visitTypeConstraint(const TypeConstraint * in) {
   const TypeConstraint * constraint = static_cast<const TypeConstraint *>(in);
   if (constraint->isSingular()) {
     return visit(constraint->singularValue());
   }
 
   if (const AmbiguousTypeParamType * tpt = dyn_cast<AmbiguousTypeParamType>(in)) {
-    const Type * base = visit(tpt->base());
+    QualifiedType base = visit(tpt->base());
     if (base == tpt->base()) {
       return tpt;
     }
@@ -306,7 +327,7 @@ const Type * SubstitutionTransform::visitTypeConstraint(const TypeConstraint * i
 // -------------------------------------------------------------------
 // RelabelTransform
 
-const Type * RelabelTransform::visitTypeVariable(const TypeVariable * in) {
+QualifiedType RelabelTransform::visitTypeVariable(const TypeVariable * in) {
   QualifiedTypeVarMap::const_iterator it = vars_.find(in);
   DASSERT(it != vars_.end()) << "Type variable " << in << " not found!";
   return it->second.type();
@@ -315,9 +336,9 @@ const Type * RelabelTransform::visitTypeVariable(const TypeVariable * in) {
 // -------------------------------------------------------------------
 // NormalizeTransform
 
-const Type * NormalizeTransform::visitTypeAssignment(const TypeAssignment * in) {
-  const Type * value = in->value();
-  return value != NULL ? value : in;
+QualifiedType NormalizeTransform::visitTypeAssignment(const TypeAssignment * in) {
+  QualifiedType value = in->value();
+  return value ? value : in;
 }
 
 // -------------------------------------------------------------------

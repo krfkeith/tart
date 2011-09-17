@@ -19,8 +19,8 @@ namespace tart {
 /// A prospect is one possibility for an ambiguous type.
 class Prospect {
 public:
-  Prospect(const Type * type) : type_(type) {}
-  Prospect(const Type * type, const ProvisionSet & provisions)
+  Prospect(QualifiedType type) : type_(type) {}
+  Prospect(QualifiedType type, const ProvisionSet & provisions)
     : type_(type), provisions_(provisions) {}
   Prospect(const Prospect & src) : type_(src.type_), provisions_(src.provisions_) {}
 
@@ -31,14 +31,14 @@ public:
   }
 
   /** The type of this prospect. */
-  const Type * type() const { return type_; }
+  QualifiedType type() const { return type_; }
 
   /** The set of provisions associated with this type. */
   const ProvisionSet & provisions() const { return provisions_; }
   ProvisionSet & provisions() { return provisions_; }
 
 private:
-  const Type * type_;
+  QualifiedType type_;
   ProvisionSet provisions_;
 };
 

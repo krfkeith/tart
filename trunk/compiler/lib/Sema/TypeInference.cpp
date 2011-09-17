@@ -349,22 +349,22 @@ void TupleCtorSite::update() {
 
 void PHISite::update() {
   const AmbiguousPhiType * phiType = cast<AmbiguousPhiType>(expr_->type());
-  TypeExpansion types;
-  const Type * solution = NULL;
+  QualifiedTypeSet types;
+  QualifiedType solution = NULL;
 
   phiType->expand(types);
-  if (phiType->expected() != NULL) {
+  if (phiType->expected()) {
     solution = phiType->expected();
   } else {
     // Try to find a common type that encompasses all input types.
     // TODO: Use coercions if needed.
-    for (TypeExpansion::const_iterator it = types.begin(); it != types.end(); ++it) {
-      const Type * ty = *it;
-      if (solution == NULL) {
+    for (QualifiedTypeSet::iterator it = types.begin(); it != types.end(); ++it) {
+      QualifiedType ty = *it;
+      if (!solution) {
         solution = ty;
       } else {
         solution = Type::commonBase(solution, ty);
-        if (solution == NULL) {
+        if (!solution) {
           break;
         }
       }
@@ -372,10 +372,10 @@ void PHISite::update() {
   }
 
   phiType->setCommon(solution);
-  if (solution != NULL) {
+  if (!solution) {
     // Compute the lowest conversion ranking of all input types to the solution.
     rank_ = IdenticalTypes;
-    for (TypeExpansion::const_iterator it = types.begin(); it != types.end(); ++it) {
+    for (QualifiedTypeSet::iterator it = types.begin(); it != types.end(); ++it) {
       rank_ = std::min(rank_, TypeConversion::check(*it, solution, TypeConversion::COERCE));
     }
   }
@@ -383,13 +383,13 @@ void PHISite::update() {
 
 void PHISite::report() {
   const AmbiguousPhiType * phiType = cast<AmbiguousPhiType>(expr_->type());
-  TypeExpansion types;
+  QualifiedTypeSet types;
   phiType->expand(types);
   diag.info() << "expression: " << expr_;
-  if (phiType->expected() != NULL) {
+  if (phiType->expected()) {
     diag.info() << "expected result type: " << phiType->expected();
   }
-  for (TypeExpansion::const_iterator it = types.begin(); it != types.end(); ++it) {
+  for (QualifiedTypeSet::iterator it = types.begin(); it != types.end(); ++it) {
     diag.info() << "expression type: " << *it;
   }
 }
@@ -654,8 +654,8 @@ void TypeInferencePass::selectConstantIntegerTypes() {
     bool hasUnsizedIntTypes = false;
     bool hasSizedIntTypes = false;
     for (ConstraintSet::const_iterator si = ta->begin(), sEnd = ta->end(); si != sEnd; ++si) {
-      const Type * ty = (*si)->value();
-      if (isa<UnsizedIntType>(ty)) {
+      QualifiedType ty = (*si)->value();
+      if (ty->isUnsizedIntType()) {
         hasUnsizedIntTypes = true;
       } else if (ty->isIntType()) {
         hasSizedIntTypes = true;
@@ -666,7 +666,7 @@ void TypeInferencePass::selectConstantIntegerTypes() {
     if (hasUnsizedIntTypes && !hasSizedIntTypes) {
       for (ConstraintSet::const_iterator si = ta->begin(), sEnd = ta->end(); si != sEnd; ++si) {
         Constraint * s = *si;
-        if (const UnsizedIntType * uint = dyn_cast<UnsizedIntType>(s->value())) {
+        if (Qualified<UnsizedIntType> uint = s->value().dyn_cast<UnsizedIntType>()) {
           changed = true;
           if (uint->signedBitsRequired() <= 32) {
             s->setValue(&Int32Type::instance);

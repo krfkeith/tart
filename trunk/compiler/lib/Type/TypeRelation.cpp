@@ -158,12 +158,12 @@ bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
     case Type::AmbiguousPhi:
     case Type::AmbiguousResult:
     case Type::AmbiguousTypeParam: {
-      TypeExpansion expansion;
+      QualifiedTypeSet expansion;
       rt->expand(expansion);
       if (expansion.empty()) {
         return false;
       }
-      for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
+      for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
         if (!isEqual(lt, *it)) {
           return false;
         }
@@ -173,7 +173,7 @@ bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
 
     case Type::Assignment: {
       Qualified<TypeAssignment> ta = rt.as<TypeAssignment>();
-      if (ta->value() != NULL) {
+      if (ta->value()) {
         return isEqual(lt, ta->value());
       }
       return false;
@@ -279,12 +279,12 @@ bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
     case Type::AmbiguousPhi:
     case Type::AmbiguousResult:
     case Type::AmbiguousTypeParam: {
-      TypeExpansion expansion;
+      QualifiedTypeSet expansion;
       lt->expand(expansion);
       if (expansion.empty()) {
         return false;
       }
-      for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
+      for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
         if (!isEqual(*it, rt)) {
           return false;
         }
@@ -294,7 +294,7 @@ bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
 
     case Type::Assignment: {
       Qualified<TypeAssignment> ta = lt.as<TypeAssignment>();
-      if (ta->value() != NULL) {
+      if (ta->value()) {
         return isEqual(ta->value(), rt);
       }
       return false;
@@ -329,12 +329,12 @@ bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
     case Type::AmbiguousPhi:
     case Type::AmbiguousResult:
     case Type::AmbiguousTypeParam: {
-      TypeExpansion expansion;
+      QualifiedTypeSet expansion;
       base->expand(expansion);
       if (expansion.empty()) {
         return false;
       }
-      for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
+      for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
         if (!isSubtype(ty, *it)) {
           return false;
         }
@@ -344,7 +344,7 @@ bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
 
     case Type::Assignment: {
       Qualified<TypeAssignment> ta = base.as<TypeAssignment>();
-      if (ta->value() != NULL) {
+      if (ta->value()) {
         return isSubtype(ty, ta->value());
       } else {
         bool any = false;
@@ -441,12 +441,12 @@ bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
     case Type::AmbiguousPhi:
     case Type::AmbiguousResult:
     case Type::AmbiguousTypeParam: {
-      TypeExpansion expansion;
+      QualifiedTypeSet expansion;
       ty->expand(expansion);
       if (expansion.empty()) {
         return false;
       }
-      for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
+      for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
         if (!isSubtype(*it, base)) {
           return false;
         }
@@ -456,7 +456,7 @@ bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
 
     case Type::Assignment: {
       Qualified<TypeAssignment> ta = ty.as<TypeAssignment>();
-      if (ta->value() != NULL) {
+      if (ta->value()) {
         return isSubtype(ta->value(), base);
       } else {
         bool any = false;

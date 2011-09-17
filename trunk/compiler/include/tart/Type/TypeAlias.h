@@ -37,7 +37,7 @@ public:
   llvm::Type * irEmbeddedType() const;
   llvm::Type * irParameterType() const;
   llvm::Type * irReturnType() const;
-  void expand(TypeExpansion & out) const { value_->expand(out); }
+  void expand(QualifiedTypeSet & out) const { value_->expand(out); }
   Expr * nullInitValue() const { return value_->nullInitValue(); }
   void trace() const;
   void format(FormatStream & out) const;

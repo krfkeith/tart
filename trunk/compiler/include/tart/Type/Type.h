@@ -95,10 +95,6 @@ enum TypeShape {
 /// EnumSet of defn states.
 typedef SmallEnumSet<TypeId, TypeId_Count> TypeIdSet;
 
-// Represents the expansion of a constraint into all of the types that match
-// that constraint.
-typedef llvm::SmallPtrSet<const Type *, 32> TypeExpansion;
-
 /// -------------------------------------------------------------------
 /// Interface for types.
 class Type : public GC, public Formattable {
@@ -157,7 +153,7 @@ public:
 
   /** Return all the possible concrete types that this type could be - only meaningful
       for type constraints. */
-  virtual void expand(TypeExpansion & out) const {
+  virtual void expand(QualifiedTypeSet & out) const {
     out.insert(this);
   }
 
@@ -232,7 +228,7 @@ public:
 
   /** Return a type which is the common supertype of type1 and type2, or NULL if there
       is no such type.  */
-  static const Type * commonBase(const Type * type1, const Type * type2);
+  static QualifiedType commonBase(QualifiedType type1, QualifiedType type2);
 
   // Traits used when using type pointers as a key.
   struct KeyInfo {

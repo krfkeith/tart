@@ -31,7 +31,7 @@ public:
     LOWER_BOUND,        ///< Type must match or be a supertype of constraint
   };
 
-  Constraint(SourceLocation loc, const Type * value, unsigned state, Kind kind,
+  Constraint(SourceLocation loc, QualifiedType value, unsigned state, Kind kind,
       const ProvisionSet & provisions)
     : loc_(loc)
     , value_(value)
@@ -42,7 +42,7 @@ public:
   {
   }
 
-  Constraint(SourceLocation loc, const Type * value, Kind kind, const ProvisionSet & provisions)
+  Constraint(SourceLocation loc, QualifiedType value, Kind kind, const ProvisionSet & provisions)
     : loc_(loc)
     , value_(value)
     , kind_(kind)
@@ -56,8 +56,8 @@ public:
   const SourceLocation & location() const { return loc_; }
 
   /** The right side of the constraint. */
-  const Type * value() const { return value_; }
-  void setValue(Type * value) { value_ = value; }
+  QualifiedType value() const { return value_; }
+  void setValue(QualifiedType value) { value_ = value; }
 
   /** What type of constraint this is - upper bound, lower bound, etc. */
   Kind kind() const { return kind_; }
@@ -77,7 +77,7 @@ public:
   bool checkProvisions() const;
 
   /** Return true if this constraint accepts 'ty' */
-  bool accepts(const Type * ty) const;
+  bool accepts(QualifiedType ty) const;
 
   /** Compare two constraints for equality. */
   bool equals(const Constraint * cst) const;
@@ -126,7 +126,7 @@ private:
   friend class TypeAssignment;
 
   SourceLocation loc_;
-  const Type * value_;
+  QualifiedType value_;
   Kind kind_;
   unsigned stateCount_;
   mutable bool visited_;

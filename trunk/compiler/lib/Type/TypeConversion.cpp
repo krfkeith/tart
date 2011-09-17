@@ -474,12 +474,11 @@ ConversionRank convert(
         return Incompatible;
       }
 
-      TypeExpansion expansion;
+      QualifiedTypeSet expansion;
       srcType->expand(expansion);
       ConversionRank best = Incompatible;
-      for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
-        const Type * ty = *it;
-        best = std::max(best, convert(ty, srcExpr, dstType, NULL, options));
+      for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
+        best = std::max(best, convert(*it, srcExpr, dstType, NULL, options));
         if (best == IdenticalTypes) {
           break;
         }
@@ -494,12 +493,11 @@ ConversionRank convert(
         return Incompatible;
       }
 
-      TypeExpansion expansion;
+      QualifiedTypeSet expansion;
       srcType->expand(expansion);
       ConversionRank worst = IdenticalTypes;
-      for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
-        const Type * ty = *it;
-        worst = std::min(worst, convert(ty, srcExpr, dstType, NULL, options));
+      for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
+        worst = std::min(worst, convert(*it, srcExpr, dstType, NULL, options));
         if (worst == Incompatible) {
           break;
         }
@@ -510,7 +508,7 @@ ConversionRank convert(
 
     case Type::Assignment: {
       const TypeAssignment * ta = static_cast<const TypeAssignment *>(srcType.type());
-      if (ta->value() != NULL) {
+      if (ta->value()) {
         return convert(ta->value(), srcExpr, dstType, dstExpr, options);
       }
 
@@ -616,12 +614,11 @@ ConversionRank convert(
         return Incompatible;
       }
 
-      TypeExpansion expansion;
+      QualifiedTypeSet expansion;
       dstType->expand(expansion);
       ConversionRank best = Incompatible;
-      for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
-        const Type * ty = *it;
-        best = std::max(best, convert(srcType, srcExpr, ty, NULL, options));
+      for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
+        best = std::max(best, convert(srcType, srcExpr, *it, NULL, options));
         if (best == IdenticalTypes) {
           break;
         }
@@ -636,12 +633,11 @@ ConversionRank convert(
         return Incompatible;
       }
 
-      TypeExpansion expansion;
+      QualifiedTypeSet expansion;
       dstType->expand(expansion);
       ConversionRank worst = IdenticalTypes;
-      for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
-        const Type * ty = *it;
-        worst = std::min(worst, convert(srcType, srcExpr, ty, NULL, options));
+      for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
+        worst = std::min(worst, convert(srcType, srcExpr, *it, NULL, options));
         if (worst == Incompatible) {
           break;
         }
@@ -652,7 +648,7 @@ ConversionRank convert(
 
     case Type::Assignment: {
       Qualified<TypeAssignment> ta = dstType.as<TypeAssignment>();
-      if (ta->value() != NULL) {
+      if (ta->value()) {
         return convert(srcType, srcExpr, ta->value(), dstExpr, options);
       } else {
         ConversionRank rank = Incompatible;

@@ -34,33 +34,34 @@ class TypeTransform {
 public:
   virtual ~TypeTransform() {}
 
-  const Type * transform(const Type * in) { return visit(in); }
+  //const Type * transform(const Type * in) { return visit(in); }
   QualifiedType transform(QualifiedType in) { return visit(in); }
 
-  const Type * operator()(const Type * in) { return visit(in); }
+  const Type * operator()(const Type * in) { return visit(in).unqualified(); }
   QualifiedType operator()(QualifiedType in) { return visit(in); }
 
-  const Type * visit(const Type * in);
-  QualifiedType visit(QualifiedType in) {
-    return QualifiedType(visit(in.type()), in.qualifiers());
-  }
+  //QualifiedType visit(const Type * in);
+  QualifiedType visit(QualifiedType in);
+//  {
+//    return QualifiedType(visit(in.type()), in.qualifiers());
+//  }
 
   virtual const Type * visitPrimitiveType(const PrimitiveType * in);
   virtual const Type * visitCompositeType(const CompositeType * in);
   virtual const Type * visitEnumType(const EnumType * in);
   virtual const Type * visitFunctionType(const FunctionType * in);
   virtual const Type * visitUnionType(const UnionType * in);
-  virtual const Type * visitTupleType(const TupleType * in);
+  virtual const TupleType * visitTupleType(const TupleType * in);
   virtual const Type * visitAddressType(const AddressType * in);
   virtual const Type * visitTypeLiteralType(const TypeLiteralType * in);
   virtual const Type * visitNativeArrayType(const NativeArrayType * in);
   virtual const Type * visitFlexibleArrayType(const FlexibleArrayType * in);
   virtual const Type * visitUnitType(const UnitType * in);
-  virtual const Type * visitTypeVariable(const TypeVariable * in);
-  virtual const Type * visitTypeAssignment(const TypeAssignment * in);
-  virtual const Type * visitTypeConstraint(const TypeConstraint * in);
+  virtual QualifiedType visitTypeVariable(const TypeVariable * in);
+  virtual QualifiedType visitTypeAssignment(const TypeAssignment * in);
+  virtual QualifiedType visitTypeConstraint(const TypeConstraint * in);
 
-  virtual const Type * visitTypeAlias(const TypeAlias * in);
+  virtual QualifiedType visitTypeAlias(const TypeAlias * in);
 };
 
 /// -------------------------------------------------------------------
@@ -69,10 +70,10 @@ class SubstitutionTransform : public TypeTransform {
 public:
   SubstitutionTransform(const QualifiedTypeVarMap & vars) : vars_(vars) {}
 
-  const Type * visitTypeVariable(const TypeVariable * in);
-  const Type * visitTypeAssignment(const TypeAssignment * in);
   const Type * visitCompositeType(const CompositeType * in);
-  const Type * visitTypeConstraint(const TypeConstraint * in);
+  QualifiedType visitTypeVariable(const TypeVariable * in);
+  QualifiedType visitTypeAssignment(const TypeAssignment * in);
+  QualifiedType visitTypeConstraint(const TypeConstraint * in);
 
 protected:
   const QualifiedTypeVarMap & vars_;
@@ -84,7 +85,7 @@ class RelabelTransform : public SubstitutionTransform {
 public:
   RelabelTransform(const QualifiedTypeVarMap & vars) : SubstitutionTransform(vars) {}
 
-  const Type * visitTypeVariable(const TypeVariable * in);
+  QualifiedType visitTypeVariable(const TypeVariable * in);
 };
 
 /// -------------------------------------------------------------------
@@ -93,7 +94,7 @@ class NormalizeTransform : public SubstitutionTransform {
 public:
   NormalizeTransform() : SubstitutionTransform(vars_) {}
 
-  const Type * visitTypeAssignment(const TypeAssignment * in);
+  QualifiedType visitTypeAssignment(const TypeAssignment * in);
 
   const QualifiedTypeVarMap vars_;
 };

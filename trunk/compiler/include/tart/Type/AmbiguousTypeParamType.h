@@ -16,7 +16,7 @@ namespace tart {
 /// type, which may itself be ambiguous.
 class AmbiguousTypeParamType : public TypeSetConstraint {
 public:
-  AmbiguousTypeParamType(const Type * base, const Type * match, unsigned paramIndex)
+  AmbiguousTypeParamType(QualifiedType base, const Type * match, unsigned paramIndex)
     : TypeSetConstraint(AmbiguousTypeParam)
     , base_(base)
     , match_(match)
@@ -26,10 +26,10 @@ public:
   /** Static helper function which either returns the Nth type param,
       or returns an ambiguous (i.e. lazy) type param type.
    */
-  static const Type * forType(const Type * base, const Type * match, unsigned paramIndex);
+  static QualifiedType forType(QualifiedType base, const Type * match, unsigned paramIndex);
 
   /** The base type. */
-  const Type * base() const { return base_; }
+  QualifiedType base() const { return base_; }
 
   /** The class or interface that originally defined the type parameter we want. */
   const Type * match() const { return match_; }
@@ -40,7 +40,7 @@ public:
   // Overrides
 
   void listProspects(ProspectList & out, const ProvisionSet & add) const;
-  void expand(TypeExpansion & out) const;
+  void expand(QualifiedTypeSet & out) const;
   void trace() const;
   void format(FormatStream & out) const;
 
@@ -50,7 +50,7 @@ public:
   }
 
 private:
-  const Type * base_;
+  QualifiedType base_;
   const Type * match_;
   unsigned paramIndex_;
 };

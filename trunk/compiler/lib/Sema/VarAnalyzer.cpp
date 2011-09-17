@@ -211,7 +211,7 @@ bool VarAnalyzer::resolveVarType() {
 
         // TODO: Only if this is a var, not a let
         if (target->type() == NULL) {
-          initType = IntegerSizingTransform().transform(initType);
+          initType = IntegerSizingTransform().transform(initType).unqualified();
           setTargetType(initType);
           analyzeType(initType, Task_PrepTypeComparison);
         }

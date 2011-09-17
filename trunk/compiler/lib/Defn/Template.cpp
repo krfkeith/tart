@@ -35,7 +35,7 @@ class FindTypeVariables : public TypeTransform {
 public:
   FindTypeVariables(TypeVariableList & vars) : vars_(vars) {}
 
-  const Type * visitTypeVariable(const TypeVariable * in) {
+  QualifiedType visitTypeVariable(const TypeVariable * in) {
     vars_.push_back(const_cast<TypeVariable *>(in));
     return in;
   }
@@ -61,8 +61,8 @@ llvm::Type * TypeVariable::createIRType() const {
   DFAIL("Invalid");
 }
 
-bool TypeVariable::canBindTo(const Type * value) const {
-  if (const UnitType * nt = dyn_cast<UnitType>(value)) {
+bool TypeVariable::canBindTo(QualifiedType value) const {
+  if (Qualified<UnitType> nt = value.dyn_cast<UnitType>()) {
     if (!value_) {
       return false;
     }
@@ -222,8 +222,8 @@ Defn * Template::instantiate(const SourceLocation & loc, const QualifiedTypeVarM
   QualifiedTypeList paramValues;
   for (TypeVariableList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
     TypeVariable * var = *it;
-    const Type * value = subst(var);
-    DASSERT_OBJ(value != NULL, var);
+    QualifiedType value = subst(var);
+    DASSERT_OBJ(value, var);
     //DASSERT_OBJ(!value->isNullType(), var);
     if (!var->canBindTo(value)) {
       diag.error(loc) << "Type of expression " << value <<
@@ -370,8 +370,8 @@ const Type * Template::instantiateType(
   SubstitutionTransform subst(varValues);
   for (TypeVariableList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
     TypeVariable * var = *it;
-    const Type * value = subst(var);
-    DASSERT_OBJ(value != NULL, var);
+    QualifiedType value = subst(var);
+    DASSERT_OBJ(value, var);
     if (!var->canBindTo(value)) {
       diag.fatal(loc) << "Type of expression " << value <<
           " incompatible with template parameter " << var << ":" << var->value();
@@ -385,7 +385,7 @@ const Type * Template::instantiateType(
     }
 
     // We might need to do some coercion here...
-    paramValues.push_back(const_cast<Type *>(value));
+    paramValues.push_back(value);
   }
 
   switch (tdef->value()->typeClass()) {

@@ -27,8 +27,8 @@ llvm::Type * TypeConstraint::irType() const {
 /// -------------------------------------------------------------------
 /// TypeSetConstraint
 
-const Type * TypeSetConstraint::singularValue() const {
-  TypeExpansion expansion;
+QualifiedType TypeSetConstraint::singularValue() const {
+  QualifiedTypeSet expansion;
   expand(expansion);
   if (expansion.size() == 1) {
     return *expansion.begin();
@@ -38,15 +38,15 @@ const Type * TypeSetConstraint::singularValue() const {
 }
 
 bool TypeSetConstraint::isSingular() const {
-  const Type * ty = singularValue();
-  return ty != NULL; // && ty->isSingular();
+  QualifiedType ty = singularValue();
+  return ty; // && ty->isSingular();
 }
 
 bool TypeSetConstraint::isReferenceType() const {
-  TypeExpansion expansion;
+  QualifiedTypeSet expansion;
   expand(expansion);
-  for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
-    const Type * ty = *it;
+  for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
+    QualifiedType ty = *it;
     if (!ty->isReferenceType()) {
       return false;
     }
@@ -60,10 +60,10 @@ void TypeSetConstraint::format(FormatStream & out) const {
   ++recursionCheck;
   DASSERT(recursionCheck < 50);
 
-  TypeExpansion expansion;
+  QualifiedTypeSet expansion;
   expand(expansion);
   out << "{";
-  for (TypeExpansion::const_iterator it = expansion.begin(); it != expansion.end(); ++it) {
+  for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
     if (it != expansion.begin()) {
       out << "|";
     }

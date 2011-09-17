@@ -58,9 +58,9 @@ QualifiedType dereferenceAlias(QualifiedType type) {
   return type;
 }
 
-void findTypeAssignments(TypeAssignmentSet & result, const Type * ty) {
-  if (const TypeAssignment * ta = dyn_cast<TypeAssignment>(ty)) {
-    TypeAssignment * taMutable = const_cast<TypeAssignment *>(ta);
+void findTypeAssignments(TypeAssignmentSet & result, QualifiedType ty) {
+  if (Qualified<TypeAssignment> ta = ty.dyn_cast<TypeAssignment>()) {
+    TypeAssignment * taMutable = const_cast<TypeAssignment *>(ta.unqualified());
     if (!result.count(taMutable)) {
       for (ConstraintSet::const_iterator it = ta->begin(), itEnd = ta->end(); it != itEnd; ++it) {
         Constraint * cst = *it;
@@ -508,14 +508,14 @@ bool BindingEnv::unifyTupleType(
 }
 
 bool BindingEnv::unifyWithTypeVar(
-    SourceContext * source, const TypeAssignment * ta, const Type * value,
+    SourceContext * source, const TypeAssignment * ta, QualifiedType value,
     Constraint::Kind kind, const ProvisionSet & provisions) {
 
   // Dereference the value as well.
   value = TypeAssignment::deref(value);
 
   // Don't bind a type assignment to itself.
-  if (ta == value) {
+  if (ta == value.unqualified()) {
     return true;
   }
 
@@ -527,7 +527,7 @@ bool BindingEnv::unifyWithTypeVar(
   // Calculate the set of all provisions
   ProvisionSet combinedProvisions(provisions);
   combinedProvisions.insertIfValid(ta->primaryProvision());
-  if (const TypeAssignment * taValue = dyn_cast<TypeAssignment>(value)) {
+  if (const TypeAssignment * taValue = dyn_cast<TypeAssignment>(value.unqualified())) {
     combinedProvisions.insertIfValid(taValue->primaryProvision());
   }
 
@@ -554,8 +554,8 @@ bool BindingEnv::unifyWithTypeVar(
     }
 
     // If the other side is also a type variable, add a reverse constraint to it.
-    if (const TypeAssignment * taValue = dyn_cast<TypeAssignment>(value)) {
-      const_cast<TypeAssignment *>(taValue)->constraints().insert(
+    if (value.isa<TypeAssignment>()) {
+      value.as<TypeAssignment>().unqualified()->mutableConstraints().insert(
           source->location(), ta, nextState(), Constraint::reverse(kind), combinedProvisions);
       if (DebugUnify || unifyVerbose) {
         diag.debug() << "bind " << value << " " << kind << " " << ta;
@@ -664,7 +664,7 @@ bool BindingEnv::updateAssignments(SourceLocation loc, GC * context) {
   // One final thing - transform the TAs values to get rid of references to other TAs.
   NormalizeTransform nxform;
   for (TypeAssignment * ta = assignments_; ta != NULL; ta = ta->next()) {
-    if (ta->value() != NULL &&
+    if (ta->value() &&
         ta->checkPrimaryProvision() &&
         (ta->scope() == context || context == NULL)) {
       ta->setValue(nxform(ta->value()));
@@ -698,10 +698,10 @@ bool BindingEnv::reconcileConstraints(GC * context) {
     unsolvedCount = 0;
     for (TypeAssignmentList::const_iterator it = unsolved.begin(); it != unsolved.end(); ++it) {
       TypeAssignment * ta = *it;
-      if (ta->value() == NULL) {
+      if (!ta->value()) {
         ta->setValue(ta->findSingularSolution());
       }
-      if (ta->value() == NULL) {
+      if (!ta->value()) {
         ++unsolvedCount;
       }
     }
@@ -712,8 +712,7 @@ bool BindingEnv::reconcileConstraints(GC * context) {
 
 void BindingEnv::toTypeVarMap(QualifiedTypeVarMap & map, GC * context) {
   for (TypeAssignment * ta = assignments_; ta != NULL; ta = ta->next()) {
-    if (ta->scope() == context && ta->value() != NULL) {
-      DASSERT_OBJ(ta->value() != NULL, ta);
+    if (ta->scope() == context && ta->value()) {
       map[ta->target()] = ta->value();
     }
   }
@@ -733,14 +732,14 @@ bool BindingEnv::isAssigned(const Type * ty) const {
 
 void BindingEnv::dumpAssignment(TypeAssignment * ta) const {
   if (ta->constraints().empty()) {
-    if (ta->value() != NULL) {
+    if (ta->value()) {
       diag.debug() << ta << " [" << ta->value() << "]";
     } else {
       diag.debug() << ta << " == {}";
     }
   } else if (ta->constraints().size() == 1) {
     Constraint * s = ta->constraints().front();
-    if (ta->value() != NULL) {
+    if (ta->value()) {
       diag.debug() << ta << " " << s->kind() << " " << s->value() << " [" << ta->value() << "]";
     } else {
       diag.debug() << ta << " " << s->kind() << " " << s->value();
@@ -749,7 +748,7 @@ void BindingEnv::dumpAssignment(TypeAssignment * ta) const {
     dumpProvisions(s->provisions());
     diag.unindent();
   } else {
-    if (ta->value() != NULL) {
+    if (ta->value()) {
       diag.debug() << ta << " [" << ta->value() << "]:";
     } else {
       diag.debug() << ta << ":";

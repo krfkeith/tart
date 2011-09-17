@@ -35,7 +35,7 @@ TypeAssignment::TypeAssignment(const TypeVariable * target, GC * scope)
 {
 }
 
-void TypeAssignment::setValue(const Type * value) {
+void TypeAssignment::setValue(QualifiedType value) {
   value_ = value;
 }
 
@@ -44,8 +44,8 @@ void TypeAssignment::remove(ConstraintSet::iterator si) {
 }
 
 bool TypeAssignment::isSingular() const {
-  if (const Type * val = value()) {
-    return val->isSingular();
+  if (value_) {
+    return value_->isSingular();
   }
 
   return false;
@@ -59,8 +59,8 @@ bool TypeAssignment::isReferenceType() const {
   return false;
 }
 
-void TypeAssignment::expand(TypeExpansion & out) const {
-  if (value_ != NULL) {
+void TypeAssignment::expand(QualifiedTypeSet & out) const {
+  if (value_) {
     value_->expand(out);
   } else {
     for (ConstraintSet::const_iterator si = begin(), sEnd = end(); si != sEnd; ++si) {
@@ -74,7 +74,7 @@ void TypeAssignment::expand(TypeExpansion & out) const {
   }
 }
 
-const Type * TypeAssignment::findSingularSolution() {
+QualifiedType TypeAssignment::findSingularSolution() {
   ConstraintSet::const_iterator ciEnd = end();
 
   // First check all the EXACT constraints
@@ -83,8 +83,8 @@ const Type * TypeAssignment::findSingularSolution() {
     Constraint * c = *ci;
     if (c->checkProvisions()) {
       if (c->kind() == Constraint::EXACT) {
-        const Type * ty = TypeAssignment::deref(c->value());
-        if (value_ == NULL) {
+        QualifiedType ty = TypeAssignment::deref(c->value());
+        if (!value_) {
           value_ = ty;
         } else if (!TypeRelation::isEqual(value_, ty)) {
           value_ = NULL;
@@ -95,7 +95,7 @@ const Type * TypeAssignment::findSingularSolution() {
   }
 
   // Now check all the other constraints to insure that it satisfies them all.
-  if (value_ != NULL) {
+  if (value_) {
     for (ConstraintSet::const_iterator ci = begin(); ci != ciEnd; ++ci) {
       Constraint * c = *ci;
       if (c->checkProvisions() && c->kind() != Constraint::EXACT && !c->accepts(value_)) {
@@ -111,8 +111,8 @@ const Type * TypeAssignment::findSingularSolution() {
     Constraint * c = *ci;
     if (c->checkProvisions()) {
       if (c->kind() == Constraint::LOWER_BOUND) {
-        const Type * ty = TypeAssignment::deref(c->value());
-        if (value_ == NULL) {
+        QualifiedType ty = TypeAssignment::deref(c->value());
+        if (!value_) {
           value_ = ty;
         } else if (TypeRelation::isSubtype(ty, value_)) {
           continue;
@@ -121,7 +121,7 @@ const Type * TypeAssignment::findSingularSolution() {
         } else {
           // Attempt to find a common base of value_ and the lower bound.
           value_ = Type::commonBase(value_, ty);
-          if (value_ == NULL) {
+          if (!value_) {
             return NULL;
           }
         }
@@ -130,7 +130,7 @@ const Type * TypeAssignment::findSingularSolution() {
   }
 
   // Now check all the other constraints to insure that it satisfies them all.
-  if (value_ != NULL) {
+  if (value_) {
     for (ConstraintSet::const_iterator ci = begin(); ci != ciEnd; ++ci) {
       Constraint * c = *ci;
       if (c->checkProvisions() && c->kind() == Constraint::UPPER_BOUND && !c->accepts(value_) &&
@@ -143,13 +143,13 @@ const Type * TypeAssignment::findSingularSolution() {
   }
 
   // There were no LOWER_BOUND constraints, so try UPPER_BOUND constraints:
-  if (value_ == NULL) {
+  if (!value_) {
     for (ConstraintSet::const_iterator ci = begin(); ci != ciEnd; ++ci) {
       Constraint * c = *ci;
       if (c->checkProvisions()) {
         if (c->kind() == Constraint::UPPER_BOUND) {
-          const Type * ty = TypeAssignment::deref(c->value());
-          if (value_ == NULL) {
+          QualifiedType ty = TypeAssignment::deref(c->value());
+          if (!value_) {
             value_ = ty;
           } else if (TypeRelation::isSubtype(ty, value_)) {
             value_ = ty;
@@ -174,7 +174,7 @@ Expr * TypeAssignment::nullInitValue() const {
 void TypeAssignment::trace() const {
   safeMark(next_);
   safeMark(target_);
-  safeMark(value_);
+  safeMark(value_.unqualified());
   for (ConstraintSet::const_iterator si = begin(), sEnd = end(); si != sEnd; ++si) {
     (*si)->mark();
   }
@@ -183,7 +183,7 @@ void TypeAssignment::trace() const {
 void TypeAssignment::format(FormatStream & out) const {
   out << target_ << "." << sequenceNum_;
   if (out.isVerbose()) {
-    if (value_ != NULL) {
+    if (value_) {
       out << "==";
       value_->format(out);
     } else if (!constraints_.empty()) {
@@ -203,9 +203,9 @@ llvm::Type * TypeAssignment::irType() const {
   DFAIL("IllegalState");
 }
 
-const Type * TypeAssignment::deref(const Type * in) {
-  while (const TypeAssignment * ta = dyn_cast<TypeAssignment>(in)) {
-    if (ta->value() != NULL) {
+QualifiedType TypeAssignment::deref(QualifiedType in) {
+  while (Qualified<TypeAssignment> ta = in.dyn_cast<TypeAssignment>()) {
+    if (ta->value()) {
       in = ta->value();
     } else {
       break;
