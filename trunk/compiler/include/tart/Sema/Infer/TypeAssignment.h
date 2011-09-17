@@ -69,13 +69,16 @@ public:
   int sequenceNum() const { return sequenceNum_; }
 
   /** The final value of the type, after all constraints have been solved. */
-  const Type * value() const { return value_; }
-  void setValue(const Type * value);
+  QualifiedType value() const { return value_; }
+  void setValue(QualifiedType value);
 
   /** The list of constraints. You can think of a constraint as an assertion
       of equivalence. */
   const ConstraintSet & constraints() const { return constraints_; }
   ConstraintSet & constraints() { return constraints_; }
+  ConstraintSet & mutableConstraints() const {
+    return const_cast<TypeAssignment *>(this)->constraints_;
+  }
   ConstraintSet::iterator begin() { return constraints_.begin(); }
   ConstraintSet::const_iterator begin() const { return constraints_.begin(); }
   ConstraintSet::iterator end() { return constraints_.end(); }
@@ -90,25 +93,25 @@ public:
 
   /** Given a comparison function, apply the comparison to all subsitutions, and return true
       if they all pass the test. */
-  bool compare(bool (Type::*func)(const Type *) const, const Type * other) const;
+  //bool compare(bool (Type::*func)(const Type *) const, const Type * other) const;
 
   /** Set the value of this assignment to a type that satisfies all active constraints,
       if such as type can be found. Sets value to NULL if there is no such type. */
-  const Type * findSingularSolution();
+  QualifiedType findSingularSolution();
 
   // Statics
 
   /** If 'in' is a type assignment with a value, return the value, otherwise return 'in'
       unchanged. */
-  static const Type * deref(const Type * in);
+  static QualifiedType deref(QualifiedType in);
 
   // Overrides
 
-  void expand(TypeExpansion & out) const;
+  void expand(QualifiedTypeSet & out) const;
   bool isSingular() const;
   bool isReferenceType() const;
   TypeShape typeShape() const {
-    return value_ != NULL ? value_->typeShape() : Shape_Unset;
+    return value_ ? value_->typeShape() : Shape_Unset;
   }
   Expr * nullInitValue() const;
   void trace() const;
@@ -130,15 +133,16 @@ private:
   const TypeVariable * target_;
   const Provision * primaryProvision_;
   int sequenceNum_;
-  const Type * value_;
+  QualifiedType value_;
   ConstraintSet constraints_;
 };
 
+#if 0
 inline bool TypeAssignment::compare(
     bool (Type::*func)(const Type *) const,
     const Type * other) const {
-  if (value_ != NULL) {
-    return (value_->*func)(other);
+  if (value_) {
+    return (value_.type()->*func)(other);
   } else {
     bool atLeastOne = false;
     for (ConstraintSet::const_iterator it = constraints_.begin(); it != constraints_.end();
@@ -158,6 +162,7 @@ inline bool TypeAssignment::compare(
   }
   return true;
 }
+#endif
 
 } // namespace tart
 

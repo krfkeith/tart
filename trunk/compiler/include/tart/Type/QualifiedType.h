@@ -130,6 +130,12 @@ public:
     return Qualified<T2>(llvm::dyn_cast<T2>(type_), qualifiers_);
   }
 
+  /** Dynamic cast. */
+  template <class T2>
+  const Qualified<T2> dyn_cast_or_null() const {
+    return Qualified<T2>(llvm::dyn_cast_or_null<T2>(type_), qualifiers_);
+  }
+
   /** Type check. */
   template <class T2>
   bool isa() const {

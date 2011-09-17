@@ -37,13 +37,13 @@ bool Constraint::checkProvisions() const {
 }
 
 void Constraint::trace() const {
-  safeMark(value_);
+  safeMark(value_.unqualified());
   for (ProvisionSet::const_iterator it = provisions_.begin(); it != provisions_.end(); ++it) {
     (*it)->mark();
   }
 }
 
-bool Constraint::accepts(const Type * ty) const {
+bool Constraint::accepts(QualifiedType ty) const {
   switch (kind_) {
     case EXACT:
       return TypeRelation::isEqual(ty, value_);
@@ -65,8 +65,8 @@ bool Constraint::equals(const Constraint * cst) const {
 }
 
 Constraint * Constraint::intersect(Constraint * cl, Constraint * cr) {
-  const Type * tl = cl->value();
-  const Type * tr = cr->value();
+  QualifiedType tl = cl->value();
+  QualifiedType tr = cr->value();
 
   bool isMoreLenient0 = cr->provisions().implies(cl->provisions());
   bool isMoreLenient1 = cl->provisions().implies(cr->provisions());
@@ -97,10 +97,10 @@ Constraint * Constraint::intersect(Constraint * cl, Constraint * cr) {
   bool isSubtypeL = false;
   bool isSubtypeR = false;
 
-  if (const CompositeType * ct0 = dyn_cast<CompositeType>(tl)) {
-    if (const CompositeType * ct1 = dyn_cast<CompositeType>(tr)) {
-      isSubtypeL = ct0->isSubclassOf(ct1);
-      isSubtypeR = ct1->isSubclassOf(ct0);
+  if (Qualified<CompositeType> ct0 = tl.dyn_cast<CompositeType>()) {
+    if (Qualified<CompositeType> ct1 = tr.dyn_cast<CompositeType>()) {
+      isSubtypeL = ct0->isSubclassOf(ct1.type());
+      isSubtypeR = ct1->isSubclassOf(ct0.type());
     }
   } else if (tl->isIntType() && tr->isIntType()) {
     isSubtypeL = TypeRelation::isSubtype(tl, tr);
@@ -159,8 +159,8 @@ Constraint * Constraint::intersect(Constraint * cl, Constraint * cr) {
 }
 
 bool Constraint::contradicts(const Constraint * cl, const Constraint * cr) {
-  const Type * tl = cl->value();
-  const Type * tr = cr->value();
+  const Type * tl = cl->value().type();
+  const Type * tr = cr->value().type();
 
   if (tl == tr) {
     return false;

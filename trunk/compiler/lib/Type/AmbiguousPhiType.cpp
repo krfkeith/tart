@@ -27,19 +27,19 @@ void AmbiguousPhiType::listProspects(ProspectList & out, const ProvisionSet & ad
   }
 }
 
-void AmbiguousPhiType::expand(TypeExpansion & out) const {
+void AmbiguousPhiType::expand(QualifiedTypeSet & out) const {
   for (ConstTypeList::const_iterator it = types_.begin(), itEnd = types_.end(); it != itEnd; ++it) {
     const Type * ty = *it;
     ty->expand(out);
   }
 }
 
-const Type * AmbiguousPhiType::singularValue() const {
+QualifiedType AmbiguousPhiType::singularValue() const {
   DFAIL("Implement");
 }
 
 bool AmbiguousPhiType::isSingular() const {
-  return common_ != NULL && common_->isSingular();
+  return common_ && common_->isSingular();
 }
 
 bool AmbiguousPhiType::isReferenceType() const {

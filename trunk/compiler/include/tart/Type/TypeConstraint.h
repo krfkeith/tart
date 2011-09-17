@@ -26,7 +26,7 @@ class TupleCtorExpr;
 class TypeConstraint : public Type {
 public:
 
-  virtual const Type * singularValue() const = 0;
+  virtual QualifiedType singularValue() const = 0;
 
   // Overrides
 
@@ -49,7 +49,7 @@ protected:
 class TypeSetConstraint : public TypeConstraint {
 public:
 
-  const Type * singularValue() const;
+  QualifiedType singularValue() const;
   bool isSingular() const;
   bool isReferenceType() const;
   void format(FormatStream & out) const;

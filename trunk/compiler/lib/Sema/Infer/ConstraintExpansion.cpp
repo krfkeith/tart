@@ -21,15 +21,15 @@ bool ConstraintExpansion::expand(Constraint * s) {
   return expand(s->value(), s->kind(), s->provisions());
 }
 
-bool ConstraintExpansion::expand(const Type * ty, Constraint::Kind kind,
+bool ConstraintExpansion::expand(QualifiedType ty, Constraint::Kind kind,
     const ProvisionSet & provisions) {
   switch (ty->typeClass()) {
     case Type::Assignment: {
-      const TypeAssignment * ta = static_cast<const TypeAssignment *>(ty);
+      Qualified<TypeAssignment> ta = ty.as<TypeAssignment>();
 
       // If the TA is unconditionally set to a value, then don't bother with
       // the constraints.
-      if (ta->value() != NULL) {
+      if (ta->value()) {
         if (ta->value() != exclude_) {
           result_.insertAndOptimize(SourceLocation(), ta->value(), kind, provisions);
         }
@@ -62,8 +62,8 @@ bool ConstraintExpansion::expand(const Type * ty, Constraint::Kind kind,
           ProvisionSet unionProvisions(provisions);
           unionProvisions.insert(c->provisions().begin(), c->provisions().end());
           if (unionProvisions.isConsistent()) {
-            tempResult.insert(c->location(), c->value(), combinedKind,
-                unionProvisions);
+            tempResult.insert(new Constraint(c->location(), c->value(), combinedKind,
+                unionProvisions));
           }
         }
       }
@@ -78,7 +78,7 @@ bool ConstraintExpansion::expand(const Type * ty, Constraint::Kind kind,
     }
 
     case Type::AmbiguousParameter: {
-      const AmbiguousParameterType * apt = static_cast<const AmbiguousParameterType *>(ty);
+      Qualified<AmbiguousParameterType> apt = ty.as<AmbiguousParameterType>();
       const Candidates & cd = apt->expr()->candidates();
       for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
         CallCandidate * cc = *it;
@@ -93,7 +93,7 @@ bool ConstraintExpansion::expand(const Type * ty, Constraint::Kind kind,
     }
 
     case Type::AmbiguousResult: {
-      const AmbiguousResultType * art = static_cast<const AmbiguousResultType *>(ty);
+      Qualified<AmbiguousResultType> art = ty.as<AmbiguousResultType>();
       const Candidates & cd = art->expr()->candidates();
       for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
         CallCandidate * cc = *it;
@@ -108,7 +108,7 @@ bool ConstraintExpansion::expand(const Type * ty, Constraint::Kind kind,
     }
 
     case Type::AmbiguousTypeParam: {
-      const AmbiguousTypeParamType * tpt = static_cast<const AmbiguousTypeParamType *>(ty);
+      Qualified<AmbiguousTypeParamType> tpt = ty.as<AmbiguousTypeParamType>();
       // Expand the base type.
       ConstraintExpansion expander(exclude_);
       if (!expander.expand(tpt->base(), kind, provisions)) {
@@ -123,9 +123,9 @@ bool ConstraintExpansion::expand(const Type * ty, Constraint::Kind kind,
 
       for (ConstraintSet::const_iterator si = cs.begin(), sEnd = cs.end(); si != sEnd; ++si) {
         Constraint * cst = *si;
-        const Type * st = AmbiguousTypeParamType::forType(
+        QualifiedType st = AmbiguousTypeParamType::forType(
             cst->value(), tpt->match(), tpt->paramIndex());
-        if (st != NULL) {
+        if (st) {
           result_.insertAndOptimize(
               cst->location(), st, Constraint::combine(kind, cst->kind()), cst->provisions());
         }

@@ -126,7 +126,7 @@ private:
 
   bool unifyImpl(SourceContext * source, const Type * left, const Type * right,
       Constraint::Kind kind, const ProvisionSet & provisions);
-  bool unifyWithTypeVar(SourceContext * source, const TypeAssignment * ta, const Type * value,
+  bool unifyWithTypeVar(SourceContext * source, const TypeAssignment * ta, QualifiedType value,
       Constraint::Kind kind, const ProvisionSet & provisions);
   bool unifyWithAmbiguousType(SourceContext * source, const Type * amb,
       const Type * value, Constraint::Kind kind, const ProvisionSet & provisions);

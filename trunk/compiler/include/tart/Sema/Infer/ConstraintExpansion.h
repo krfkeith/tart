@@ -30,7 +30,7 @@ public:
 
   /** Similar to expand above, except that it takes the individual properties
       of a constraint. */
-  bool expand(const Type * ty, Constraint::Kind kind, const ProvisionSet & provisions);
+  bool expand(QualifiedType ty, Constraint::Kind kind, const ProvisionSet & provisions);
 
   /** Expand all of the constraints in the list 'sl'. Substitutions which cannot
       be expanded are added to the result list unchanged. */

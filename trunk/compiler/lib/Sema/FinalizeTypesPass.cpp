@@ -786,8 +786,8 @@ Expr * FinalizeTypesPassImpl::visitTupleCtor(TupleCtorExpr * in) {
 Expr * FinalizeTypesPassImpl::visitTypeLiteral(TypeLiteralExpr * in) {
   const Type * type = in->value();
   if (const TypeAssignment * tb = dyn_cast<TypeAssignment>(type)) {
-    if (tb->value() != NULL) {
-      return new TypeLiteralExpr(in->location(), tb->value());
+    if (tb->value()) {
+      return new TypeLiteralExpr(in->location(), tb->value().unqualified());
     }
 
     return in;
@@ -804,7 +804,7 @@ Expr * FinalizeTypesPassImpl::visitTypeLiteral(TypeLiteralExpr * in) {
 Expr * FinalizeTypesPassImpl::visitIf(IfExpr * in) {
   CFGPass::visitIf(in);
   if (const AmbiguousPhiType * phi = dyn_cast_or_null<AmbiguousPhiType>(in->type())) {
-    const Type * singularCommon = getCommonPhiType(phi);
+    QualifiedType singularCommon = getCommonPhiType(phi);
     if (singularCommon) {
       in->setType(singularCommon);
     }
@@ -823,7 +823,7 @@ Expr * FinalizeTypesPassImpl::visitIf(IfExpr * in) {
 Expr * FinalizeTypesPassImpl::visitSwitch(SwitchExpr * in) {
   CFGPass::visitSwitch(in);
   if (const AmbiguousPhiType * phi = dyn_cast_or_null<AmbiguousPhiType>(in->type())) {
-    if (phi->common() != NULL) {
+    if (phi->common()) {
       in->setType(phi->common());
     }
   }
@@ -844,7 +844,7 @@ Expr * FinalizeTypesPassImpl::visitSwitch(SwitchExpr * in) {
 Expr * FinalizeTypesPassImpl::visitMatch(MatchExpr * in) {
   CFGPass::visitMatch(in);
   if (const AmbiguousPhiType * phi = dyn_cast_or_null<AmbiguousPhiType>(in->type())) {
-    if (phi->common() != NULL) {
+    if (phi->common()) {
       in->setType(phi->common());
     }
   }
@@ -876,9 +876,9 @@ Expr * FinalizeTypesPassImpl::handleUnboxCast(CastExpr * in) {
   return in;
 }
 
-const Type * FinalizeTypesPassImpl::getCommonPhiType(const AmbiguousPhiType * phi) {
-  if (const TypeConstraint * tc = dyn_cast_or_null<TypeConstraint>(phi->common())) {
-    if (tc->singularValue() != NULL) {
+QualifiedType FinalizeTypesPassImpl::getCommonPhiType(const AmbiguousPhiType * phi) {
+  if (Qualified<TypeConstraint> tc = phi->common().dyn_cast_or_null<TypeConstraint>()) {
+    if (tc->singularValue()) {
       return tc->singularValue();
     }
   }

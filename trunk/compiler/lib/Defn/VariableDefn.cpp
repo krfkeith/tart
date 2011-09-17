@@ -37,8 +37,8 @@ VariableDefn::VariableDefn(DefnType dtype, Module * m, const ASTDecl * de)
 
 void VariableDefn::trace() const {
   ValueDefn::trace();
-  safeMark(type_);
-  safeMark(sharedRefType_);
+  safeMark(type_.type());
+  safeMark(sharedRefType_.type());
   safeMark(initValue_);
 }
 
@@ -112,7 +112,7 @@ void VariableDefn::format(FormatStream & out) const {
     out << name_;
   }
 
-  if (out.getShowType() && type_ != NULL) {
+  if (out.getShowType() && type_) {
     out << ":" << type_;
   }
 

@@ -59,7 +59,7 @@ public:
   void setMemberIndexRecursive(int index) { memberIndexRecursive_ = index; }
 
   /** Set the type of this variable. */
-  void setType(const Type * ty) { type_= ty; }
+  void setType(QualifiedType ty) { type_= ty; }
 
   /** Variable flags. */
   uint32_t flags() const { return flags_; }
@@ -97,9 +97,9 @@ public:
   /** If this variable is a closure variable (meaning that it is shared between
       multiple environments) then this is the type of the shared reference cell
       containing the variable. */
-  const Type * sharedRefType() const { return sharedRefType_; }
+  const Type * sharedRefType() const { return sharedRefType_.type(); }
   void setSharedRefType(const Type * type) { sharedRefType_ = type; }
-  bool isSharedRef() const { return sharedRefType_ != NULL; }
+  bool isSharedRef() const { return !sharedRefType_.isNull(); }
 
   /** True if this variable is external to this module. */
   bool isExtern() const { return getFlag(Extern); }
@@ -114,7 +114,7 @@ public:
 
   // Overrides
 
-  const Type * type() const { return type_; }
+  const Type * type() const { return type_.type(); }
   void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const VariableDefn *) { return true; }
@@ -124,8 +124,8 @@ public:
   }
 
 private:
-  const Type * type_;
-  const Type * sharedRefType_;
+  QualifiedType type_;
+  QualifiedType sharedRefType_;
   uint32_t flags_;
   Expr * initValue_;
   mutable llvm::Value * irValue_;

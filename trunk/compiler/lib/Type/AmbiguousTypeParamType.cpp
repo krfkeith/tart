@@ -17,7 +17,7 @@ namespace tart {
 // -------------------------------------------------------------------
 // AmbiguousTypeParamType
 
-const Type * AmbiguousTypeParamType::forType(const Type * base, const Type * match,
+QualifiedType AmbiguousTypeParamType::forType(QualifiedType base, const Type * match,
     unsigned paramIndex) {
   base = dealias(base);
   match = dealias(match);
@@ -26,21 +26,21 @@ const Type * AmbiguousTypeParamType::forType(const Type * base, const Type * mat
     case Type::Struct:
     case Type::Interface:
     case Type::Protocol: {
-      const CompositeType * ctBase = static_cast<const CompositeType *>(base);
+      const CompositeType * ctBase = static_cast<const CompositeType *>(base.type());
       if (const CompositeType * ctMatch = dyn_cast_or_null<CompositeType>(match)) {
         if (ctMatch != NULL) {
           base = ctBase->findBaseSpecializing(ctMatch);
-          if (base == NULL) {
-            return NULL;
+          if (!base) {
+            return QualifiedType();
           }
         }
         if (paramIndex >= base->numTypeParams()) {
-          return NULL;
+          return QualifiedType();
         } else {
           return base->typeParam(paramIndex).type();
         }
       }
-      return NULL;
+      return QualifiedType();
     }
 
     case Type::NAddress:
@@ -49,12 +49,12 @@ const Type * AmbiguousTypeParamType::forType(const Type * base, const Type * mat
       if (paramIndex == 0 && (match == NULL || base->typeClass() == match->typeClass())) {
         return base->typeParam(0).type();
       }
-      return NULL;
+      return QualifiedType();
     }
 
     case Type::Tuple: {
       if (match != NULL || paramIndex >= base->numTypeParams()) {
-        return NULL;
+        return QualifiedType();
       } else {
         return base->typeParam(paramIndex).type();
       }
@@ -65,7 +65,7 @@ const Type * AmbiguousTypeParamType::forType(const Type * base, const Type * mat
     case Type::AmbiguousTypeParam:
     case Type::AmbiguousPhi:
     case Type::Assignment: {
-      TypeExpansion expansion;
+      QualifiedTypeSet expansion;
       base->expand(expansion);
       if (expansion.size() == 1) {
         return forType(*expansion.begin(), match, paramIndex);
@@ -74,7 +74,7 @@ const Type * AmbiguousTypeParamType::forType(const Type * base, const Type * mat
     }
 
     default:
-      return NULL;
+      return QualifiedType();
   }
 }
 
@@ -82,8 +82,8 @@ void AmbiguousTypeParamType::listProspects(ProspectList & out, const ProvisionSe
   ProspectList plist;
   AmbiguousType::listProspects(plist, base_, add);
   for (ProspectList::const_iterator it = plist.begin(), itEnd = plist.end(); it != itEnd; ++it) {
-    const Type * ty = forType(it->type(), match_, paramIndex_);
-    if (ty != NULL) {
+    QualifiedType ty = forType(it->type(), match_, paramIndex_);
+    if (ty) {
       out.push_back(Prospect(ty, it->provisions()));
     } else {
       out.push_back(Prospect(&BadType::instance, it->provisions()));
@@ -91,12 +91,12 @@ void AmbiguousTypeParamType::listProspects(ProspectList & out, const ProvisionSe
   }
 }
 
-void AmbiguousTypeParamType::expand(TypeExpansion & out) const {
-  TypeExpansion baseExpansion;
+void AmbiguousTypeParamType::expand(QualifiedTypeSet & out) const {
+  QualifiedTypeSet baseExpansion;
   base_->expand(baseExpansion);
-  for (TypeExpansion::const_iterator it = baseExpansion.begin(); it != baseExpansion.end(); ++it) {
-    const Type * ty = forType(*it, match_, paramIndex_);
-    if (ty != NULL) {
+  for (QualifiedTypeSet::iterator it = baseExpansion.begin(); it != baseExpansion.end(); ++it) {
+    QualifiedType ty = forType(*it, match_, paramIndex_);
+    if (ty) {
       out.insert(ty);
     } else {
       out.insert(&BadType::instance);
@@ -111,7 +111,7 @@ void AmbiguousTypeParamType::trace() const {
 }
 
 void AmbiguousTypeParamType::format(FormatStream & out) const {
-  TypeExpansion expansion;
+  QualifiedTypeSet expansion;
   expand(expansion);
   if (expansion.empty()) {
     out << "{" << base_ << "[%" << paramIndex_ << "]}";

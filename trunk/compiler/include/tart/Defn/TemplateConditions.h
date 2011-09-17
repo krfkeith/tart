@@ -26,19 +26,19 @@ public:
 class TypeComparisonCondition : public TemplateCondition {
 public:
 
-  TypeComparisonCondition(const Type * first, const Type * second)
+  TypeComparisonCondition(QualifiedType first, QualifiedType second)
     : first_(first)
     , second_(second)
   {}
 
-  const Type * first() const { return first_; }
-  const Type * second() const { return second_; }
+  QualifiedType first() const { return first_; }
+  QualifiedType second() const { return second_; }
 
   void trace() const;
 
 protected:
-  const Type * first_;
-  const Type * second_;
+  QualifiedType first_;
+  QualifiedType second_;
 };
 
 /// -------------------------------------------------------------------
@@ -46,7 +46,7 @@ protected:
 class IsSubtypeCondition : public TypeComparisonCondition {
 public:
 
-  IsSubtypeCondition(const Type * first, const Type * second)
+  IsSubtypeCondition(QualifiedType first, QualifiedType second)
     : TypeComparisonCondition(first, second)
   {}
 

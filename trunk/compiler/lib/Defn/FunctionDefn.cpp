@@ -22,7 +22,7 @@ namespace tart {
 
 void ParameterDefn::trace() const {
   VariableDefn::trace();
-  safeMark(internalType_);
+  safeMark(internalType_.unqualified());
 }
 
 void ParameterDefn::format(FormatStream & out) const {

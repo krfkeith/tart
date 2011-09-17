@@ -19,11 +19,11 @@ typedef llvm::SmallPtrSet<const Type *, 4> TypeSolutionSet;
 class ConstraintSet : public llvm::SmallVector<Constraint *, 4> {
 public:
   /** Add a new constraint, or return an existing one if it matches. */
-  Constraint * insert(SLC & loc, const Type * ty, unsigned state, Constraint::Kind kind,
+  Constraint * insert(SLC & loc, QualifiedType ty, unsigned state, Constraint::Kind kind,
       const ProvisionSet & provisions = ProvisionSet());
 
   /** Add a new constraint, or return an existing one if it matches. */
-  Constraint * insert(SLC & loc, const Type * ty, Constraint::Kind kind,
+  Constraint * insert(SLC & loc, QualifiedType ty, Constraint::Kind kind,
       const ProvisionSet & provisions = ProvisionSet());
 
   /** Add a new constraint, or return an existing one if it matches. */
@@ -31,7 +31,7 @@ public:
 
   /** Insert a constraint, merging with existing constraints if possible. */
   Constraint * insertAndOptimize(
-      SLC & loc, const Type * ty, Constraint::Kind kind, const ProvisionSet & provisions);
+      SLC & loc, QualifiedType ty, Constraint::Kind kind, const ProvisionSet & provisions);
 
   /** Insert a constraint, merging with existing constraints if possible. */
   Constraint * insertAndOptimize(Constraint * in);

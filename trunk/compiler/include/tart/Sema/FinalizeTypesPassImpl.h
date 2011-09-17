@@ -60,7 +60,7 @@ private:
 
   Expr * addCastIfNeeded(Expr * in, const Type * toType, unsigned options = AO_IMPLICIT_CAST);
   Expr * handleUnboxCast(CastExpr * in);
-  const Type * getCommonPhiType(const AmbiguousPhiType * phi);
+  QualifiedType getCommonPhiType(const AmbiguousPhiType * phi);
 };
 
 } // namespace tart

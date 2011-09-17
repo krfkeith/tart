@@ -45,7 +45,7 @@ public:
   void setIsVariadic(bool isVariadic) { isVariadic_ = isVariadic; }
 
   /** Return true if the specified type value can be bound to this type. */
-  bool canBindTo(const Type * value) const;
+  bool canBindTo(QualifiedType value) const;
 
   // Overrides
 

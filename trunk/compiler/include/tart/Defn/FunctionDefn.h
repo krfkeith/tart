@@ -46,22 +46,22 @@ public:
   }
 
   /** Constructor that takes a name and a type (for static decls.) */
-  ParameterDefn(Module * m, StringRef name, const Type * ty, int paramFlags,
+  ParameterDefn(Module * m, StringRef name, QualifiedType ty, int paramFlags,
       Expr * defaultVal = NULL)
     : VariableDefn(Parameter, m, name, defaultVal)
     , internalType_(ty)
     , variance_(Contravariant)
     , flags_(paramFlags)
   {
+    DASSERT(ty) << "Invalid type for ParameterDefn " << name;
     setType(ty);
-    assert(ty != NULL);
     setStorageClass(Storage_Local);
   }
 
   /** The 'internal' type is the type of the parameter as it appears within the function body,
       which may not be the same as it appears externally. */
-  const Type * internalType() const { return internalType_; }
-  void setInternalType(const Type * type) { internalType_ = type; }
+  const Type * internalType() const { return internalType_.type(); }
+  void setInternalType(QualifiedType type) { internalType_ = type; }
 
   /** Whether this parameter is covariant, contravariant, or invariant. */
   Variance variance() const { return variance_; }
@@ -93,7 +93,7 @@ public:
   }
 
 private:
-  const Type * internalType_;
+  QualifiedType internalType_;
   Variance variance_;
   uint32_t flags_;
 };
