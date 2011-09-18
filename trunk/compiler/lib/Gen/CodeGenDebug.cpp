@@ -293,44 +293,44 @@ DIType CodeGenerator::genDIType(QualifiedType type) {
   }
 
   type->irType(); // Force eager evaluation of irType.
-
+  const Type * unqual = type.unqualified();
   switch (type->typeClass()) {
     case Type::Primitive:
-      result = genDIPrimitiveType(static_cast<const PrimitiveType *>(type.type()));
+      result = genDIPrimitiveType(static_cast<const PrimitiveType *>(unqual));
       break;
 
     case Type::Class:
     case Type::Struct:
     case Type::Interface:
-      return genDICompositeType(static_cast<const CompositeType *>(type.type()));
+      return genDICompositeType(static_cast<const CompositeType *>(unqual));
       break;
 
     case Type::Enum:
-      result = genDIEnumType(static_cast<const EnumType *>(type.type()));
+      result = genDIEnumType(static_cast<const EnumType *>(unqual));
       break;
 
     case Type::NArray:
-      result = genDINativeArrayType(static_cast<const NativeArrayType *>(type.type()));
+      result = genDINativeArrayType(static_cast<const NativeArrayType *>(unqual));
       break;
 
     case Type::FlexibleArray:
-      result = genDIFlexibleArrayType(static_cast<const FlexibleArrayType *>(type.type()));
+      result = genDIFlexibleArrayType(static_cast<const FlexibleArrayType *>(unqual));
       break;
 
     case Type::NAddress:
-      result = genDIAddressType(static_cast<const AddressType *>(type.type()));
+      result = genDIAddressType(static_cast<const AddressType *>(unqual));
       break;
 
     case Type::Union:
-      result = genDIUnionType(static_cast<const UnionType *>(type.type()));
+      result = genDIUnionType(static_cast<const UnionType *>(unqual));
       break;
 
     case Type::Tuple:
-      result = genDITupleType(static_cast<const TupleType *>(type.type()));
+      result = genDITupleType(static_cast<const TupleType *>(unqual));
       break;
 
     case Type::Function:
-      result = genDIFunctionType(static_cast<const FunctionType *>(type.type()));
+      result = genDIFunctionType(static_cast<const FunctionType *>(unqual));
       break;
 
     case Type::Alias: {
@@ -346,6 +346,13 @@ DIType CodeGenerator::genDIType(QualifiedType type) {
       diag.debug() << type;
       DFAIL("Invalid type defn");
       break;
+  }
+
+  if (type.qualifiers() != 0) {
+    if (type.isImmutable() || type.isReadOnly()) {
+      result = diBuilder_.createQualifiedType(dwarf::DW_TAG_const_type, result);
+    }
+    // TODO: Other qualifiers
   }
 
   if (!type->isVoidType()) {

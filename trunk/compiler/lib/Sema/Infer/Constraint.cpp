@@ -97,10 +97,10 @@ Constraint * Constraint::intersect(Constraint * cl, Constraint * cr) {
   bool isSubtypeL = false;
   bool isSubtypeR = false;
 
-  if (Qualified<CompositeType> ct0 = tl.dyn_cast<CompositeType>()) {
-    if (Qualified<CompositeType> ct1 = tr.dyn_cast<CompositeType>()) {
-      isSubtypeL = ct0->isSubclassOf(ct1.type());
-      isSubtypeR = ct1->isSubclassOf(ct0.type());
+  if (tl.isa<CompositeType>()) {
+    if (tr.isa<CompositeType>()) {
+      isSubtypeL = TypeRelation::isSubclass(tl, tr);
+      isSubtypeR = TypeRelation::isSubclass(tr, tl);
     }
   } else if (tl->isIntType() && tr->isIntType()) {
     isSubtypeL = TypeRelation::isSubtype(tl, tr);

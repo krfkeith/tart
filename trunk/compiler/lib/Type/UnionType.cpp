@@ -407,10 +407,8 @@ Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
 
 bool UnionType::isSubtypeOfOfAnyMembers(const CompositeType * toType) const {
   for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
-    if (Qualified<CompositeType> ctype = it->dyn_cast<CompositeType>()) {
-      if (toType->isSubclassOf(ctype.unqualified())) {
-        return true;
-      }
+    if (TypeRelation::isSubclass(toType, *it)) {
+      return true;
     }
   }
 
@@ -420,10 +418,8 @@ bool UnionType::isSubtypeOfOfAnyMembers(const CompositeType * toType) const {
 bool UnionType::isSupertypeOfAllMembers(const CompositeType * toType) const {
   for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     QualifiedType memberType = *it;
-    if (Qualified<CompositeType> ctype = memberType.dyn_cast<CompositeType>()) {
-      if (!ctype->isSubclassOf(toType)) {
-        return false;
-      }
+    if (!TypeRelation::isSubclass(memberType, toType)) {
+      return false;
     } else if (!memberType->isNullType()) {
       return false;
     }

@@ -144,9 +144,6 @@ public:
   const AttributeInfo & attributeInfo() const { return attributeInfo_; }
   AttributeInfo & attributeInfo() { return attributeInfo_; }
 
-  /** Return true if this class is the same as, or is a subclass of, the class 'base'. */
-  bool isSubclassOf(const CompositeType * base) const;
-
   /** Similar to 'isSubclassOf', except also takes into account template specializations and
       implicit protocol implementations. */
   bool implements(const CompositeType * interface) const;

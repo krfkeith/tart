@@ -370,7 +370,7 @@ Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
   if (CompositeType * ctd = dyn_cast<CompositeType>(type)) {
     DASSERT_OBJ(value->type() != NULL, value);
     if (const CompositeType * valueClass = dyn_cast<CompositeType>(value->type())) {
-      if (valueClass->isSubclassOf(ctd)) {
+      if (TypeRelation::isSubclass(valueClass, ctd)) {
         return ConstantInteger::getConstantBool(ast->location(), true);
       }
     }

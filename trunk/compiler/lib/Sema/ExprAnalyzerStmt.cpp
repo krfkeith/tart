@@ -688,7 +688,8 @@ Expr * ExprAnalyzer::reduceTryStmt(const TryStmt * st, QualifiedType expected) {
 
       // Analyze the exception type definition
       AnalyzerBase::analyzeType(exceptType, Task_PrepTypeComparison);
-      if (exceptType == NULL || !exceptType->isSubclassOf(Builtins::typeThrowable.get())) {
+      if (exceptType == NULL ||
+          !TypeRelation::isSubclass(exceptType, Builtins::typeThrowable.get())) {
         diag.fatal(exceptDecl) << "'" << exceptDecl << "' is not a subtype of Throwable";
         return &Expr::ErrorVal;
       }
@@ -735,7 +736,7 @@ Expr * ExprAnalyzer::reduceTryStmt(const TryStmt * st, QualifiedType expected) {
 
 bool ExprAnalyzer::canCatch(TypeList & catchTypes, const CompositeType * exceptionType) {
   for (TypeList::iterator it = catchTypes.begin(); it != catchTypes.end(); ++it) {
-    if (exceptionType->isSubclassOf(cast<CompositeType>(*it))) {
+    if (TypeRelation::isSubclass(exceptionType, *it)) {
       return true;
     }
   }

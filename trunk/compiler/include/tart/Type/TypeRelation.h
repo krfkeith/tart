@@ -37,7 +37,13 @@ bool isEqual(QualifiedType lhs, QualifiedType rhs);
     or is a subtype of, the type on the right. Note that in the case of
     ambiguous types, all possibilities must pass the subclass test
     in order for the whole to be considered a subtype. */
-bool isSubtype(QualifiedType lhs, QualifiedType rhs);
+bool isSubtype(QualifiedType ty, QualifiedType base);
+
+/** Is similar to isSubtype, but more restrictive - only returns true for class/interface types,
+    not other types. As a result of this restriction, we always know that when this function
+    returns true, a value of type 'ty' can be stored directly into a variable of type 'base' without
+    conversion or transformation. */
+bool isSubclass(QualifiedType ty, QualifiedType base);
 
 /** Type equality functor. */
 class Equal {

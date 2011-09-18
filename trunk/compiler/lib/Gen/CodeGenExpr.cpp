@@ -810,7 +810,7 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, For
       fieldClass->createIRTypeFields();
       DASSERT(fieldClass != NULL);
       const CompositeType * baseClass = cast<CompositeType>(lval->base()->type());
-      DASSERT(baseClass->isSubclassOf(fieldClass));
+      DASSERT(TypeRelation::isSubclass(baseClass, fieldClass));
       while (baseClass != fieldClass) {
         baseClass = baseClass->super();
         indices.push_back(getInt32Val(0));

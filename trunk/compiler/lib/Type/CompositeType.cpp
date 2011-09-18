@@ -313,28 +313,6 @@ llvm::Type * CompositeType::irReturnType() const {
   }
 }
 
-bool CompositeType::isSubclassOf(const CompositeType * base) const {
-  if (this == base) {
-    return true;
-  }
-
-  if (TypeRelation::isEqual(this, base)) {
-    return true;
-  }
-
-  for (ClassList::const_iterator it = bases_.begin(); it != bases_.end(); ++it) {
-    if ((*it)->isSubclassOf(base)) {
-      return true;
-    }
-  }
-
-  if (cls == Interface && base == Builtins::typeObject.get()) {
-    return true;
-  }
-
-  return false;
-}
-
 bool CompositeType::implements(const CompositeType * interface) const {
   return implementsImpl(interface);
 }
@@ -363,10 +341,8 @@ bool CompositeType::isSupportedBy(const Type * type) const {
   }
 
   // First do a direct subclass test.
-  if (const CompositeType * ctype = dyn_cast<CompositeType>(type)) {
-    if (ctype->isSubclassOf(this)) {
-      return true;
-    }
+  if (TypeRelation::isSubclass(type, this)) {
+    return true;
   }
 
   // See if the answer has been cached.
