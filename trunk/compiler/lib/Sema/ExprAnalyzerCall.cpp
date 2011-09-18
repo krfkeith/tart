@@ -28,7 +28,7 @@
 
 namespace tart {
 
-Expr * ExprAnalyzer::reduceCall(const ASTCall * call, const Type * expected) {
+Expr * ExprAnalyzer::reduceCall(const ASTCall * call, QualifiedType expected) {
   const ASTNode * callable = call->func();
   const ASTNodeList & args = call->args();
 
@@ -56,7 +56,7 @@ Expr * ExprAnalyzer::reduceCall(const ASTCall * call, const Type * expected) {
 }
 
 Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNodeList & args,
-    const Type * expected, bool isOptional) {
+    QualifiedType expected, bool isOptional) {
 
   // Specialize works here because lookupName handles explicit specializations.
   DASSERT(callable->nodeType() == ASTNode::Id ||
@@ -164,7 +164,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
     fs << Format_Dealias << callable << "(";
     formatExprTypeList(fs, call->args());
     fs << ")";
-    if (expected != NULL) {
+    if (expected) {
       fs << " -> " << expected;
     }
     fs.flush();
@@ -242,7 +242,7 @@ void ExprAnalyzer::lookupByArgType(CallExpr * call, StringRef name, const ASTNod
 }
 
 Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * callable, const ASTNodeList & args,
-    const Type * expected) {
+    QualifiedType expected) {
   if (isErrorResult(callable)) {
     return callable;
   } else if (TypeLiteralExpr * typeExpr = dyn_cast<TypeLiteralExpr>(callable)) {
@@ -322,7 +322,7 @@ Expr * ExprAnalyzer::callExpr(SLC & loc, Expr * callable, const ASTNodeList & ar
   }
 }
 
-Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, const Type * expected) {
+Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, QualifiedType expected) {
   if (currentFunction_ == NULL || currentFunction_->storageClass() != Storage_Instance) {
     diag.fatal(loc) << "'super' only callable from instance methods";
     return &Expr::ErrorVal;
@@ -536,7 +536,7 @@ bool ExprAnalyzer::reduceArgList(const ASTNodeList & in, CallExpr * call) {
       return false;
     }
 
-    Expr * ex = reduceExpr(arg, paramType.type());
+    Expr * ex = reduceExpr(arg, paramType);
     if (isErrorResult(ex)) {
       return false;
     }

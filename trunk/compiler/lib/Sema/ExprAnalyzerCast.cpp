@@ -104,7 +104,7 @@ Expr * ExprAnalyzer::doImplicitCast(Expr * in, QualifiedType toType, unsigned op
     // can't handle building the actual call expression.
     castExpr = tryCoerciveCast(in, toType.type());
     if (castExpr != NULL) {
-      Expr * result = inferTypes(subject_, castExpr, toType.type(), false);
+      Expr * result = inferTypes(subject_, castExpr, toType, false);
       return result;
     }
   }

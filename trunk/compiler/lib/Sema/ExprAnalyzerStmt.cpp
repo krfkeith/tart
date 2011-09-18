@@ -39,7 +39,7 @@ namespace tart {
 
 #define CHECK_EXPR(e) if (isErrorResult(e)) return &Expr::ErrorVal
 
-Expr * ExprAnalyzer::reduceBlockStmt(const BlockStmt * st, const Type * expected) {
+Expr * ExprAnalyzer::reduceBlockStmt(const BlockStmt * st, QualifiedType expected) {
   LocalScope * blockScope = createLocalScope("block-scope");
   Scope * savedScope = setActiveScope(blockScope);
 
@@ -47,7 +47,7 @@ Expr * ExprAnalyzer::reduceBlockStmt(const BlockStmt * st, const Type * expected
   size_t stcount = stlist.size();
 
   // Check for empty statement list.
-  if (expected != NULL && stcount == 0) {
+  if (expected && stcount == 0) {
     diag.error(st) << "Empty statement list used in expression context";
     return &Expr::ErrorVal;
   }
@@ -55,7 +55,7 @@ Expr * ExprAnalyzer::reduceBlockStmt(const BlockStmt * st, const Type * expected
   // Now process all of the statements
   ExprList exprs;
   for (size_t i = 0; i < stcount; ++i) {
-    const Type * ex = (i == stcount - 1) ? expected : NULL;
+    QualifiedType ex = (i == stcount - 1) ? expected : QualifiedType::NONE;
     const Stmt * st = stlist[i];
     if (st->nodeType() == ASTNode::LocalDecl) {
       if (!reduceDeclStmt(static_cast<const DeclStmt *>(st), ex, exprs)) {
@@ -66,7 +66,7 @@ Expr * ExprAnalyzer::reduceBlockStmt(const BlockStmt * st, const Type * expected
     }
 
     Expr * e = reduceExpr(st, ex);
-    if (ex == NULL) {
+    if (!ex) {
       e = inferTypes(e, NULL);
     }
     if (isErrorResult(e)) {
@@ -90,7 +90,7 @@ Expr * ExprAnalyzer::reduceBlockStmt(const BlockStmt * st, const Type * expected
   }
 }
 
-Expr * ExprAnalyzer::reduceIfStmt(const IfStmt * st, const Type * expected) {
+Expr * ExprAnalyzer::reduceIfStmt(const IfStmt * st, QualifiedType expected) {
   Scope * savedScope = activeScope();
   LocalScope * implicitScope = NULL;
   Expr * testExpr = reduceTestExpr(st->testExpr(), implicitScope);
@@ -100,7 +100,7 @@ Expr * ExprAnalyzer::reduceIfStmt(const IfStmt * st, const Type * expected) {
   bool hasElse = (st->elseSt() != NULL);
 
   // Statements used in expression context must return a value on all paths.
-  if (expected != NULL && !hasElse) {
+  if (expected && !hasElse) {
     diag.error(st) << "if-statement used in expression context must have an 'else' clause";
   }
 
@@ -116,12 +116,12 @@ Expr * ExprAnalyzer::reduceIfStmt(const IfStmt * st, const Type * expected) {
 
   setActiveScope(savedScope);
   IfExpr * result = new IfExpr(st->location(), implicitScope, testExpr, thenExpr, elseExpr);
-  if (expected != NULL) {
+  if (expected) {
     if (elseExpr == NULL) {
       diag.error(st) << "If-statement used in expression context must have an else block";
     } else {
       AmbiguousPhiType * phiType = new AmbiguousPhiType(
-          expected == &AnyType::instance ? NULL : expected);
+          expected == &AnyType::instance ? QualifiedType::NONE : expected);
       phiType->add(thenExpr->type());
       phiType->add(elseExpr->type());
       result->setType(phiType);
@@ -130,8 +130,8 @@ Expr * ExprAnalyzer::reduceIfStmt(const IfStmt * st, const Type * expected) {
   return result;
 }
 
-Expr * ExprAnalyzer::reduceWhileStmt(const WhileStmt * st, const Type * expected) {
-  if (expected != NULL) {
+Expr * ExprAnalyzer::reduceWhileStmt(const WhileStmt * st, QualifiedType expected) {
+  if (expected) {
     diag.error(st) << "statement cannot return a value";
   }
 
@@ -150,8 +150,8 @@ Expr * ExprAnalyzer::reduceWhileStmt(const WhileStmt * st, const Type * expected
   return new WhileExpr(Expr::While, st->location(), implicitScope, testExpr, body);
 }
 
-Expr * ExprAnalyzer::reduceDoWhileStmt(const DoWhileStmt * st, const Type * expected) {
-  if (expected != NULL) {
+Expr * ExprAnalyzer::reduceDoWhileStmt(const DoWhileStmt * st, QualifiedType expected) {
+  if (expected) {
     diag.error(st) << "statement cannot return a value";
   }
   Scope * savedScope = activeScope();
@@ -167,8 +167,8 @@ Expr * ExprAnalyzer::reduceDoWhileStmt(const DoWhileStmt * st, const Type * expe
   return new WhileExpr(Expr::DoWhile, st->location(), NULL, testExpr, body);
 }
 
-Expr * ExprAnalyzer::reduceForStmt(const ForStmt * st, const Type * expected) {
-  if (expected != NULL) {
+Expr * ExprAnalyzer::reduceForStmt(const ForStmt * st, QualifiedType expected) {
+  if (expected) {
     diag.error(st) << "statement cannot return a value";
   }
   Scope * savedScope = activeScope();
@@ -235,8 +235,8 @@ Expr * ExprAnalyzer::reduceForStmt(const ForStmt * st, const Type * expected) {
   return new ForExpr(st->location(), forScope, initExpr, testExpr, incrExpr, body);
 }
 
-Expr * ExprAnalyzer::reduceForEachStmt(const ForEachStmt * st, const Type * expected) {
-  if (expected != NULL) {
+Expr * ExprAnalyzer::reduceForEachStmt(const ForEachStmt * st, QualifiedType expected) {
+  if (expected) {
     diag.error(st) << "statement cannot return a value";
   }
   Scope * savedScope = activeScope();
@@ -355,7 +355,7 @@ Expr * ExprAnalyzer::reduceForEachStmt(const ForEachStmt * st, const Type * expe
         VariableDefn * var = cast<VariableDefn>(vars[i]);
         QualifiedType elementType = tt->member(i);
         if (var->type() == NULL) {
-          var->setType(elementType.type());
+          var->setType(elementType);
         }
 
         if (!analyzeVariable(var, Task_PrepTypeGeneration)) {
@@ -386,7 +386,7 @@ Expr * ExprAnalyzer::reduceForEachStmt(const ForEachStmt * st, const Type * expe
   return foreach;
 }
 
-Expr * ExprAnalyzer::reduceSwitchStmt(const SwitchStmt * st, const Type * expected) {
+Expr * ExprAnalyzer::reduceSwitchStmt(const SwitchStmt * st, QualifiedType expected) {
   Scope * savedScope = activeScope();
   Scope * caseValScope = activeScope();
   LocalScope * implicitScope = NULL;
@@ -440,8 +440,8 @@ Expr * ExprAnalyzer::reduceSwitchStmt(const SwitchStmt * st, const Type * expect
   }
 
   AmbiguousPhiType * phiType = NULL;
-  if (expected != NULL) {
-    phiType = new AmbiguousPhiType(expected == &AnyType::instance ? NULL : expected);
+  if (expected) {
+    phiType = new AmbiguousPhiType(expected == &AnyType::instance ? QualifiedType::NONE : expected);
     swe->setType(phiType);
   }
 
@@ -529,7 +529,7 @@ ConstantExpr * ExprAnalyzer::reduceCaseValue(const ASTNode * ast, const Type * t
   return cast<ConstantExpr>(result);
 }
 
-Expr * ExprAnalyzer::reduceMatchStmt(const MatchStmt * st, const Type * expected) {
+Expr * ExprAnalyzer::reduceMatchStmt(const MatchStmt * st, QualifiedType expected) {
   Scope * savedScope = activeScope();
   // TODO - I don't think reduceTestExpr is correct here.
   LocalScope * implicitScope = NULL;
@@ -562,8 +562,8 @@ Expr * ExprAnalyzer::reduceMatchStmt(const MatchStmt * st, const Type * expected
   MatchExpr * me = new MatchExpr(st->location(), implicitScope, testExpr);
 
   AmbiguousPhiType * phiType = NULL;
-  if (expected != NULL) {
-    phiType = new AmbiguousPhiType(expected == &AnyType::instance ? NULL : expected);
+  if (expected) {
+    phiType = new AmbiguousPhiType(expected == &AnyType::instance ? QualifiedType::NONE : expected);
     me->setType(phiType);
   }
 
@@ -610,7 +610,7 @@ Expr * ExprAnalyzer::reduceMatchStmt(const MatchStmt * st, const Type * expected
 }
 
 Expr * ExprAnalyzer::reduceMatchAsStmt(const MatchAsStmt * st, Expr * testExpr,
-    Expr::ExprType castType, const Type * expected) {
+    Expr::ExprType castType, QualifiedType expected) {
   const ASTDecl * asDecl = st->asDecl();
   SourceLocation stLoc = asDecl->location();
   LocalScope * caseScope = createLocalScope("as-scope");
@@ -642,10 +642,10 @@ Expr * ExprAnalyzer::reduceMatchAsStmt(const MatchAsStmt * st, Expr * testExpr,
   return new MatchAsExpr(st->location(), caseScope, typeTestExpr, initVarExpr, body);
 }
 
-Expr * ExprAnalyzer::reduceTryStmt(const TryStmt * st, const Type * expected) {
+Expr * ExprAnalyzer::reduceTryStmt(const TryStmt * st, QualifiedType expected) {
 
   // Generate the code inside the body of the try block.
-  Expr * body = reduceExpr(st->body(), st->elseSt() != NULL ? expected : NULL);
+  Expr * body = reduceExpr(st->body(), st->elseSt() != NULL ? expected : QualifiedType::NONE);
   CHECK_EXPR(body);
 
   TryExpr * te = new TryExpr(st->location(), body);
@@ -743,18 +743,18 @@ bool ExprAnalyzer::canCatch(TypeList & catchTypes, const CompositeType * excepti
   return false;
 }
 
-Expr * ExprAnalyzer::reduceThrowStmt(const ThrowStmt * st, const Type * expected) {
+Expr * ExprAnalyzer::reduceThrowStmt(const ThrowStmt * st, QualifiedType expected) {
   Expr * resultVal = NULL;
   if (st->value() != NULL) {
-    resultVal = inferTypes(reduceExpr(st->value(), Builtins::typeThrowable),
-        Builtins::typeThrowable);
+    resultVal = inferTypes(reduceExpr(st->value(), Builtins::typeThrowable.get()),
+        Builtins::typeThrowable.get());
     CHECK_EXPR(resultVal);
   }
 
   return new ThrowExpr(st->location(), resultVal);
 }
 
-Expr * ExprAnalyzer::reduceReturnStmt(const ReturnStmt * st, const Type * expected) {
+Expr * ExprAnalyzer::reduceReturnStmt(const ReturnStmt * st, QualifiedType expected) {
   DASSERT(!returnType_.isNull());
   Expr * resultVal = NULL;
   if (st->value() != NULL) {
@@ -764,7 +764,7 @@ Expr * ExprAnalyzer::reduceReturnStmt(const ReturnStmt * st, const Type * expect
     //}
 
     analyzeType(returnType_, Task_PrepTypeComparison);
-    resultVal = inferTypes(reduceExpr(st->value(), returnType_.type()), returnType_.type());
+    resultVal = inferTypes(reduceExpr(st->value(), returnType_), returnType_);
     CHECK_EXPR(resultVal);
 
     // If the return value type is an unsized int, and there's no explicit return
@@ -817,20 +817,20 @@ Expr * ExprAnalyzer::reduceReturnStmt(const ReturnStmt * st, const Type * expect
   return new ReturnExpr(Expr::Return, st->location(), resultVal);
 }
 
-Expr * ExprAnalyzer::reduceYieldStmt(const ReturnStmt * st, const Type * expected) {
+Expr * ExprAnalyzer::reduceYieldStmt(const ReturnStmt * st, QualifiedType expected) {
   DFAIL("Unimplemented");
   return NULL;
 }
 
-Expr * ExprAnalyzer::reduceBreakStmt(const Stmt * st, const Type * expected) {
+Expr * ExprAnalyzer::reduceBreakStmt(const Stmt * st, QualifiedType expected) {
   return new BranchExpr(Expr::Break, st->location());
 }
 
-Expr * ExprAnalyzer::reduceContinueStmt(const Stmt * st, const Type * expected) {
+Expr * ExprAnalyzer::reduceContinueStmt(const Stmt * st, QualifiedType expected) {
   return new BranchExpr(Expr::Continue, st->location());
 }
 
-bool ExprAnalyzer::reduceDeclStmt(const DeclStmt * st, const Type * expected, ExprList & exprs) {
+bool ExprAnalyzer::reduceDeclStmt(const DeclStmt * st, QualifiedType expected, ExprList & exprs) {
   // Handle multiple vars.
   if (st->decl()->nodeType() == ASTNode::VarList) {
     DefnList vars;

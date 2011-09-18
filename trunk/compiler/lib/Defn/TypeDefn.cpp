@@ -20,7 +20,7 @@ Expr * TypeDefn::asExpr() {
 
 void TypeDefn::trace() const {
   Defn::trace();
-  value_.type()->mark();
+  value_.unqualified()->mark();
   safeMark(expr_);
 }
 

@@ -478,7 +478,7 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
         if (Qualified<TypeVariable> tv = param.dyn_cast<TypeVariable>()) {
           if (tv->value()) {
             ConstantExpr * defaultValue = dyn_cast_or_null<ConstantExpr>(
-                ea.reduceConstantExpr(node, tv->value().type()));
+                ea.reduceConstantExpr(node, tv->value()));
             if (isErrorResult(defaultValue)) {
               break;
             }

@@ -45,7 +45,7 @@ void AmbiguousType::listProspects(ProspectList & out, QualifiedType ty, const Pr
     }
 
     default:
-      out.push_back(Prospect(ty.type(), add));
+      out.push_back(Prospect(ty, add));
       break;
   }
 

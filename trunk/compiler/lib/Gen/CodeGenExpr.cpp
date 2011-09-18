@@ -1380,7 +1380,7 @@ llvm::Constant * CodeGenerator::genConstantEmptyArray(const CompositeType * arra
   StructBuilder sb(*this);
   sb.createObjectHeader(arrayType);
   sb.addField(getIntVal(0));
-  sb.addArrayField(elementType.type(), ConstantList());
+  sb.addArrayField(elementType.unqualified(), ConstantList());
 
   llvm::Constant * arrayStruct = sb.build(arrayType->irType());
   GlobalVariable * array = new GlobalVariable(*irModule_,

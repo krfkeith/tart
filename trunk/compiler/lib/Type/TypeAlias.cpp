@@ -39,7 +39,7 @@ void TypeAlias::format(FormatStream & out) const {
 }
 
 void TypeAlias::trace() const {
-  safeMark(value_.type());
+  safeMark(value_.unqualified());
 }
 
 } // namespace tart

@@ -474,7 +474,7 @@ Expr * DerefIntrinsic::eval(const SourceLocation & loc, Module * callingModule,
     const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   DASSERT(args.size() == 1);
   Expr * arg = args[0];
-  return new UnaryExpr(Expr::PtrDeref, loc, dealias(arg->type())->typeParam(0).type(), arg);
+  return new UnaryExpr(Expr::PtrDeref, loc, dealias(arg->type())->typeParam(0), arg);
 }
 
 // -------------------------------------------------------------------

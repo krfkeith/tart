@@ -47,7 +47,7 @@ ExprAnalyzer::ExprAnalyzer(const AnalyzerBase * parent, FunctionDefn * currentFu
 {
 }
 
-Expr * ExprAnalyzer::inferTypes(Expr * expr, const Type * expectedType) {
+Expr * ExprAnalyzer::inferTypes(Expr * expr, QualifiedType expectedType) {
   expr = inferTypes(subject_, expr, expectedType);
   if (isErrorResult(expr)) {
     return expr;
@@ -57,7 +57,7 @@ Expr * ExprAnalyzer::inferTypes(Expr * expr, const Type * expectedType) {
   return expr;
 }
 
-Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, const Type * expected,
+Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, QualifiedType expected,
     unsigned options) {
   if (isErrorResult(expr)) {
     return NULL;
@@ -70,7 +70,7 @@ Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, const Type * expect
 
   BindingEnv env;
   if (expr && !expr->isSingular()) {
-    expr = TypeInferencePass::run(subject->module(), expr, env, expected);
+    expr = TypeInferencePass::run(subject->module(), expr, env, expected.type());
   }
 
   expr = FinalizeTypesPass::run(subject, expr, env);
@@ -82,7 +82,7 @@ Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, const Type * expect
   return expr;
 }
 
-Expr * ExprAnalyzer::reduceExpr(const ASTNode * ast, const Type * expected) {
+Expr * ExprAnalyzer::reduceExpr(const ASTNode * ast, QualifiedType expected) {
   Expr * result = reduceExprImpl(ast, expected);
   if (result != NULL) {
     DASSERT(result->exprType() < Expr::TypeCount);
@@ -95,7 +95,7 @@ Expr * ExprAnalyzer::reduceExpr(const ASTNode * ast, const Type * expected) {
   return result;
 }
 
-Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, const Type * expected) {
+Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, QualifiedType expected) {
   switch (ast->nodeType()) {
     case ASTNode::Null:
       return reduceNull(ast);
@@ -259,7 +259,7 @@ Expr * ExprAnalyzer::reduceAttribute(const ASTNode * ast) {
   }
 }
 
-Expr * ExprAnalyzer::reduceConstantExpr(const ASTNode * ast, const Type * expected) {
+Expr * ExprAnalyzer::reduceConstantExpr(const ASTNode * ast, QualifiedType expected) {
   Expr * expr = analyze(ast, expected);
   if (isErrorResult(expr)) {
     return NULL;

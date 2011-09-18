@@ -44,25 +44,25 @@ public:
   ExprAnalyzer(const AnalyzerBase * parent, FunctionDefn * currentFunction);
 
   /** Build expression tree from AST and do all type inferencing. */
-  Expr * analyze(const ASTNode * ast, const Type * expected, unsigned options = AO_IMPLICIT_CAST) {
+  Expr * analyze(const ASTNode * ast, QualifiedType expected, unsigned options = AO_IMPLICIT_CAST) {
     return inferTypes(subject(), reduceExpr(ast, expected), expected, options);
   }
 
   /** Take a reduced expression and do type inferencing. */
-  Expr * inferTypes(Defn * source, Expr * expr, const Type * expected,
+  Expr * inferTypes(Defn * source, Expr * expr, QualifiedType expected,
       unsigned options = AO_IMPLICIT_CAST);
-  Expr * inferTypes(Expr * expr, const Type * expectedType);
+  Expr * inferTypes(Expr * expr, QualifiedType expected);
 
   /** Build expression tree from AST. */
-  Expr * reduceExpr(const ASTNode * ast, const Type * expected);
-  Expr * reduceExprImpl(const ASTNode * ast, const Type * expected);
+  Expr * reduceExpr(const ASTNode * ast, QualifiedType expected);
+  Expr * reduceExprImpl(const ASTNode * ast, QualifiedType expected);
 
   /** Similar to reduceExpr, but applies the special name lookup rules for
       attributes. */
   Expr * reduceAttribute(const ASTNode * ast);
 
   /** Similar to reduceExpr, but returns a constant. */
-  Expr * reduceConstantExpr(const ASTNode * ast, const Type * expected);
+  Expr * reduceConstantExpr(const ASTNode * ast, QualifiedType expected);
 
   /** Similar to reduceExpr, but returns a constant. */
   Expr * reduceTemplateArgExpr(const ASTNode * ast, bool doInference);
@@ -83,7 +83,7 @@ public:
   Expr * reduceStringLiteral(const ASTStringLiteral * ast);
   Expr * reduceBoolLiteral(const ASTBoolLiteral * ast);
   Expr * reduceBuiltInDefn(const ASTBuiltIn * ast);
-  Expr * reduceAnonFn(const ASTFunctionDecl * ast, const Type * expected);
+  Expr * reduceAnonFn(const ASTFunctionDecl * ast, QualifiedType expected);
 
   // Identifiers
 
@@ -108,49 +108,49 @@ public:
   Expr * reduceLogicalOper(const ASTOper * ast);
   Expr * reduceLogicalNot(const ASTOper * ast);
   Expr * reduceComplement(const ASTOper * ast);
-  Expr * reduceArrayLiteral(const ASTOper * ast, const Type * expected);
-  Expr * reduceTuple(const ASTOper * ast, const Type * expected);
+  Expr * reduceArrayLiteral(const ASTOper * ast, QualifiedType expected);
+  Expr * reduceTuple(const ASTOper * ast, QualifiedType expected);
 
   // Statements
 
-  Expr * reduceBlockStmt(const BlockStmt * st, const Type * expected);
-  Expr * reduceIfStmt(const IfStmt * st, const Type * expected);
-  Expr * reduceWhileStmt(const WhileStmt * st, const Type * expected);
-  Expr * reduceDoWhileStmt(const DoWhileStmt * st, const Type * expected);
-  Expr * reduceForStmt(const ForStmt * st, const Type * expected);
-  Expr * reduceForEachStmt(const ForEachStmt * st, const Type * expected);
-  Expr * reduceSwitchStmt(const SwitchStmt * st, const Type * expected);
-  Expr * reduceMatchStmt(const MatchStmt * st, const Type * expected);
+  Expr * reduceBlockStmt(const BlockStmt * st, QualifiedType expected);
+  Expr * reduceIfStmt(const IfStmt * st, QualifiedType expected);
+  Expr * reduceWhileStmt(const WhileStmt * st, QualifiedType expected);
+  Expr * reduceDoWhileStmt(const DoWhileStmt * st, QualifiedType expected);
+  Expr * reduceForStmt(const ForStmt * st, QualifiedType expected);
+  Expr * reduceForEachStmt(const ForEachStmt * st, QualifiedType expected);
+  Expr * reduceSwitchStmt(const SwitchStmt * st, QualifiedType expected);
+  Expr * reduceMatchStmt(const MatchStmt * st, QualifiedType expected);
   Expr * reduceMatchAsStmt(const MatchAsStmt * st, Expr * testExpr, Expr::ExprType castType,
-      const Type * expected);
-  Expr * reduceTryStmt(const TryStmt * st, const Type * expected);
-  Expr * reduceThrowStmt(const ThrowStmt * st, const Type * expected);
-  Expr * reduceReturnStmt(const ReturnStmt * st, const Type * expected);
-  Expr * reduceYieldStmt(const ReturnStmt * st, const Type * expected);
-  Expr * reduceBreakStmt(const Stmt * st, const Type * expected);
-  Expr * reduceContinueStmt(const Stmt * st, const Type * expected);
-  bool reduceDeclStmt(const DeclStmt * st, const Type * expected, ExprList & exprs);
+      QualifiedType expected);
+  Expr * reduceTryStmt(const TryStmt * st, QualifiedType expected);
+  Expr * reduceThrowStmt(const ThrowStmt * st, QualifiedType expected);
+  Expr * reduceReturnStmt(const ReturnStmt * st, QualifiedType expected);
+  Expr * reduceYieldStmt(const ReturnStmt * st, QualifiedType expected);
+  Expr * reduceBreakStmt(const Stmt * st, QualifiedType expected);
+  Expr * reduceContinueStmt(const Stmt * st, QualifiedType expected);
+  bool reduceDeclStmt(const DeclStmt * st, QualifiedType expected, ExprList & exprs);
 
   // Calls
 
   /** Transform an expression to a callable object. The 'expected'
       parameter is only used in overload selection, the actual result type
       may not actually be that type. */
-  Expr * reduceCall(const ASTCall * call, const Type * expected);
+  Expr * reduceCall(const ASTCall * call, QualifiedType expected);
 
   /** Reduce a call to an identifier to an actual call. */
   Expr * callName(const SourceLocation & loc, const ASTNode * callable, const ASTNodeList & args,
-      const Type * expected, bool isOptional = false);
+      QualifiedType expected, bool isOptional = false);
 
   /** Handle Argument-dependent lookup (ADL) */
   void lookupByArgType(CallExpr * call, StringRef name, const ASTNodeList & args);
 
   /** Handle expressions of the form "super(args)" */
-  Expr * callSuper(const SourceLocation & loc, const ASTNodeList & args, const Type * expected);
+  Expr * callSuper(const SourceLocation & loc, const ASTNodeList & args, QualifiedType expected);
 
   /** Select an overload and build the call expression node. */
   Expr * callExpr(const SourceLocation & loc, Expr * fun, const ASTNodeList & args,
-      const Type * expected);
+      QualifiedType expected);
 
   /** Evaluate a call to a constructor. */
   Expr * callConstructor(const SourceLocation & loc, TypeDefn * tdef, const ASTNodeList & args);
@@ -212,8 +212,6 @@ public:
       const ExprList & args);
 
   // Specializations
-
-  Expr * reduceSpecialize(const ASTSpecialize * call, const Type * expected);
 
   /** Return either the single best specialization candidate, or NULL. */
   static Defn * findBestSpecialization(SpecializeExpr * spe);

@@ -19,8 +19,6 @@ namespace tart {
 
 typedef llvm::DenseSet<const Type *, Type::KeyInfo> TypeSet;
 
-extern bool unifyVerbose;
-
 // -------------------------------------------------------------------
 // TypeAssignment
 

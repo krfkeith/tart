@@ -58,7 +58,7 @@ public:
   Expr(ExprType k, const SourceLocation & l, QualifiedType type)
     : exprType_(k)
     , loc_(l)
-    , type_(type.type())
+    , type_(type)
   {}
 
   virtual ~Expr() {}
@@ -254,7 +254,7 @@ inline bool isErrorResult(const Expr * ex) {
 
 bool isErrorResult(const Type * ty);
 inline bool isErrorResult(const QualifiedType & qtype) {
-  return isErrorResult(qtype.type());
+  return isErrorResult(qtype.unqualified());
 }
 
 bool any(ExprList::const_iterator first, ExprList::const_iterator last, bool (Expr::*func)() const);

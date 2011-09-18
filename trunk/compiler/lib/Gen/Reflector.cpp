@@ -424,7 +424,7 @@ llvm::GlobalVariable * Reflector::getFunctionTypePtr(const FunctionType * type) 
     diag.fatal() << "Attempting to add a type export during output phase: " << type;
   }
 
-  getTypePtr(type->returnType().type());
+  getTypePtr(type->returnType().unqualified());
   for (ParameterList::const_iterator it = type->params().begin();
       it != type->params().end(); ++it) {
     getTypePtr((*it)->type());
@@ -583,7 +583,7 @@ void Reflector::getRefs(const Defn * def) {
 
         if (td->isReflected()) {
           for (size_t i = 0; i < ctype->numTypeParams(); ++i) {
-            getTypePtr(ctype->typeParam(i).type());
+            getTypePtr(ctype->typeParam(i).unqualified());
           }
         }
 
@@ -1198,7 +1198,7 @@ llvm::Constant * Reflector::emitArray(
   StructBuilder sb(cg_);
   sb.createObjectHeader(arrayType);
   sb.addField(cg_.getIntVal(values.size()));
-  sb.addArrayField(elementType.type(), values);
+  sb.addArrayField(elementType.unqualified(), values);
 
   llvm::Constant * arrayStruct = sb.build(arrayType);
   GlobalVariable * array = new GlobalVariable(*irModule_,

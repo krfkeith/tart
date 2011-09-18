@@ -171,10 +171,16 @@ public:
     static bool isPod() { return true; }
   };
 
+  /** Sentinel value that indicates an uninitialized type reference. */
+  static const Qualified NONE;
+
 private:
   const T * type_;
   unsigned qualifiers_;
 };
+
+template<class T>
+const Qualified<T> Qualified<T>::NONE(NULL);
 
 /** QualifiedType gets used most often with Type. */
 typedef Qualified<Type> QualifiedType;
@@ -182,6 +188,7 @@ typedef Qualified<Type> QualifiedType;
 /** A vector of QualifiedTypes. */
 typedef llvm::SmallVector<QualifiedType, 8> QualifiedTypeList;
 
+/** A set of QualifiedTypes. */
 typedef llvm::DenseSet<QualifiedType, QualifiedType::KeyInfo> QualifiedTypeSet;
 
 /** Print a QualifiedType to an output stream. */
@@ -189,7 +196,7 @@ void formatQualifiedType(FormatStream & out, const Type * ty, unsigned qualifier
 
 template <class T>
 inline FormatStream & operator<<(FormatStream & out, const Qualified<T> & qual) {
-  formatQualifiedType(out, qual.type(), qual.qualifiers());
+  formatQualifiedType(out, qual.unqualified(), qual.qualifiers());
   return out;
 }
 
