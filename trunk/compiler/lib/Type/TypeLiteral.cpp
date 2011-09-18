@@ -55,6 +55,7 @@ void TypeLiteralType::initBuiltin() {
   typedefn.setQualifiedName(typedefn.name());
   typedefn.setValue(&prototype);
 
+  // TODO: What about qualifiers here?
   prototype.literalType_ = tm->typeParam(0).type();
 }
 

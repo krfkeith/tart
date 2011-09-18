@@ -218,7 +218,7 @@ llvm::Type * UnionType::createIRType() const {
     size_t size = estimateTypeSize(irType);
     if (size > largestSize) {
       largestSize = size;
-      largestType = type.type();
+      largestType = type.unqualified();
     }
   }
 
@@ -408,7 +408,7 @@ Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
 bool UnionType::isSubtypeOfOfAnyMembers(const CompositeType * toType) const {
   for (TupleType::const_iterator it = members_->begin(); it != members_->end(); ++it) {
     if (Qualified<CompositeType> ctype = it->dyn_cast<CompositeType>()) {
-      if (toType->isSubclassOf(ctype.type())) {
+      if (toType->isSubclassOf(ctype.unqualified())) {
         return true;
       }
     }

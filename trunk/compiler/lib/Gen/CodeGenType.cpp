@@ -610,7 +610,7 @@ llvm::Constant * CodeGenerator::getPrimitiveTypeObjectPtr(const PrimitiveType * 
 
 llvm::FunctionType * CodeGenerator::getCallAdapterFnType() {
   if (invokeFnType_ == NULL) {
-    const Type * invokeTypeDefn = reflect::FunctionType::CallAdapterFnType.get()->value().type();
+    QualifiedType invokeTypeDefn = reflect::FunctionType::CallAdapterFnType.get()->value();
     invokeFnType_ = cast<llvm::FunctionType>(invokeTypeDefn->irType());
   }
 
@@ -697,7 +697,7 @@ llvm::Function * CodeGenerator::genCallAdapterFn(const FunctionType * fnType) {
       returnVal = sret;
     }
 
-    returnVal = genCast(returnVal, returnType.type(), Builtins::typeObject);
+    returnVal = genCast(returnVal, returnType.unqualified(), Builtins::typeObject);
     if (returnVal == NULL) {
       currentFn_ = NULL;
       return NULL;

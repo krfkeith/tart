@@ -37,7 +37,7 @@ QualifiedType AmbiguousTypeParamType::forType(QualifiedType base, const Type * m
         if (paramIndex >= base->numTypeParams()) {
           return QualifiedType();
         } else {
-          return base->typeParam(paramIndex).type();
+          return base->typeParam(paramIndex);
         }
       }
       return QualifiedType();
@@ -47,7 +47,7 @@ QualifiedType AmbiguousTypeParamType::forType(QualifiedType base, const Type * m
     case Type::NArray:
     case Type::FlexibleArray: {
       if (paramIndex == 0 && (match == NULL || base->typeClass() == match->typeClass())) {
-        return base->typeParam(0).type();
+        return base->typeParam(0);
       }
       return QualifiedType();
     }
@@ -56,7 +56,7 @@ QualifiedType AmbiguousTypeParamType::forType(QualifiedType base, const Type * m
       if (match != NULL || paramIndex >= base->numTypeParams()) {
         return QualifiedType();
       } else {
-        return base->typeParam(paramIndex).type();
+        return base->typeParam(paramIndex);
       }
     }
 

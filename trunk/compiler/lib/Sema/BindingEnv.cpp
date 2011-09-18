@@ -42,14 +42,6 @@ typedef llvm::SmallSetVector<TypeAssignment *, 16> TypeAssignmentSet;
 namespace {
 
 /** Special version of dealias that doesn't dereference type assignments. */
-const Type * dereferenceAlias(const Type * type) {
-  if (const TypeAlias * alias = dyn_cast<TypeAlias>(type)) {
-    type = alias->value().type();
-    DASSERT_OBJ(type != NULL, alias);
-  }
-  return type;
-}
-
 QualifiedType dereferenceAlias(QualifiedType type) {
   if (type.isa<TypeAlias>()) {
     type = type.as<TypeAlias>()->value();
@@ -58,6 +50,7 @@ QualifiedType dereferenceAlias(QualifiedType type) {
   return type;
 }
 
+// Return all type assignments reachable from ty.
 void findTypeAssignments(TypeAssignmentSet & result, QualifiedType ty) {
   if (Qualified<TypeAssignment> ta = ty.dyn_cast<TypeAssignment>()) {
     TypeAssignment * taMutable = const_cast<TypeAssignment *>(ta.unqualified());
@@ -74,7 +67,7 @@ void findTypeAssignments(TypeAssignmentSet & result, QualifiedType ty) {
     }
   } else if (ty->numTypeParams() > 0) {
     for (size_t i = 0, numTypeParams = ty->numTypeParams(); i < numTypeParams; ++i) {
-      findTypeAssignments(result, ty->typeParam(i).type());
+      findTypeAssignments(result, ty->typeParam(i));
     }
   }
 }
@@ -90,13 +83,7 @@ void BindingEnv::reset() {
   backtrack(0);
 }
 
-/** Perform unification from a pattern type to a value type. */
 bool BindingEnv::unify(SourceContext * source, QualifiedType left, QualifiedType right,
-    Constraint::Kind kind, const ProvisionSet & provisions) {
-  return unify(source, left.type(), right.type(), kind, provisions);
-}
-
-bool BindingEnv::unify(SourceContext * source, const Type * left, const Type * right,
     Constraint::Kind kind, const ProvisionSet & provisions) {
   if (left == &BadType::instance) {
     return false;
@@ -118,7 +105,7 @@ bool BindingEnv::unify(SourceContext * source, const Type * left, const Type * r
     diag.indent();
   }
 
-  bool result = unifyImpl(source, left, right, kind, provisions);
+  bool result = unifyImpl(source, left.type(), right.type(), kind, provisions);
 
   if (DebugUnify || unifyVerbose) {
     if (!result) {

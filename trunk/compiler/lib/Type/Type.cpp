@@ -239,7 +239,7 @@ void typeLinkageName(llvm::raw_ostream & out, QualifiedType ty) {
     out << "volatile(";
   }
 
-  typeLinkageName(out, ty.type());
+  typeLinkageName(out, ty.unqualified());
 
   if (ty.qualifiers() & QualifiedType::VARIADIC) {
     out << " ... ";

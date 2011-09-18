@@ -406,7 +406,7 @@ public:
 
   /** Constructor. */
   CastExpr(ExprType k, const SourceLocation & loc, QualifiedType type, Expr * a)
-    : UnaryExpr(k, loc, type.type(), a)
+    : UnaryExpr(k, loc, type, a)
     , typeIndex_(0)
   {
   }

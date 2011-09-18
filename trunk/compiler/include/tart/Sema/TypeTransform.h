@@ -34,17 +34,12 @@ class TypeTransform {
 public:
   virtual ~TypeTransform() {}
 
-  //const Type * transform(const Type * in) { return visit(in); }
   QualifiedType transform(QualifiedType in) { return visit(in); }
 
   const Type * operator()(const Type * in) { return visit(in).unqualified(); }
   QualifiedType operator()(QualifiedType in) { return visit(in); }
 
-  //QualifiedType visit(const Type * in);
   QualifiedType visit(QualifiedType in);
-//  {
-//    return QualifiedType(visit(in.type()), in.qualifiers());
-//  }
 
   virtual const Type * visitPrimitiveType(const PrimitiveType * in);
   virtual const Type * visitCompositeType(const CompositeType * in);

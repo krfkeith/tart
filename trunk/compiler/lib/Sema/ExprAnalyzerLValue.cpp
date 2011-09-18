@@ -306,7 +306,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
   // Memory address type
   if (const AddressType * maType = dyn_cast<AddressType>(arrayType)) {
     QualifiedType elemType = maType->typeParam(0);
-    if (!AnalyzerBase::analyzeType(elemType.type(), Task_PrepTypeComparison)) {
+    if (!AnalyzerBase::analyzeType(elemType, Task_PrepTypeComparison)) {
       return &Expr::ErrorVal;
     }
 
@@ -606,7 +606,7 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
   // Addresses are implicitly dereferenced.
   if (lvalue->base() != NULL && lvalue->base()->type()->typeClass() == Type::NAddress) {
     lvalue->setBase(new UnaryExpr(Expr::PtrDeref, lvalue->base()->location(),
-        lvalue->base()->type()->typeParam(0).type(), lvalue->base()));
+        lvalue->base()->type()->typeParam(0), lvalue->base()));
   }
 
   return lvalue;

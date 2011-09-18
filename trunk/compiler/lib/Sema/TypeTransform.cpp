@@ -231,7 +231,7 @@ QualifiedType TypeTransform::visitTypeAlias(const TypeAlias * in) {
 QualifiedType SubstitutionTransform::visitTypeVariable(const TypeVariable * in) {
   QualifiedTypeVarMap::const_iterator it = vars_.find(in);
   if (it != vars_.end()) {
-    return it->second.type();
+    return it->second;
   } else {
     return in;
   }
@@ -330,7 +330,7 @@ QualifiedType SubstitutionTransform::visitTypeConstraint(const TypeConstraint * 
 QualifiedType RelabelTransform::visitTypeVariable(const TypeVariable * in) {
   QualifiedTypeVarMap::const_iterator it = vars_.find(in);
   DASSERT(it != vars_.end()) << "Type variable " << in << " not found!";
-  return it->second.type();
+  return it->second;
 }
 
 // -------------------------------------------------------------------

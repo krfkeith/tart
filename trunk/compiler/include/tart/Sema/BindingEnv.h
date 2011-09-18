@@ -63,10 +63,6 @@ public:
   bool unify(SourceContext * source, QualifiedType left, QualifiedType right,
       Constraint::Kind kind, const ProvisionSet & provisions = ProvisionSet());
 
-  /** Perform unification from a pattern type to a value type. */
-  bool unify(SourceContext * source, const Type * left, const Type * right,
-      Constraint::Kind kind, const ProvisionSet & provisions = ProvisionSet());
-
   /** Get the type assignment for the specified type variable. */
   const TypeAssignment * getAssignment(const TypeVariable * var, const GC * context) const;
 

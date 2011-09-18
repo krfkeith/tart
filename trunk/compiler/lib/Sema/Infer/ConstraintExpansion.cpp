@@ -86,7 +86,7 @@ bool ConstraintExpansion::expand(QualifiedType ty, Constraint::Kind kind,
         ProvisionSet ccProvisions(provisions);
         ccProvisions.insertIfValid(cc->primaryProvision());
         if (ccProvisions.isConsistent()) {
-          result_.insertAndOptimize(apt->expr()->location(), paramType.type(), kind, ccProvisions);
+          result_.insertAndOptimize(apt->expr()->location(), paramType, kind, ccProvisions);
         }
       }
       return true;
@@ -101,7 +101,7 @@ bool ConstraintExpansion::expand(QualifiedType ty, Constraint::Kind kind,
         ProvisionSet ccProvisions(provisions);
         ccProvisions.insertIfValid(cc->primaryProvision());
         if (ccProvisions.isConsistent()) {
-          result_.insertAndOptimize(art->expr()->location(), resultType.type(), kind, ccProvisions);
+          result_.insertAndOptimize(art->expr()->location(), resultType, kind, ccProvisions);
         }
       }
       return true;

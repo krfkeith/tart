@@ -91,10 +91,6 @@ public:
   /** Remove an existing constraint. */
   void remove(ConstraintSet::iterator si);
 
-  /** Given a comparison function, apply the comparison to all subsitutions, and return true
-      if they all pass the test. */
-  //bool compare(bool (Type::*func)(const Type *) const, const Type * other) const;
-
   /** Set the value of this assignment to a type that satisfies all active constraints,
       if such as type can be found. Sets value to NULL if there is no such type. */
   QualifiedType findSingularSolution();
@@ -136,33 +132,6 @@ private:
   QualifiedType value_;
   ConstraintSet constraints_;
 };
-
-#if 0
-inline bool TypeAssignment::compare(
-    bool (Type::*func)(const Type *) const,
-    const Type * other) const {
-  if (value_) {
-    return (value_.type()->*func)(other);
-  } else {
-    bool atLeastOne = false;
-    for (ConstraintSet::const_iterator it = constraints_.begin(); it != constraints_.end();
-        ++it) {
-      Constraint * s = *it;
-      if (!s->visited() && s->checkProvisions()) {
-        s->setVisited(true);
-        bool result = (s->value()->*func)(other);
-        s->setVisited(false);
-        if (!result) {
-          return false;
-        }
-        atLeastOne = true;
-      }
-    }
-    return atLeastOne;
-  }
-  return true;
-}
-#endif
 
 } // namespace tart
 

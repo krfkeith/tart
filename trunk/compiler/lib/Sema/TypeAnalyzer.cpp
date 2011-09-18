@@ -149,20 +149,20 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
 
     case ASTNode::Address: {
       const ASTOper * op = static_cast<const ASTOper *>(ast);
-      Type * ty = typeFromAST(op->arg(0));
-      if (ty != NULL) {
-        ty = AddressType::get(ty);
+      QualifiedType ty = qualifiedTypeFromAST(op->arg(0));
+      if (!isErrorResult(ty)) {
+        return AddressType::get(ty);
       }
-      return ty;
+      return &BadType::instance;
     }
 
     case ASTNode::FlexArray: {
        const ASTOper * op = static_cast<const ASTOper *>(ast);
        QualifiedType ty = qualifiedTypeFromAST(op->arg(0));
        if (!ty.isNull()) {
-         ty = FlexibleArrayType::get(TupleType::get(ty));
+         return FlexibleArrayType::get(TupleType::get(ty));
        }
-       return const_cast<Type *>(ty.type());
+       return &BadType::instance;
      }
 
     case ASTNode::TypeAlias:
@@ -280,8 +280,8 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
       // later from the default value.
       QualifiedType paramType = qualifiedTypeFromAST(aparam->type());
       ParameterDefn * param = new ParameterDefn(module_, aparam);
-      param->setType(paramType.type());
-      param->setInternalType(paramType.type());
+      param->setType(paramType);
+      param->setInternalType(paramType);
       params.push_back(param);
       if (aparam->flags() & Param_Variadic) {
         param->setFlag(ParameterDefn::Variadic, true);

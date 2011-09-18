@@ -86,14 +86,14 @@ Expr * ExprAnalyzer::reduceBuiltInDefn(const ASTBuiltIn * ast) {
   }
 }
 
-Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expected) {
+Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, QualifiedType expected) {
   TypeAnalyzer ta(module(), activeScope());
   FunctionType * ftype = ta.typeFromFunctionAST(ast);
   size_t paramCount = ftype->params().size();
 
   if (ftype != NULL) {
     if (ftype->returnType().isNull()) {
-      if (expected != NULL) {
+      if (expected) {
         // Check if the expected type is a specialization of the 'tart.core.Function' interface
         // and return the 0th parameter if so.
         QualifiedType returnType = AmbiguousTypeParamType::forType(
@@ -113,7 +113,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
     for (size_t i = 0; i < paramCount; ++i) {
       ParameterDefn * param = ftype->param(i);
       if (param->type() == NULL) {
-        if (expected == NULL) {
+        if (!expected) {
           diag.error(ast) << "Can't deduce type of function parameter " << i + 1 << ".";
           return &Expr::ErrorVal;
         } else {
@@ -250,7 +250,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, const Type * expe
   return &Expr::ErrorVal;
 }
 
-Expr * ExprAnalyzer::reduceArrayLiteral(const ASTOper * ast, const Type * expected) {
+Expr * ExprAnalyzer::reduceArrayLiteral(const ASTOper * ast, QualifiedType expected) {
   if (expected == &AnyType::instance) {
     expected = NULL;
   }
@@ -273,10 +273,15 @@ Expr * ExprAnalyzer::reduceArrayLiteral(const ASTOper * ast, const Type * expect
   DFAIL("Array type not found for array literal");
 }
 
-Expr * ExprAnalyzer::reduceTuple(const ASTOper * ast, const Type * expected) {
+Expr * ExprAnalyzer::reduceTuple(const ASTOper * ast, QualifiedType expected) {
   DASSERT(ast->count() >= 2);
 
-  const TupleType * ttype = dyn_cast_or_null<TupleType>(dealias(expected));
+  if (expected && expected.isMutable()) {
+    diag.error(ast) << "Tuples cannot be made mutable";
+  }
+
+  // TODO: Add qualifier bits when done - although note that tuples are always immutable.
+  const TupleType * ttype = dyn_cast_or_null<TupleType>(dealias(expected).unqualified());
   if (ttype != NULL) {
     if (ast->count() != ttype->numTypeParams()) {
       diag.error(ast) << "Type of '" << ast << "' does not match '" << expected << "'";
@@ -288,14 +293,16 @@ Expr * ExprAnalyzer::reduceTuple(const ASTOper * ast, const Type * expected) {
   size_t numParams = ast->count();
   bool isSingular = true;
   for (size_t i = 0; i < numParams; ++i) {
-    const Type * elType = ttype != NULL ? ttype->typeParam(i).type() : NULL;
+    QualifiedType elType = ttype != NULL ? ttype->typeParam(i) : QualifiedType::NONE;
     Expr * el = reduceExpr(ast->args()[i], elType);
     if (isErrorResult(el)) {
       return &Expr::ErrorVal;
     }
 
-    if (elType != NULL && elType->isSingular()) {
-      TypeConversion::convert(el, elType, &el, TypeConversion::COERCE);
+    if (elType && elType->isSingular()) {
+      ConversionRank rank;
+      llvm::tie(rank, el) = TypeConversion::convert(el, elType, TypeConversion::COERCE);
+      DASSERT(el != NULL);
     }
 
     if (!el->type()->isSingular()) {

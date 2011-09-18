@@ -35,7 +35,7 @@ public:
 
   /** Return the type expression defined by this definition. */
   const Type * typePtr() const { return value_.type(); }
-  Type * mutableTypePtr() const { return const_cast<Type *>(value_.type()); }
+  Type * mutableTypePtr() const { return const_cast<Type *>(value_.unqualified()); }
   void setTypePtr(Type * type) { value_ = QualifiedType(type, value_.qualifiers()); }
 
   /** Return the type expression defined by this definition. */

@@ -317,7 +317,7 @@ Defn * Template::instantiate(const SourceLocation & loc, const QualifiedTypeVarM
       argDefn = new VariableDefn(Defn::Let, result->module(), var->name(), cval);
       argDefn->setStorageClass(Storage_Static);
     } else {
-      argDefn = new TypeDefn(result->module(), var->name(), const_cast<Type *>(value.type()));
+      argDefn = new TypeDefn(result->module(), var->name(), value);
     }
 
     argDefn->setSingular(value->isSingular());
@@ -400,7 +400,7 @@ const Type * Template::instantiateType(
 
     case Type::TypeLiteral:
       // TODO: Disallow qualifiers here
-      return TypeLiteralType::get(paramValues[0].type());
+      return TypeLiteralType::get(paramValues[0].unqualified());
 
     default:
       DFAIL("Invalid template type");
