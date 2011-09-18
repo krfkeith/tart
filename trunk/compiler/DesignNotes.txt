@@ -2,19 +2,21 @@
 
 Next up:
 
+* Qualified types:
+  * Finish conversion to Qualified<>
+  * Start implementing conversion rules.
 * Fix DWARF.
+  * local vars - why don't they work.
+* How to restrict a template to just an enum or an integer type?
+* GC: Bug in collection of global vars.
 * Fix bug in nametable static roots.
 * Start work on readonly / mutable / immutable type constructors and value casts.
 * String should take from Collection, not Copyable.
-* Change uses of isEqual method to isEqual binary function.
 * Type inference
   * Pre-cull candidates that can never be chosen
   * Finish moving classes to Sema/Infer
   * can use additional refactoring / simplification I think.
 
-* Bug in collection of global vars.
-* Get DWARF working again:
-  * local vars - why don't they work.
 * Deduce argument types and return types for anon funcs.
 * Implement Attribute.Retention.RUNTIME_ITERABLE.
 * @ReflectOnly (non-propagating reflection.)
@@ -25,11 +27,7 @@ Design TODOS:
 * Const:
   * readonly / mutable / immutable
   * syntax is readonly(int)
-  * transitive? All reachable items? That's kinda kooky but might be useful.
   * ImmutableList should derive from immutable(List) or readonly(List)?
-  * How do we mark which methods conform to the immutable(self) or readonly(self) contract?
-  * And mutable(self) means something entirely different: Actually the paradigm should be:
-    let mself = mutable(self);
 * Need a way to collect all declarations that a given attribute is assigned to.
 * With-statement multiple vars and tuple unpacking.
 
@@ -62,11 +60,11 @@ Implementation TODOS:
   * Show right margin.
 * Refactoring
   * Use a type to represent variadic params.
-  * Use CVQualifiedType to represent const/volatile.
   * Some means to cache relabeled specializations?
   * Finish up override keyword, with failure tests.
   * Unit tests for lexical type ordering.
 * I/O library.
+  * Think about async i/o.
 * typecast[type](in);
   * More tests - reference types, null pointers. (Union types are done)
 * Reflection

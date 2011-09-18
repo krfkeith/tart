@@ -560,7 +560,7 @@ Expr * FinalizeTypesPassImpl::visitInstanceOf(InstanceOfExpr * in) {
       // Structs are not polymorphic, so we know the answer at compile time.
       if (ctTo->typeClass() != Type::Struct) {
         isConstFalse = true;
-      } else if (ctFrom->isSubclassOf(ctTo)) {
+      } else if (TypeRelation::isSubclass(ctFrom, ctTo)) {
         // to struct from struct.
         isConstTrue = true;
       } else {
@@ -569,14 +569,14 @@ Expr * FinalizeTypesPassImpl::visitInstanceOf(InstanceOfExpr * in) {
     } else if (ctTo->typeClass() == Type::Class) {
       if (ctTo->typeClass() == Type::Class) {
         // to class from class
-        if (ctFrom->isSubclassOf(ctTo)) {
+        if (TypeRelation::isSubclass(ctFrom, ctTo)) {
           isConstTrue = true;
-        } else if (!ctTo->isSubclassOf(ctFrom)) {
+        } else if (!TypeRelation::isSubclass(ctTo, ctFrom)) {
           isConstFalse = true;
         }
       } else if (ctTo->typeClass() == Type::Interface) {
         // to interface from class.
-        if (ctFrom->isSubclassOf(ctTo)) {
+        if (TypeRelation::isSubclass(ctFrom, ctTo)) {
           isConstTrue = true;
         }
       } else {
@@ -585,12 +585,12 @@ Expr * FinalizeTypesPassImpl::visitInstanceOf(InstanceOfExpr * in) {
     } else if (ctTo->typeClass() == Type::Interface) {
       if (ctTo->typeClass() == Type::Class) {
         // to class from interface
-        if (ctFrom->isSubclassOf(ctTo)) {
+        if (TypeRelation::isSubclass(ctFrom, ctTo)) {
           isConstTrue = true;
         }
       } else if (ctTo->typeClass() == Type::Interface) {
         // to interface from interface
-        if (ctFrom->isSubclassOf(ctTo)) {
+        if (TypeRelation::isSubclass(ctFrom, ctTo)) {
           isConstTrue = true;
         }
       } else {

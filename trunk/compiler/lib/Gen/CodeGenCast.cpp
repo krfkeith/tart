@@ -184,7 +184,7 @@ Value * CodeGenerator::genBitCast(const CastExpr * in, bool saveRoots) {
 Value * CodeGenerator::genCompositeCast(Value * in,
     const CompositeType * fromCls, const CompositeType * toCls, bool throwOnFailure) {
   if (toCls->isReferenceType() && fromCls->isReferenceType()) {
-    if (fromCls->isSubclassOf(toCls)) {
+    if (TypeRelation::isSubclass(fromCls, toCls)) {
       // Upcast, no need for type test.
       return genUpCastInstr(in, fromCls, toCls);
     }
@@ -425,7 +425,7 @@ Value * CodeGenerator::genUpCastInstr(Value * val, const Type * from, const Type
   const CompositeType * toType = dyn_cast<CompositeType>(to);
   const CompositeType * fromType = dyn_cast<CompositeType>(from);
 
-  if (!fromType->isSubclassOf(toType)) {
+  if (!TypeRelation::isSubclass(fromType, toType)) {
     diag.fatal() << "'" << fromType << "' does not inherit from '" <<
     toType << "'";
     return val;

@@ -492,4 +492,153 @@ bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
   return false;
 }
 
+bool TypeRelation::isSubclass(QualifiedType ty, QualifiedType base) {
+  if (ty.unqualified() == base.unqualified() && ty.qualifiers() == base.qualifiers()) {
+    return true;
+  }
+
+  // Special cases for ambiguous base types.
+  switch (base->typeClass()) {
+    case Type::Alias:
+      return isSubclass(ty, base.as<TypeAlias>()->value() | base.qualifiers());
+
+    case Type::AmbiguousParameter:
+    case Type::AmbiguousPhi:
+    case Type::AmbiguousResult:
+    case Type::AmbiguousTypeParam: {
+      QualifiedTypeSet expansion;
+      base->expand(expansion);
+      if (expansion.empty()) {
+        return false;
+      }
+      for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
+        if (!isSubclass(ty, *it)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    case Type::Assignment: {
+      Qualified<TypeAssignment> ta = base.as<TypeAssignment>();
+      if (ta->value()) {
+        return isSubclass(ty, ta->value());
+      } else {
+        bool any = false;
+        for (ConstraintSet::const_iterator si = ta->begin(), sEnd = ta->end(); si != sEnd; ++si) {
+          Constraint * cst = *si;
+          if (cst->visited()) {
+            any = true;
+          } else if (cst->checkProvisions()) {
+            if (cst->kind() == Constraint::UPPER_BOUND) {
+              // There's no way to determine if this is true, so return false.
+              return false;
+            }
+
+            cst->setVisited(true);
+            if (!isSubclass(ty, cst->value())) {
+              cst->setVisited(false);
+              return false;
+            }
+            cst->setVisited(false);
+            any = true;
+          }
+        }
+        return any;
+      }
+    }
+
+    default:
+      break;
+  }
+
+  switch (ty->typeClass()) {
+    case Type::Alias:
+      return isSubclass(ty.as<TypeAlias>()->value() | ty.qualifiers(), base);
+
+    case Type::Primitive: {
+      return false;
+    }
+
+    case Type::Class:
+    case Type::Interface:
+    case Type::Protocol: {
+      // TODO: Factor in qualifiers
+      Qualified<CompositeType> ctType = ty.as<CompositeType>();
+      if (Qualified<CompositeType> ctBase = base.dyn_cast<CompositeType>()) {
+        if (isEqualComposite(ctType, ctBase)) {
+          return true;
+        }
+
+        // Interfaces are always considered to be subclasses of Object.
+        if (ctType->typeClass() == Type::Interface && ctBase == Builtins::typeObject.get()) {
+          return true;
+        }
+
+        // They aren't the same, check all base classes
+        const ClassList & bases = ctType->bases();
+        for (ClassList::const_iterator it = bases.begin(); it != bases.end(); ++it) {
+          if (isSubclass(*it, base)) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
+    case Type::AmbiguousParameter:
+    case Type::AmbiguousPhi:
+    case Type::AmbiguousResult:
+    case Type::AmbiguousTypeParam: {
+      QualifiedTypeSet expansion;
+      ty->expand(expansion);
+      if (expansion.empty()) {
+        return false;
+      }
+      for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
+        if (!isSubclass(*it, base)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    case Type::Assignment: {
+      Qualified<TypeAssignment> ta = ty.as<TypeAssignment>();
+      if (ta->value()) {
+        return isSubclass(ta->value(), base);
+      } else {
+        bool any = false;
+        for (ConstraintSet::const_iterator si = ta->begin(), sEnd = ta->end(); si != sEnd; ++si) {
+          Constraint * cst = *si;
+          if (cst->visited()) {
+            any = true;
+          } else if (cst->checkProvisions()) {
+            if (cst->kind() == Constraint::UPPER_BOUND) { // TODO: Wrong!
+              // There's no way to determine if this is true, so return false.
+              return false;
+            }
+
+            cst->setVisited(true);
+            if (!isSubclass(cst->value(), base)) {
+              cst->setVisited(false);
+              return false;
+            }
+            cst->setVisited(false);
+            any = true;
+          }
+        }
+        return any;
+      }
+      return false;
+    }
+
+    default:
+      return false;
+  }
+
+  return false;
+}
+
 } // namespace tart

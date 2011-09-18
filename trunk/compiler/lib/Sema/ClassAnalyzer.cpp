@@ -490,7 +490,7 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
       baseClass->addBaseXRefs(module_);
     }
 
-    if (baseClass->isSubclassOf(type)) {
+    if (TypeRelation::isSubclass(baseClass, type)) {
       type->setClassFlag(CompositeType::HasErrors);
       diag.error(target) << "Circular inheritance not allowed";
       return false;

@@ -16,10 +16,14 @@
 #include "tart/Sema/SpCandidate.h"
 
 #include "tart/Expr/Exprs.h"
+
 #include "tart/Defn/Defn.h"
 #include "tart/Defn/TypeDefn.h"
 #include "tart/Defn/NamespaceDefn.h"
 #include "tart/Defn/FunctionDefn.h"
+#include "tart/Defn/Module.h"
+#include "tart/Defn/Template.h"
+
 #include "tart/Type/FunctionType.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/NativeType.h"
@@ -27,8 +31,7 @@
 #include "tart/Type/TupleType.h"
 #include "tart/Type/UnitType.h"
 #include "tart/Type/TypeLiteral.h"
-#include "tart/Defn/Module.h"
-#include "tart/Defn/Template.h"
+#include "tart/Type/TypeRelation.h"
 
 #include "tart/Common/PackageMgr.h"
 #include "tart/Common/Diagnostics.h"
@@ -168,7 +171,6 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
     ExprList lvals;
     if (!lookupNameRecurse(lvals, spec->templateExpr(), path,
         LookupOptions(lookupOptions | LOOKUP_REQUIRED))) {
-      //DASSERT(diag.inRecovery());
       return false;
     }
 
@@ -211,7 +213,6 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
       return true;
     }
 
-    //DASSERT(diag.inRecovery());
     return false;
   }
 }
@@ -276,8 +277,6 @@ bool AnalyzerBase::lookupNameInModule(ExprList & out, StringRef modName,
 bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, StringRef name, SLC & loc) {
   if (ScopeNameExpr * scopeName = dyn_cast<ScopeNameExpr>(context)) {
     if (Module * m = dyn_cast<Module>(scopeName->value())) {
-      //m->createMembers();
-      //AnalyzerBase::analyzeDefn(m, Task_PrepMemberLookup);
       if (findInScope(out, name, m, NULL, loc, NO_PREFERENCE)) {
         return true;
       }
@@ -1018,15 +1017,10 @@ bool AnalyzerBase::canAccess(Defn * source, Defn * target) {
 
       if (target->visibility() == Protected) {
         if (TypeDefn * dstTypeDef = dyn_cast<TypeDefn>(dstContext)) {
-          if (const CompositeType * dstType = dyn_cast_or_null<CompositeType>(dstTypeDef->typePtr())) {
-            for (Defn * de = source; de != NULL; de = de->parentDefn()) {
-              if (TypeDefn * srcTypeDef = dyn_cast<TypeDefn>(de)) {
-                if (const CompositeType * srcType =
-                    dyn_cast_or_null<CompositeType>(srcTypeDef->typePtr())) {
-                  if (srcType->isSubclassOf(dstType)) {
-                    return true;
-                  }
-                }
+          for (Defn * de = source; de != NULL; de = de->parentDefn()) {
+            if (TypeDefn * srcTypeDef = dyn_cast<TypeDefn>(de)) {
+              if (TypeRelation::isSubclass(srcTypeDef->value(), dstTypeDef->value())) {
+                return true;
               }
             }
           }

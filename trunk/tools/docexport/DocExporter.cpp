@@ -84,7 +84,7 @@ void DocExporter::exportCompositeType(const CompositeType * ctype) {
       kind = "class";
       if (ctype->isAttribute()) {
         group = "attribute";
-      } else if (ctype->isSubclassOf(Builtins::typeThrowable)) {
+      } else if (TypeRelation::isSubclass(ctype, Builtins::typeThrowable)) {
         group = "exception";
       }
       break;
