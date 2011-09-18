@@ -72,14 +72,14 @@ Defn * FindExternalRefsPass::runImpl(Defn * in) {
     if (!fn->isIntrinsic() && !fn->isExtern()) {
       visit(fn);
       if (fn->isReflected()) {
-        addTypeRef(fn->type());
+        addTypeRef(fn->type().unqualified());
       }
 
       fn = fn->mergeTo();
       if (fn != NULL) {
         visit(fn);
         if (fn->isReflected()) {
-          addTypeRef(fn->type());
+          addTypeRef(fn->type().unqualified());
         }
       }
     }
@@ -116,7 +116,7 @@ bool FindExternalRefsPass::addTypeRef(const Type * type) {
   } else if (const FunctionType * fnType = dyn_cast<FunctionType>(type)) {
     for (ParameterList::const_iterator it = fnType->params().begin(); it != fnType->params().end();
         ++it) {
-      addTypeRef((*it)->type());
+      addTypeRef((*it)->type().unqualified());
     }
   }
 

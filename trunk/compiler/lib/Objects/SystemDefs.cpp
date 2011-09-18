@@ -120,7 +120,7 @@ SystemEnumConstant::operator VariableDefn *() const {
 }
 
 const Type * SystemEnumConstant::type() const {
-  return get()->type();
+  return get()->type().type();
 }
 
 int SystemEnumConstant::asInt() const {

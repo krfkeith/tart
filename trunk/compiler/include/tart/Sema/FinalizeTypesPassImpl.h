@@ -58,7 +58,7 @@ private:
   bool coerceArgs(CallCandidate * cd, const ExprList & args, ExprList & coercedArgs);
   Defn * doPatternSubstitutions(SLC & loc, Defn * def, const QualifiedTypeVarMap & varValues);
 
-  Expr * addCastIfNeeded(Expr * in, const Type * toType, unsigned options = AO_IMPLICIT_CAST);
+  Expr * addCastIfNeeded(Expr * in, QualifiedType toType, unsigned options = AO_IMPLICIT_CAST);
   Expr * handleUnboxCast(CastExpr * in);
   QualifiedType getCommonPhiType(const AmbiguousPhiType * phi);
 };

@@ -131,7 +131,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
   }
 
   DASSERT_OBJ(fdef->isSingular(), fdef);
-  DASSERT_OBJ(fdef->type() != NULL, fdef);
+  DASSERT_OBJ(fdef->type(), fdef);
   DASSERT_OBJ(fdef->type()->isSingular(), fdef);
 
   // Don't generate intrinsic functions.
@@ -190,7 +190,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     // Handle the 'self' parameter
     if (ftype->selfParam() != NULL) {
       ParameterDefn * selfParam = ftype->selfParam();
-      const Type * selfParamType = selfParam->type();
+      const Type * selfParamType = selfParam->type().unqualified();
       DASSERT_OBJ(fdef->storageClass() == Storage_Instance ||
           fdef->storageClass() == Storage_Local, fdef);
       DASSERT_OBJ(it != f->arg_end(), ftype);
@@ -331,7 +331,7 @@ Value * CodeGenerator::genLetValue(const VariableDefn * let) {
   }
 
   // Calculate the type.
-  DASSERT(let->type() != NULL);
+  DASSERT(let->type()) << "Undefined type for let " << let;
   llvm::Type * irType = let->type()->irEmbeddedType();
   TypeShape shape = let->type()->typeShape();
 
@@ -433,7 +433,7 @@ llvm::Constant * CodeGenerator::genGlobalVar(const VariableDefn * var) {
     return gv;
   }
 
-  const Type * varType = var->type();
+  const Type * varType = var->type().unqualified();
   DASSERT(varType != NULL);
 
   // Create the global variable
@@ -451,7 +451,7 @@ llvm::Constant * CodeGenerator::genGlobalVar(const VariableDefn * var) {
   // Only supply an initialization expression if the variable was
   // defined in this module - otherwise, it's an external declaration.
   if (var->module() == module_ || var->isSynthetic()) {
-    addStaticRoot(gv, var->type());
+    addStaticRoot(gv, varType);
     if (debug_) {
       genDIGlobalVariable(var, gv);
     }

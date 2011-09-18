@@ -326,7 +326,7 @@ Expr * ExprAnalyzer::reduceForEachStmt(const ForEachStmt * st, QualifiedType exp
   if (st->loopVars()->nodeType() == ASTNode::Var) {
     const ASTVarDecl * initDecl = static_cast<const ASTVarDecl *>(st->loopVars());
     VariableDefn * initDefn = cast<VariableDefn>(astToDefn(initDecl));
-    if (initDefn->type() == NULL) {
+    if (!initDefn->type()) {
       initDefn->setType(iterVarType);
     }
 
@@ -354,7 +354,7 @@ Expr * ExprAnalyzer::reduceForEachStmt(const ForEachStmt * st, QualifiedType exp
       for (size_t i = 0; i < numVars; ++i) {
         VariableDefn * var = cast<VariableDefn>(vars[i]);
         QualifiedType elementType = tt->member(i);
-        if (var->type() == NULL) {
+        if (!var->type()) {
           var->setType(elementType);
         }
 
@@ -622,7 +622,7 @@ Expr * ExprAnalyzer::reduceMatchAsStmt(const MatchAsStmt * st, Expr * testExpr,
   }
 
   VariableDefn * asValueDefn = cast<VariableDefn>(asDefn);
-  const Type * toType = asValueDefn->type();
+  const Type * toType = asValueDefn->type().type();
   if (!analyzeType(toType, Task_PrepTypeComparison)) {
     return NULL;
   }
@@ -681,7 +681,7 @@ Expr * ExprAnalyzer::reduceTryStmt(const TryStmt * st, QualifiedType expected) {
       }
 
       // Get the exception type and determine if it is valid.
-      const CompositeType * exceptType = dyn_cast<CompositeType>(dealias(exceptDefn->type()));
+      const CompositeType * exceptType = dyn_cast<CompositeType>(dealias(exceptDefn->type().type()));
       if (isErrorResult(exceptType)) {
         continue;
       }
@@ -879,7 +879,7 @@ bool ExprAnalyzer::reduceDeclStmt(const DeclStmt * st, QualifiedType expected, E
         Expr * initVal = new BinaryExpr(Expr::ElementRef, var->ast()->location(),
             tt->member(memberIndex), initExpr, ConstantInteger::getUInt32(memberIndex));
         exprs.push_back(new InitVarExpr(st->location(), var, initVal));
-        if (var->type() == NULL) {
+        if (!var->type()) {
           DASSERT(initVal->canonicalType() != &AnyType::instance);
           var->setType(initVal->canonicalType());
         }
@@ -922,7 +922,7 @@ Expr * ExprAnalyzer::reduceTestExpr(const ASTNode * test, LocalScope *& implicit
     }
 
     VariableDefn * testVar = cast<VariableDefn>(testDefn);
-    const Type * varType = testVar->type();
+    const Type * varType = testVar->type().type();
     Expr * initValue = testVar->initValue();
     DASSERT(initValue != NULL);
     testVar->setInitValue(NULL);
@@ -937,7 +937,7 @@ Expr * ExprAnalyzer::reduceTestExpr(const ASTNode * test, LocalScope *& implicit
           testVar->setType(ut->getFirstNonVoidType());
           Expr * cmpExpr = new CompareExpr(
               test->location(), llvm::CmpInst::ICMP_NE, varValue,
-              ConstantNull::get(test->location(), testVar->type()));
+              ConstantNull::get(test->location(), testVar->type().unqualified()));
           return new BinaryExpr(
               Expr::Prog2, test->location(), &BoolType::instance, initExpr, cmpExpr);
         }

@@ -93,7 +93,7 @@ int FunctionType::paramNameIndex(StringRef name) const {
 }
 
 const Type * FunctionType::paramType(int index) const {
-  return params_[index]->type();
+  return params_[index]->type().type();
 }
 
 TupleType * FunctionType::paramTypes() const {
@@ -140,7 +140,7 @@ llvm::Type * FunctionType::createIRType() const {
   // Insert the 'self' parameter if it's an instance method
   const Type * selfType = NULL;
   if (selfParam_ != NULL && !isStatic()) {
-    selfType = selfParam_->type();
+    selfType = selfParam_->type().unqualified();
   }
 
   // Create the function type
@@ -234,13 +234,13 @@ bool FunctionType::isSingular() const {
     return false;
   }
 
-  if (selfParam_ != NULL && (selfParam_->type() == NULL || !selfParam_->type()->isSingular())) {
+  if (selfParam_ != NULL && (!selfParam_->type() || !selfParam_->type()->isSingular())) {
     return false;
   }
 
   for (ParameterList::const_iterator it = params_.begin(); it != params_.end(); ++it) {
     const ParameterDefn * param = *it;
-    if (param->type() == NULL || !param->type()->isSingular()) {
+    if (!param->type() || !param->type()->isSingular()) {
       return false;
     }
   }
@@ -256,7 +256,7 @@ void FunctionType::whyNotSingular() const {
   }
 
   if (selfParam_ != NULL) {
-    if (selfParam_->type() == NULL) {
+    if (!selfParam_->type()) {
       diag.info() << "Parameter 'self' has unspecified type.";
     } else if (!selfParam_->type()->isSingular()) {
       diag.info() << "Parameter 'self' has non-singular type.";
@@ -265,7 +265,7 @@ void FunctionType::whyNotSingular() const {
 
   for (ParameterList::const_iterator it = params_.begin(); it != params_.end(); ++it) {
     const ParameterDefn * param = *it;
-    if (param->type() == NULL) {
+    if (!param->type()) {
       diag.info() << "Parameter '" << param->name() << "' parameter has unspecified type.";
     } else if (!param->type()->isSingular()) {
       diag.info() << "Parameter '" << param->name() << "' parameter has non-singular type.";

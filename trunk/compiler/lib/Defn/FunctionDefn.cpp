@@ -27,7 +27,7 @@ void ParameterDefn::trace() const {
 
 void ParameterDefn::format(FormatStream & out) const {
   out << name_;
-  if (out.getShowType() && type() != NULL) {
+  if (out.getShowType() && type()) {
     out << ":" << type();
   }
 
@@ -87,7 +87,7 @@ FunctionDefn::FunctionDefn(Module * m, StringRef name, FunctionType * ty)
   , mergeTo_(NULL)
 {}
 
-const Type * FunctionDefn::type() const {
+QualifiedType FunctionDefn::type() const {
   return type_;
 }
 
@@ -157,8 +157,8 @@ bool FunctionDefn::hasSameSignature(const FunctionDefn * otherFn) const {
     ParameterDefn * p0 = ft0->params()[i];
     ParameterDefn * p1 = ft1->params()[i];
 
-    DASSERT_OBJ(p0->type() != NULL, p0);
-    DASSERT_OBJ(p1->type() != NULL, p1);
+    DASSERT(p0->type()) << "Undefined type for parameter " << p0;
+    DASSERT(p1->type()) << "Undefined type for parameter " << p1;
 
     if (isErrorResult(p0->type()) || isErrorResult(p1->type())) {
       return false;
@@ -177,8 +177,8 @@ bool FunctionDefn::hasSameSignature(const FunctionDefn * otherFn) const {
 }
 
 bool FunctionDefn::canOverride(const FunctionDefn * base) const {
-  DASSERT_OBJ(base->type() != NULL, base);
-  DASSERT_OBJ(type() != NULL, this);
+  DASSERT(base->type()) << "Undefined type for function " << base;
+  DASSERT(type()) << "Undefined type for function " << this;
 
   const FunctionType * funcType = functionType();
   const FunctionType * baseType = base->functionType();
@@ -205,8 +205,8 @@ bool FunctionDefn::canOverride(const FunctionDefn * base) const {
       return false;
     }
 
-    const Type * baseArgType = baseArg->type();
-    const Type * funcArgType = funcArg->type();
+    QualifiedType baseArgType = baseArg->type();
+    QualifiedType funcArgType = funcArg->type();
 
     if (!TypeRelation::isEqual(baseArgType, funcArgType)) {
       switch (baseArg->variance()) {

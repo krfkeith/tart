@@ -51,7 +51,7 @@ StructBuilder & StructBuilder::addIntegerField(const Type * type, int32_t value)
 }
 
 StructBuilder & StructBuilder::addIntegerField(VariableDefn * var, int32_t value) {
-  return addIntegerField(var->type(), value);
+  return addIntegerField(var->type().unqualified(), value);
 }
 
 StructBuilder & StructBuilder::addStringField(StringRef strval) {
@@ -70,7 +70,7 @@ StructBuilder & StructBuilder::addArrayField(
 
 StructBuilder & StructBuilder::addArrayField(
     const VariableDefn * arrayVar, llvm::ArrayRef<llvm::Constant *> values) {
-  if (const CompositeType * arrayType = dyn_cast<CompositeType>(arrayVar->type())) {
+  if (const CompositeType * arrayType = dyn_cast<CompositeType>(arrayVar->type().unqualified())) {
     addArrayField(arrayType->typeParam(0).unqualified(), values);
   } else {
     DFAIL("Not an array type");

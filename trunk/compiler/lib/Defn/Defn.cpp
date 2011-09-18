@@ -282,7 +282,7 @@ void formatParameterList(FormatStream & out, const ParameterList & params) {
       out << param->name();
     }
 
-    if (out.getShowType() && param->type() != NULL) {
+    if (out.getShowType() && param->type()) {
       out << ":" << param->type();
       if (param->isVariadic()) {
         out << "...";

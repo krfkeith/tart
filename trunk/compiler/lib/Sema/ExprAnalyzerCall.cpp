@@ -120,7 +120,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
           return &Expr::ErrorVal;
         }
 
-        const Type * varType = dealias(var->type());
+        const Type * varType = var->type().dealias().type();
         if (const FunctionType * ft = dyn_cast<FunctionType>(varType)) {
           success &= addOverload(call, lv, ft, args);
         } else {
@@ -346,7 +346,7 @@ Expr * ExprAnalyzer::callSuper(SLC & loc, const ASTNodeList & args, QualifiedTyp
 
   ParameterDefn * selfParam = currentFunction_->functionType()->selfParam();
   DASSERT_OBJ(selfParam != NULL, currentFunction_);
-  DASSERT_OBJ(selfParam->type() != NULL, currentFunction_);
+  DASSERT_OBJ(selfParam->type(), currentFunction_);
   TypeDefn * selfType = selfParam->type()->typeDefn();
   DASSERT_OBJ(selfType != NULL, currentFunction_);
   Expr * selfExpr = LValueExpr::get(selfParam->location(), NULL, selfParam);
@@ -416,7 +416,7 @@ bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDef
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
         FunctionDefn * cons = cast<FunctionDefn>(*it);
         if (analyzeFunction(cons, Task_PrepTypeComparison)) {
-          DASSERT(cons->type() != NULL);
+          DASSERT(cons->type());
           DASSERT(cons->returnType().isNull() || cons->returnType()->isVoidType());
           DASSERT(cons->storageClass() == Storage_Instance);
           DASSERT(cons->isTemplate() || cons->isTemplateMember());
@@ -430,7 +430,7 @@ bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDef
         FunctionDefn * create = cast<FunctionDefn>(*it);
         if (create->storageClass() == Storage_Static) {
           if (analyzeFunction(create, Task_PrepTypeComparison)) {
-            DASSERT(create->type() != NULL);
+            DASSERT(create->type());
             //Type * returnType = create->returnType();
             addOverload(call, NULL, create, args, sp);
           }
@@ -447,7 +447,7 @@ bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDef
       DASSERT(!methods.empty());
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
         FunctionDefn * cons = cast<FunctionDefn>(*it);
-        DASSERT(cons->type() != NULL);
+        DASSERT(cons->type());
         DASSERT(cons->isCtor());
         DASSERT(cons->returnType().isNull() || cons->returnType()->isVoidType());
         DASSERT(cons->storageClass() == Storage_Instance);
@@ -457,7 +457,7 @@ bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDef
       DASSERT(!methods.empty());
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
         FunctionDefn * create = cast<FunctionDefn>(*it);
-        DASSERT(create->type() != NULL);
+        DASSERT(create->type());
         if (create->storageClass() == Storage_Static) {
           //const Type * returnType = create->returnType();
           addOverload(call, NULL, create, args, sp);
@@ -468,7 +468,7 @@ bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDef
       DASSERT(!methods.empty());
       for (DefnList::const_iterator it = methods.begin(); it != methods.end(); ++it) {
         FunctionDefn * cons = cast<FunctionDefn>(*it);
-        DASSERT(cons->type() != NULL);
+        DASSERT(cons->type());
         DASSERT(cons->isCtor());
         DASSERT(cons->returnType().isNull() || cons->returnType()->isVoidType());
         DASSERT(cons->storageClass() == Storage_Instance);
@@ -587,7 +587,7 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * 
     return false;
   }
 
-  DASSERT_OBJ(method->type() != NULL, method);
+  DASSERT_OBJ(method->type(), method);
   ParameterAssignments pa;
   ParameterAssignmentsBuilder builder(pa, method->functionType());
   if (builder.assignFromAST(args)) {
@@ -603,7 +603,7 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * 
     return false;
   }
 
-  DASSERT_OBJ(method->type() != NULL, method);
+  DASSERT_OBJ(method->type(), method);
   ParameterAssignments pa;
   ParameterAssignmentsBuilder builder(pa, method->functionType());
   if (builder.assignFromAST(args)) {
@@ -644,7 +644,7 @@ bool ExprAnalyzer::addOverload(CallExpr * call, Expr * baseExpr, FunctionDefn * 
     return false;
   }
 
-  DASSERT_OBJ(method->type() != NULL, method);
+  DASSERT_OBJ(method->type(), method);
   ParameterAssignments pa;
   ParameterAssignmentsBuilder builder(pa, method->functionType());
   for (size_t i = 0; i < args.size(); ++i) {

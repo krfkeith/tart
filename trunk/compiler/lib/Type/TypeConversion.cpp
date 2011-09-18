@@ -434,9 +434,12 @@ ConversionRank convert(
   DASSERT(!srcType.isNull());
   DASSERT(!dstType.isNull());
 
+  if (!canAssignQualifiers(srcType.qualifiers(), dstType.qualifiers())) {
+    return QualifierLoss;
+  }
+
   // Early out
-  if (srcType.unqualified() == dstType.unqualified() &&
-      srcType.qualifiers() == dstType.qualifiers()) {
+  if (srcType.unqualified() == dstType.unqualified()) {
     if (dstExpr != NULL) {
       *dstExpr = srcExpr;
     }

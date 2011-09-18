@@ -308,7 +308,9 @@ bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
 }
 
 bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
-  if (ty.unqualified() == base.unqualified() && ty.qualifiers() == base.qualifiers()) {
+  if (!canAssignQualifiers(ty.qualifiers(), base.qualifiers())) {
+    return false;
+  } else if (ty.unqualified() == base.unqualified()) {
     return true;
   }
 
@@ -493,7 +495,9 @@ bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
 }
 
 bool TypeRelation::isSubclass(QualifiedType ty, QualifiedType base) {
-  if (ty.unqualified() == base.unqualified() && ty.qualifiers() == base.qualifiers()) {
+  if (!canAssignQualifiers(ty.qualifiers(), base.qualifiers())) {
+    return false;
+  } else if (ty.unqualified() == base.unqualified()) {
     return true;
   }
 

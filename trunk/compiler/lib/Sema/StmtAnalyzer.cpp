@@ -83,7 +83,7 @@ bool StmtAnalyzer::buildCFG() {
   if (function()->storageClass() == Storage_Instance) {
     ParameterDefn * selfParam = function()->functionType()->selfParam();
     DASSERT_OBJ(selfParam != NULL, function());
-    DASSERT_OBJ(selfParam->type() != NULL, function());
+    DASSERT_OBJ(selfParam->type(), function());
     TypeDefn * selfType = selfParam->type()->typeDefn();
     DASSERT_OBJ(selfType != NULL, function());
 
@@ -97,7 +97,7 @@ bool StmtAnalyzer::buildCFG() {
   } else if (function()->storageClass() == Storage_Local) {
     ParameterDefn * selfParam = function()->functionType()->selfParam();
     DASSERT_OBJ(selfParam != NULL, function());
-    DASSERT_OBJ(selfParam->type() != NULL, function());
+    DASSERT_OBJ(selfParam->type(), function());
     DASSERT_OBJ(selfParam->initValue() != NULL, function());
     if (ClosureEnvExpr * env = dyn_cast<ClosureEnvExpr>(selfParam->initValue())) {
       parameterScope.setParentScope(env);

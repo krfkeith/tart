@@ -63,7 +63,7 @@ bool PropertyAnalyzer::analyze(AnalysisTask task) {
 bool PropertyAnalyzer::runPasses(PropertyDefn::PassSet passesToRun) {
   passesToRun.removeAll(target->passes().finished());
   if (passesToRun.empty()) {
-    if (target->type() == NULL) {
+    if (!target->type()) {
       return false;
     }
 
@@ -171,7 +171,7 @@ bool PropertyAnalyzer::resolvePropertyType() {
 
 bool PropertyAnalyzer::resolveAccessorType() {
   if (target->passes().begin(PropertyDefn::AccessorTypePass)) {
-    const Type * type = target->type();
+    const Type * type = target->type().type();
     TypeAnalyzer ta(module(), activeScope());
     const ASTPropertyDecl * ast = cast_or_null<ASTPropertyDecl>(target->ast());
 
@@ -226,7 +226,7 @@ bool PropertyAnalyzer::resolveAccessorType() {
         if (valueParam != NULL) {
           // Re-add the value param.
           setterType->params().push_back(valueParam);
-          if (valueParam->type() == NULL) {
+          if (!valueParam->type()) {
             valueParam->setType(type);
             valueParam->setInternalType(type);
           } else if (!TypeRelation::isEqual(valueParam->type(), type)) {

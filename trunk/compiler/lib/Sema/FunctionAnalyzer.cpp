@@ -238,7 +238,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
           success = false;
         }
 
-        if (param->type() == NULL) {
+        if (!param->type()) {
           diag.error(param) << "No type specified for parameter '" << param << "'";
         } else {
           if (param->isVariadic() && param->type()->isSingular()) {
@@ -507,7 +507,7 @@ void FunctionAnalyzer::visitClosureEnvs(const ExprList & closureEnvs) {
           }
         }
 
-        const Type * varType = var->type();
+        const Type * varType = var->type().type();
         if (isAssignedTo) {
           var->setIsAssignedTo();
           varType = getMutableRefType(varType);
@@ -719,7 +719,7 @@ bool FunctionAnalyzer::createReflectionData() {
     } else {
       if (doReflect) {
         if (ftype->selfParam() != NULL) {
-          const Type * selfType = ftype->selfParam()->type();
+          const Type * selfType = ftype->selfParam()->type().type();
           if (const CompositeType * cself = dyn_cast<CompositeType>(selfType)) {
             // Don't reflect structs (for now) or protocols.
             if (cself->typeClass() == Type::Struct || cself->typeClass() == Type::Protocol) {
@@ -740,7 +740,7 @@ bool FunctionAnalyzer::createReflectionData() {
       // Add the other arguments
       for (ParameterList::const_iterator it = target->params().begin();
           it != target->params().end(); ++it) {
-        const Type * paramType = dealias((*it)->type());
+        const Type * paramType = dealias((*it)->type().type());
         if (paramType->isBoxableType()) {
           // Cache the unbox function for this type.
           ExprAnalyzer(this, target).getUnboxFn(SourceLocation(), paramType);

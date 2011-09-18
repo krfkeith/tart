@@ -72,6 +72,11 @@ namespace tart {
         break;
       }
 
+      case QualifierLoss: {
+        out << "QualifierLoss";
+        break;
+      }
+
       case Truncation: {
         out << "Truncation";
         break;

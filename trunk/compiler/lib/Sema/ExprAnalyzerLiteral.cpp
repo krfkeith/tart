@@ -112,7 +112,7 @@ Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, QualifiedType exp
     // See if ftype has any unspecified param types.
     for (size_t i = 0; i < paramCount; ++i) {
       ParameterDefn * param = ftype->param(i);
-      if (param->type() == NULL) {
+      if (!param->type()) {
         if (!expected) {
           diag.error(ast) << "Can't deduce type of function parameter " << i + 1 << ".";
           return &Expr::ErrorVal;

@@ -93,7 +93,7 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
       // Synthesize a call to the superclass constructor.
       ParameterDefn * selfParam = ctorType->selfParam();
       DASSERT_OBJ(selfParam != NULL, ctor);
-      DASSERT_OBJ(selfParam->type() != NULL, ctor);
+      DASSERT_OBJ(selfParam->type(), ctor);
       TypeDefn * selfType = selfParam->type()->typeDefn();
       DASSERT_OBJ(selfType != NULL, ctor);
       Expr * selfExpr = LValueExpr::get(selfParam->location(), NULL, selfParam);
@@ -113,7 +113,7 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
         } else if (param->isVariadic()) {
           // Pass a null array - possibly a static singleton.
           ArrayLiteralExpr * arrayParam =
-              AnalyzerBase::createArrayLiteral(param->location(), param->type());
+              AnalyzerBase::createArrayLiteral(param->location(), param->type().type());
           AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
           superCall->appendArg(arrayParam);
         } else {
@@ -149,7 +149,7 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
 
     if (needsInitialization) {
       Expr * defaultValue = field->initValue();
-      const Type * fieldType = field->type();
+      const Type * fieldType = field->type().unqualified();
       if (defaultValue == NULL) {
         if (field->defnType() == Defn::Let) {
           diag.error(field) << "Instance member '" << field->name() <<

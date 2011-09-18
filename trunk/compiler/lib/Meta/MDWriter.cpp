@@ -244,7 +244,7 @@ MDNode * MDWriter::functionDefn(const FunctionDefn * fn) {
     needImports_ = true;
     builder.put(serializeAst(fn->templateSignature()->ast()));
   } else {
-    if (fn->type() != NULL) {
+    if (fn->type()) {
       builder.put(serializeType(fn->returnType()));
       builder.put(parameterList(fn->params()));
 
