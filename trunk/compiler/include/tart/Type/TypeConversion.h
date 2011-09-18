@@ -21,19 +21,20 @@ class Expr;
 /// as 'bad' as SignedUnsigned.
 enum ConversionRank {
   // Rank 0: Impossible conversions
-  Incompatible,      // let x:String = 1     No conversion possible
+  Incompatible,      // let x:String = 1       No conversion possible
+  QualifierLoss,     // let x:T = immutable(T) Conversion would lose qualifiers
 
   // Rank 1: Lossy conversions (cause warning message to be emitted.)
-  Truncation,        // let x:ubyte = 256    Value will be truncated
-  SignedUnsigned,    // let x:uint = -1      Signed / unsigned mismatch
-  PrecisionLoss,     // let x:int = 1.2      Loss of decimal precision
-  IntegerToBool,     // let x:bool = 256     Compare with 0
+  Truncation,        // let x:ubyte = 256      Value will be truncated
+  SignedUnsigned,    // let x:uint = -1        Signed / unsigned mismatch
+  PrecisionLoss,     // let x:int = 1.2        Loss of decimal precision
+  IntegerToBool,     // let x:bool = 256       Compare with 0
 
   // Rank 2: Non-lossy conversions
-  NonPreferred,      // let x:int = 1.0      Requires transformation
+  NonPreferred,      // let x:int = 1.0        Requires transformation
 
   // Rank 3-4: Trivial conversions
-  ExactConversion,   // let x:byte = int(1)  Lossless conversion
+  ExactConversion,   // let x:byte = int(1)    Lossless conversion
 
   // Rank 5: Identity conversions
   IdenticalTypes,     // let x:int = int(1)   No conversion, same type

@@ -26,11 +26,11 @@ namespace tart {
 class Type;
 struct SourceLocation;
 
-/** Combine type qualifiers. Right side qualifiers override left side precedence. */
-unsigned combineQualifiers(unsigned left, unsigned right);
-
 // Forward declaration of dealias.
 const Type * dealias(const Type * t);
+
+/** Combine type qualifiers. Right side qualifiers override left side precedence. */
+unsigned combineQualifiers(unsigned left, unsigned right);
 
 /// -------------------------------------------------------------------
 /// Value type containing a type reference and qualifier bits.
@@ -45,6 +45,8 @@ public:
     ADOPTED = (1<<3),
     VARIADIC = (1<<4),
     VOLATILE = (1<<5),
+
+    MUTABILITY_MASK = MUTABLE | IMMUTABLE | READONLY,
   };
 
   Qualified() : type_(NULL), qualifiers_(0) {}
@@ -190,6 +192,9 @@ typedef llvm::SmallVector<QualifiedType, 8> QualifiedTypeList;
 
 /** A set of QualifiedTypes. */
 typedef llvm::DenseSet<QualifiedType, QualifiedType::KeyInfo> QualifiedTypeSet;
+
+/** True if a value with 'from' qualifiers can be assigned to a variable with 'to' qualifiers. */
+bool canAssignQualifiers(unsigned from, unsigned to);
 
 /** Print a QualifiedType to an output stream. */
 void formatQualifiedType(FormatStream & out, const Type * ty, unsigned qualifiers);

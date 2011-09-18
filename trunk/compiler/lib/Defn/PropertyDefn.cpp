@@ -92,8 +92,8 @@ void IndexerDefn::format(FormatStream & out) const {
     out << "[]";
   }
 
-  const FunctionType * ftype = dyn_cast_or_null<FunctionType>(type());
-  if (out.getShowType() && ftype != NULL) {
+  Qualified<FunctionType> ftype = type().dyn_cast_or_null<FunctionType>();
+  if (out.getShowType() && ftype) {
     out << "(";
     formatParameterList(out, ftype->params());
     out << ")";

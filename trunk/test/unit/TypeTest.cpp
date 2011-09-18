@@ -186,30 +186,6 @@ public:
 
 };
 
-/// -------------------------------------------------------------------
-/// A pair of type refs - used as a map key.
-class TypePair {
-public:
-  TypePair(const Type * first, const Type * second) : first_(first), second_(second) {}
-  TypePair(const TypePair & src) : first_(src.first_), second_(src.second_) {}
-
-  const Type * first() { return first_; }
-  const Type * second() { return second_; }
-
-  bool operator==(const TypePair & other) const {
-    return first_ == other.first_ && second_ == other.second_;
-  }
-
-  bool operator!=(const TypePair & other) const {
-    return !(*this == other);
-  }
-
-
-private:
-  const Type * first_;
-  const Type * second_;
-};
-
 // -------------------------------------------------------------------
 // Utility functions
 
@@ -217,23 +193,6 @@ private:
     can be converted to.
   */
 Type * findCommonType(Type * t0, Type * t1);
-
-/** Given a pointer to a type, dereference any aliases and return the
-    real underlying type. */
-const Type * dealias(const Type * t);
-Type * dealias(Type * t);
-
-/** Type equality functor. */
-class TypeEquals {
-public:
-  bool operator()(const Type * t0, const Type * t1);
-};
-
-/** Type 'less than' operator for sorting lists of types. */
-class TypeLess {
-public:
-  bool operator()(const Type * t0, const Type * t1);
-};
 
 }
 

@@ -670,7 +670,7 @@ bool ClassAnalyzer::analyzeFields() {
           }
 
           analyzeVariable(field, Task_PrepTypeComparison);
-          DASSERT(field->type() != NULL);
+          DASSERT(field->type());
 
           bool isStorageRequired = true;
           if (field->defnType() == Defn::Let) {
@@ -718,7 +718,7 @@ bool ClassAnalyzer::analyzeFields() {
     for (size_t i = 0; i + 1 < type->instanceFields_.size(); ++i) {
       VariableDefn * field = cast_or_null<VariableDefn>(type->instanceFields_[i]);
       if (field != NULL) {
-        const Type * fieldType = dealias(field->type());
+        QualifiedType fieldType = dealias(field->type());
         if (fieldType->typeClass() == Type::FlexibleArray) {
           diag.error(field) << "Member of type FlexibleArray must be the last member.";
         }
@@ -1480,7 +1480,7 @@ bool ClassAnalyzer::createNoArgConstructor() {
 }
 
 Expr * ClassAnalyzer::getFieldInitVal(VariableDefn * var) {
-  const Type * fieldType = var->type();
+  const Type * fieldType = var->type().unqualified();
   if (fieldType->isErrorType()) {
     return NULL;
   }

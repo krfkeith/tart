@@ -114,7 +114,7 @@ public:
 
   // Overrides
 
-  const Type * type() const { return type_.type(); }
+  QualifiedType type() const { return type_; }
   void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const VariableDefn *) { return true; }

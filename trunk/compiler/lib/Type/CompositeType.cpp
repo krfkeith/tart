@@ -270,7 +270,7 @@ void CompositeType::createIRTypeFields() const {
     if (*it) {
       VariableDefn * var = static_cast<VariableDefn *>(*it);
       DASSERT_OBJ(var->passes().isFinished(VariableDefn::VariableTypePass), var);
-      const Type * varType = var->type();
+      QualifiedType varType = var->type();
       llvm::Type * memberType =
           (var->isSharedRef() ? var->sharedRefType() : varType)->irEmbeddedType();
       fieldTypes.push_back(memberType);
@@ -464,7 +464,7 @@ bool CompositeType::containsReferenceType() const {
   if (typeClass() == Struct) {
     for (DefnList::const_iterator it = instanceFields_.begin(); it != instanceFields_.end(); ++it) {
       if (const VariableDefn * var = cast_or_null<VariableDefn>(*it)) {
-        if (var->type() != NULL && var->type()->containsReferenceType()) {
+        if (var->type() && var->type()->containsReferenceType()) {
           return true;
         }
       }

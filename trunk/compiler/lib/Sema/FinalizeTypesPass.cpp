@@ -247,7 +247,7 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
 
     if (callType == Expr::CtorCall) {
       DASSERT_OBJ(method->functionType()->selfParam() != NULL, method);
-      DASSERT_OBJ(method->functionType()->selfParam()->type() != NULL, method);
+      DASSERT_OBJ(method->functionType()->selfParam()->type(), method);
       DASSERT_OBJ(!method->functionType()->selfParam()->type()->isVoidType(), method);
       result->setType(method->functionType()->selfParam()->type());
     } else {
@@ -353,7 +353,7 @@ bool FinalizeTypesPassImpl::coerceArgs(
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     int paramIndex = cd->parameterIndex(argIndex);
     ParameterDefn * param = fnType->params()[paramIndex];
-    const Type * paramType = param->type();
+    const Type * paramType = param->type().type();
     DASSERT(paramType->isSingular());
     Expr * argVal = visitExpr(args[argIndex]);
     if (isErrorResult(argVal)) {
@@ -393,7 +393,7 @@ bool FinalizeTypesPassImpl::coerceArgs(
       if (param->isVariadic()) {
         // Pass a null array - possibly a static singleton.
         ArrayLiteralExpr * arrayParam = AnalyzerBase::createArrayLiteral(
-            cd->callExpr()->location(), param->type());
+            cd->callExpr()->location(), param->type().type());
         //diag.debug() << "Creating default array literal of type " << param->type() << " calling method " << cd->method();
         AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
         outArgs[paramIndex] = arrayParam;
@@ -862,7 +862,7 @@ Expr * FinalizeTypesPassImpl::visitMatch(MatchExpr * in) {
   return in;
 }
 
-Expr * FinalizeTypesPassImpl::addCastIfNeeded(Expr * in, const Type * toType, unsigned options) {
+Expr * FinalizeTypesPassImpl::addCastIfNeeded(Expr * in, QualifiedType toType, unsigned options) {
   return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_, NULL)
         .doImplicitCast(in, toType, options);
 }

@@ -250,7 +250,7 @@ public:
   // Overrides
 
   StringRef linkageName() const;
-  const Type * type() const;
+  QualifiedType type() const;
   void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const FunctionDefn *) { return true; }

@@ -136,7 +136,7 @@ void CodeGenerator::pushRoots(LocalScope * scope) {
         if (var->isSharedRef()) {
           pushGCRoot(var->irValue(), var->sharedRefType());
         } else if (var->hasStorage() && var->type()->containsReferenceType()) {
-          pushGCRoot(var->irValue(), var->type());
+          pushGCRoot(var->irValue(), var->type().unqualified());
         }
       }
     }
@@ -371,7 +371,8 @@ void CodeGenerator::createCompositeTraceTableEntries(const CompositeType * type,
       case Type::Tuple:
       case Type::Union:
         indices.push_back(getInt32Val(var->memberIndex()));
-        createTraceTableEntries(var->type(), basePtr, traceTable, fieldOffsets, indices);
+        createTraceTableEntries(
+            var->type().unqualified(), basePtr, traceTable, fieldOffsets, indices);
         indices.resize(indicesSize);
         break;
 

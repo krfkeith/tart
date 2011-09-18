@@ -88,7 +88,7 @@ bool VarAnalyzer::analyze(AnalysisTask task) {
 bool VarAnalyzer::runPasses(VariableDefn::PassSet passesToRun) {
   passesToRun.removeAll(target->passes().finished());
   if (passesToRun.empty()) {
-    if (target->type() == NULL) {
+    if (!target->type()) {
       return false;
     }
 
@@ -146,7 +146,7 @@ bool VarAnalyzer::resolveVarType() {
     const ASTVarDecl * ast = cast_or_null<ASTVarDecl>(target->ast());
 
     // Evaluate the explicitly declared type, if any
-    if (target->type() == NULL) {
+    if (!target->type()) {
       DASSERT(ast != NULL);
       if (ast->type() != NULL) {
         TypeAnalyzer ta(module_, activeScope_);
@@ -175,8 +175,8 @@ bool VarAnalyzer::resolveVarType() {
     // Evaluate the initializer expression, if any
     if (ast != NULL && ast->value() != NULL) {
       Scope * savedScope = activeScope_;
-      if (target->type() != NULL) {
-        const Type * targetType = dealias(target->type());
+      if (target->type()) {
+        QualifiedType targetType = target->type().dealias();
         if (targetType->typeClass() == Type::Enum) {
           // If the initializer is an enumerated type, then add that type's member scope
           // to the list of scopes.
@@ -190,7 +190,7 @@ bool VarAnalyzer::resolveVarType() {
 
       ExprAnalyzer ea(this, currentFunction_);
       Expr * initExpr = ea.analyze(ast->value(),
-          (target->type() != NULL ? target->type() : &AnyType::instance), AO_IMPLICIT_CAST);
+          (target->type() ? target->type() : &AnyType::instance), AO_IMPLICIT_CAST);
       setActiveScope(savedScope);
       if (isErrorResult(initExpr)) {
         target->passes().finish(VariableDefn::VariableTypePass);
@@ -210,14 +210,14 @@ bool VarAnalyzer::resolveVarType() {
         DASSERT_OBJ(initType != NULL, target);
 
         // TODO: Only if this is a var, not a let
-        if (target->type() == NULL) {
+        if (!target->type()) {
           initType = IntegerSizingTransform().transform(initType).unqualified();
           setTargetType(initType);
           analyzeType(initType, Task_PrepTypeComparison);
         }
 
         // Special case for native array initializers.
-        if (isa<NativeArrayType>(dealias(target->type()))) {
+        if (target->type().dealias().isa<NativeArrayType>()) {
           if (ast->value()->nodeType() == ASTNode::ArrayLiteral) {
             initExpr = initializeNativeArray(initExpr);
           }
@@ -236,18 +236,18 @@ bool VarAnalyzer::resolveVarType() {
           target->setInitValue(initExpr);
         }
       }
-    } else if (target->type() == NULL) {
+    } else if (!target->type()) {
       diag.error(target) << "Type of '" << target << "' cannot be determined";
     }
 
-    if (target->type() != NULL && target->type()->isSingular()) {
+    if (target->type() && target->type()->isSingular()) {
       target->addTrait(Defn::Singular);
     }
 
     target->passes().finish(VariableDefn::VariableTypePass);
   }
 
-  if (target->type() == NULL) {
+  if (!target->type()) {
     target->setType(&BadType::instance);
     return false;
   }
@@ -334,7 +334,7 @@ bool VarAnalyzer::resolveInitializers() {
 }
 
 Expr * VarAnalyzer::initializeNativeArray(Expr * initValue) {
-  const NativeArrayType * nat = static_cast<const NativeArrayType *>(target->type());
+  const NativeArrayType * nat = static_cast<const NativeArrayType *>(target->type().type());
   FnCallExpr * call = cast<FnCallExpr>(initValue);
   ArrayLiteralExpr * alit = cast<ArrayLiteralExpr>(call->arg(0));
   if (target->storageClass() != Storage_Global && target->storageClass() != Storage_Static) {

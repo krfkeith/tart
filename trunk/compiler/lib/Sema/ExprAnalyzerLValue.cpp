@@ -528,7 +528,7 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
   ExprList castArgs;
   size_t argCount = call->args().size();
   for (size_t i = 0; i < argCount; ++i) {
-    const Type * paramType = getter->functionType()->param(i)->type();
+    const Type * paramType = getter->functionType()->param(i)->type().type();
     Expr * arg = call->arg(i);
     arg = inferTypes(subject(), arg, paramType);
     Expr * castArg = paramType->implicitCast(arg->location(), arg);
@@ -557,7 +557,7 @@ Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
   ValueDefn * valueDefn = lvalue->value();
   DASSERT(valueDefn != NULL);
   analyzeDefn(valueDefn, Task_PrepTypeComparison);
-  DASSERT(valueDefn->type() != NULL);
+  DASSERT(valueDefn->type());
   lvalue->setType(valueDefn->type());
   if (ParameterDefn * param = dyn_cast<ParameterDefn>(valueDefn)) {
     lvalue->setType(param->internalType());

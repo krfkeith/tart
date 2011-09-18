@@ -60,7 +60,7 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
 
     // Upcast the self argument type.
     if (fnType->selfParam() != NULL) {
-      const Type * selfType = dealias(fnType->selfParam()->type());
+      const Type * selfType = fnType->selfParam()->type().dealias().unqualified();
       selfArg = genUpCastInstr(selfArg, in->selfArg()->type(), selfType);
     }
 
@@ -87,7 +87,7 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
   Value * fnVal;
   if (in->exprType() == Expr::VTableCall) {
     DASSERT_OBJ(selfArg != NULL, in);
-    const Type * classType = dealias(fnType->selfParam()->type());
+    const Type * classType = fnType->selfParam()->type().dealias().unqualified();
     if (classType->typeClass() == Type::Class) {
       fnVal = genVTableLookup(fn, static_cast<const CompositeType *>(classType), selfArg);
     } else if (classType->typeClass() == Type::Interface) {

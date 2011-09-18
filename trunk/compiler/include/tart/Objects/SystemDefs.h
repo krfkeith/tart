@@ -109,7 +109,7 @@ public:
   }
 
   const Type * type() const {
-    return get()->type();
+    return get()->type().type();
   }
 
 private:

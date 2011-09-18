@@ -267,7 +267,7 @@ llvm::GlobalVariable * Reflector::getMethodPtr(const FunctionDefn * fn) {
     diag.fatal() << "Attempting to add an export during output phase: " << fn;
   }
 
-  getTypePtr(fn->type());
+  getTypePtr(fn->type().unqualified());
 
   DASSERT_OBJ(module()->exportDefs().count(const_cast<FunctionDefn *>(fn)) > 0, fn);
 
@@ -287,7 +287,7 @@ llvm::GlobalVariable * Reflector::getPropertyPtr(const PropertyDefn * prop) {
     diag.fatal() << "Attempting to add an export during output phase: " << prop;
   }
 
-  getTypePtr(prop->type());
+  getTypePtr(prop->type().unqualified());
 
   defnExports_.append(prop);
   return new GlobalVariable(*irModule_, Builtins::typeProperty->irTypeComplete(), true,
@@ -305,7 +305,7 @@ llvm::GlobalVariable * Reflector::getFieldPtr(const VariableDefn * field) {
     diag.fatal() << "Attempting to add an export during output phase: " << field;
   }
 
-  getTypePtr(field->type());
+  getTypePtr(field->type().unqualified());
 
   defnExports_.append(field);
   return new GlobalVariable(*irModule_, Builtins::typeField->irTypeComplete(), true,
@@ -427,7 +427,7 @@ llvm::GlobalVariable * Reflector::getFunctionTypePtr(const FunctionType * type) 
   getTypePtr(type->returnType().unqualified());
   for (ParameterList::const_iterator it = type->params().begin();
       it != type->params().end(); ++it) {
-    getTypePtr((*it)->type());
+    getTypePtr((*it)->type().unqualified());
   }
 
   typeExports_.append(type);
@@ -797,7 +797,7 @@ llvm::Constant * Reflector::emitMember(const ValueDefn * member,
   sb.addIntegerField(reflect::Member::traits, traits);
 
   // Member._type
-  sb.addPointerField(reflect::Member::type, getTypePtr(member->type()));
+  sb.addPointerField(reflect::Member::type, getTypePtr(member->type().type()));
 
   // Member._attributes
   sb.addPointerField(reflect::Member::attributes, emitAttributeList(member->attrs(), name));
@@ -991,7 +991,7 @@ void Reflector::emitFunctionType(const FunctionType * type) {
 
   // Union return values temporarily disabled for the moment.
   bool canInvoke = false;
-  const Type * selfType = type->selfParam() != NULL ? type->selfParam()->type() : NULL;
+  const Type * selfType = type->selfParam() != NULL ? type->selfParam()->type().type() : NULL;
   const Type * returnType = type->returnType().type();
   if (type->isInvocable() &&
       returnType->typeClass() != Type::Union &&
@@ -1012,7 +1012,7 @@ void Reflector::emitFunctionType(const FunctionType * type) {
 
   // FunctionType._selfType
   if (type->selfParam() != NULL) {
-    sb.addPointerField(reflect::FunctionType::selfType, getTypePtr(type->selfParam()->type()));
+    sb.addPointerField(reflect::FunctionType::selfType, getTypePtr(type->selfParam()->type().type()));
   } else {
     sb.addNullField(reflect::FunctionType::selfType.type());
   }
@@ -1182,7 +1182,7 @@ llvm::Constant * Reflector::emitStaticList(const ConstantList & elements,
 llvm::Constant * Reflector::emitArray(
     const std::string & baseName, const VariableDefn * var, const ConstantList & values)
 {
-  const Type * varType = var->type();
+  const Type * varType = var->type().unqualified();
   if (const UnionType * utype = dyn_cast<UnionType>(varType)) {
     DASSERT_OBJ(utype->isSingleOptionalType(), utype);
     varType = utype->getFirstNonVoidType();

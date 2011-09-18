@@ -43,26 +43,25 @@ const char * compatibilityError(ConversionRank rank) {
   switch (rank) {
     case Incompatible:
       return "Type mismatch";
-      break;
+
+    case QualifierLoss:
+      return "loss of type qualifiers";
 
     case Truncation:
       return "Truncation of value";
-      break;
 
     case IntegerToBool:
       return "Implicit conversion of integer to bool type";
-      break;
 
     case PrecisionLoss:
       return "Possible loss of precision";
-      break;
 
     case SignedUnsigned:
       return "Signed/unsigned mismatch";
-      break;
 
     default:
       DFAIL("IllegalState");
+      break;
   }
 }
 
@@ -86,45 +85,41 @@ void compatibilityWarning(const SourceLocation & loc,
 
 FormatStream & operator<<(FormatStream & out, ConversionRank rank) {
   switch (rank) {
-    case Incompatible: {
+    case Incompatible:
       out << "Incompatible";
       break;
-    }
 
-    case Truncation: {
+    case QualifierLoss:
+      out << "QualifierLoss";
+      break;
+
+    case Truncation:
       out << "Truncation";
       break;
-    }
 
-    case IntegerToBool: {
+    case IntegerToBool:
       out << "IntegerToBool";
       break;
-    }
 
-    case SignedUnsigned: {
+    case SignedUnsigned:
       out << "SignedUnsigned";
       break;
-    }
 
-    case PrecisionLoss: {
+    case PrecisionLoss:
       out << "PrecisionLoss";
       break;
-    }
 
-    case NonPreferred: {
+    case NonPreferred:
       out << "NonPreferred";
       break;
-    }
 
-    case ExactConversion: {
+    case ExactConversion:
       out << "ExactConversion";
       break;
-    }
 
-    case IdenticalTypes: {
+    case IdenticalTypes:
       out << "IdenticalTypes";
       break;
-    }
   }
 
   return out;

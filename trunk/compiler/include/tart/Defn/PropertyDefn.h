@@ -54,7 +54,7 @@ public:
 
   // Overrides
 
-  const Type * type() const { return type_.type(); }
+  QualifiedType type() const { return type_; }
   void trace() const;
   void format(FormatStream & out) const;
   void setDefiningScope(Scope * scope) {

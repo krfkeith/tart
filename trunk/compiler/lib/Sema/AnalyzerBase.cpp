@@ -705,21 +705,21 @@ const Type * AnalyzerBase::getTupleTypesFromTupleExpr(Expr * in) {
 }
 
 const Type * AnalyzerBase::inferType(ValueDefn * valueDef) {
-  if (valueDef->type() == NULL) {
+  if (!valueDef->type()) {
     if (!analyzeDefn(valueDef, Task_PrepTypeComparison)) {
       return NULL;
     }
   }
 
-  if (valueDef->type() != NULL && valueDef->type()->isSingular()) {
+  if (valueDef->type() && valueDef->type()->isSingular()) {
     if (ParameterDefn * param = dyn_cast<ParameterDefn>(valueDef)) {
       return param->internalType();
     }
 
-    return valueDef->type();
+    return valueDef->type().type();
   }
 
-  if (valueDef->type() != NULL) {
+  if (valueDef->type()) {
     diag.info(valueDef) << valueDef << ":" << valueDef->type();
   } else {
     diag.info(valueDef) << valueDef;

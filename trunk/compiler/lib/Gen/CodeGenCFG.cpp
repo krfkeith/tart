@@ -48,7 +48,7 @@ void CodeGenerator::genLocalRoots(LocalScopeList & lsl) {
         if (var->isSharedRef()) {
           genGCRoot(var->irValue(), var->sharedRefType(), var->name());
         } else if (var->hasStorage() && var->type()->containsReferenceType()) {
-          genGCRoot(var->irValue(), var->type(), var->name());
+          genGCRoot(var->irValue(), var->type().unqualified(), var->name());
         }
       }
     }
@@ -60,7 +60,7 @@ void CodeGenerator::genLocalVar(VariableDefn * var, Value * initialVal) {
   DASSERT_OBJ(var->storageClass() == Storage_Local, var);
   DASSERT_OBJ(var->irValue() == NULL, var);
 
-  const Type * varType = var->type();
+  const Type * varType = var->type().unqualified();
   DASSERT_OBJ(varType != NULL, var);
 
   // Generate the variable type
@@ -830,7 +830,7 @@ Value * CodeGenerator::genTry(const TryExpr * in) {
           diag.error(ce) << "Unreachable statement after catch-all";
         }
 
-        const CompositeType * exceptType = cast<CompositeType>(catchVar->type());
+        const CompositeType * exceptType = cast<CompositeType>(catchVar->type().unqualified());
         selectorVals.push_back(getTypeInfoBlockPtr(exceptType));
         // If a backtrace was wanted, use the more expensive personality function.
         if (catchVar->hasTrait(Defn::RequestStackTrace)) {
@@ -889,7 +889,7 @@ Value * CodeGenerator::genTry(const TryExpr * in) {
           const CatchExpr * ce = cast<CatchExpr>(*it);
           VariableDefn * catchVar = ce->var();
           if (catchVar != NULL) {
-            const CompositeType * exceptType = cast<CompositeType>(catchVar->type());
+            const CompositeType * exceptType = cast<CompositeType>(catchVar->type().unqualified());
             Twine name = Twine("try.catch.") + exceptType->typeDefn()->qualifiedName();
             BasicBlock * blkCatchBody = createBlock(name);
             si->addCase(getInt32Val(selectorIndex++), blkCatchBody);

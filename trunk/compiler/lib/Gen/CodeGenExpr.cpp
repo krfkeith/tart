@@ -353,7 +353,7 @@ llvm::Constant * CodeGenerator::genConstRef(const Expr * in, StringRef name, boo
 
 Value * CodeGenerator::genInitVar(const InitVarExpr * in) {
   VariableDefn * var = in->var();
-  TypeShape typeShape = var->canonicalType()->typeShape();
+  TypeShape typeShape = var->type()->typeShape();
   Value * initValue = genExpr(in->initExpr());
   if (initValue == NULL) {
     return NULL;
@@ -565,7 +565,7 @@ Value * CodeGenerator::genLogicalOper(const BinaryExpr * in) {
 
 Value * CodeGenerator::genLoadLValue(const LValueExpr * lval, bool derefShared) {
   const ValueDefn * var = lval->value();
-  TypeShape typeShape = var->canonicalType()->typeShape();
+  TypeShape typeShape = var->type()->typeShape();
 
   // It's a member or element expression
   if (lval->base() != NULL) {
@@ -895,7 +895,7 @@ Value * CodeGenerator::genBaseAddress(const Expr * in, ValueList & indices,
   const Expr * base = in;
   if (const LValueExpr * lval = dyn_cast<LValueExpr>(base)) {
     const ValueDefn * field = lval->value();
-    const Type * fieldType = dealias(field->type());
+    const Type * fieldType = field->type().dealias().unqualified();
     if (const ParameterDefn * param = dyn_cast<ParameterDefn>(field)) {
       fieldType = dealias(param->internalType());
       if (param->getFlag(ParameterDefn::Reference)) {
