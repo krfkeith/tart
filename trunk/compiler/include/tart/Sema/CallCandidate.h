@@ -106,6 +106,9 @@ public:
   /** Update the compatibility score for this candidate. */
   ConversionRank updateConversionRank();
 
+  /** True if any of the types in the function signature are error types. */
+  bool hasErrors() const;
+
   /** Return true if *this* candidate is more specific than the one given. */
   bool isMoreSpecific(const CallCandidate * other) const;
 

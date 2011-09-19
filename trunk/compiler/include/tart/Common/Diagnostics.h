@@ -347,6 +347,8 @@ public:
   /** Print the current stack trace. */
   void printStackTrace(int skipFrames);
 
+  bool enableVerboseErrors() const;
+
 protected:
   int messageCount[Severity_Levels];
   Writer * writer_;

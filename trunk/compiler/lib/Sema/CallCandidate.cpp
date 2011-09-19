@@ -292,6 +292,23 @@ ConversionRank CallCandidate::updateConversionRank() {
   return conversionRank_;
 }
 
+bool CallCandidate::hasErrors() const {
+  if (callExpr_->expectedReturnType() && callExpr_->expectedReturnType()->isErrorType()) {
+    return true;
+  }
+  if (isErrorResult(resultType_)) {
+    return true;
+  }
+  size_t argCount = callExpr_->argCount();
+  for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
+    QualifiedType paramType = this->paramType(argIndex);
+    if (isErrorResult(paramType)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
   bool same = true;
 

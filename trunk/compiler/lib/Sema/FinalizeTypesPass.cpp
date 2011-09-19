@@ -251,7 +251,6 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
       DASSERT_OBJ(!method->functionType()->selfParam()->type()->isVoidType(), method);
       result->setType(method->functionType()->selfParam()->type());
     } else {
-      //DASSERT_OBJ(strcmp(method->name(), "construct") != 0, method);
       DASSERT(method->returnType()) << "Missing return type for " << method;
       result->setType(method->returnType());
       if (method->storageClass() != Storage_Instance) {
@@ -260,7 +259,9 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
     }
 
     DASSERT_OBJ(result->isSingular(), result);
-    DASSERT_OBJ(result->type()->isSingular(), result);
+    if (!result->type()->isSingular()) {
+      diag.error(result) << "Non-singular expression: " << result->type();
+    }
     return result;
   }
 

@@ -219,8 +219,10 @@ QualifiedType TypeAnalyzer::qualifiedTypeFromAST(const ASTNode * ast) {
 
 void TypeAnalyzer::undefinedType(const ASTNode * ast) {
   diag.fatal(ast) << "Undefined type '" << ast << "'";
-  diag.writeLnIndent("Scopes searched:");
-  dumpScopeHierarchy();
+  if (diag.enableVerboseErrors()) {
+    diag.writeLnIndent("Scopes searched:");
+    dumpScopeHierarchy();
+  }
 }
 
 bool TypeAnalyzer::typeDefnListFromAST(const ASTNode * ast, DefnList & defns) {

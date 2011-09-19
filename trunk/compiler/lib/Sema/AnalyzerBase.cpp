@@ -112,9 +112,11 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
 
     if (isRequired) {
       diag.error(ast) << "Undefined symbol '" << ast << "'";
-      // TODO: Dump macro context.
-      diag.info() << "Scopes searched:";
-      dumpScopeHierarchy();
+      if (diag.enableVerboseErrors()) {
+        // TODO: Dump macro context.
+        diag.info() << "Scopes searched:";
+        dumpScopeHierarchy();
+      }
     }
 
     return false;
@@ -125,9 +127,11 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
     if (lookupNameRecurse(lvals, qual, path, LookupOptions(lookupOptions & ~LOOKUP_REQUIRED))) {
       if (lvals.size() > 1) {
         diag.error(ast) << "Multiply defined symbol " << qual;
-        // TODO: Dump macro context.
-        diag.info() << "Found in scopes:";
-        dumpScopeList(lvals);
+        if (diag.enableVerboseErrors()) {
+          // TODO: Dump macro context.
+          diag.info() << "Found in scopes:";
+          dumpScopeList(lvals);
+        }
         path.clear();
         return false;
       }
@@ -140,9 +144,11 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
       path.clear();
       if (isRequired) {
         diag.error(ast) << "Undefined member '" << mref->memberName() << "'";
-        // TODO: Dump macro & context.
-        diag.info() << "Scopes searched:";
-        dumpScopeList(lvals);
+        if (diag.enableVerboseErrors()) {
+          // TODO: Dump macro & context.
+          diag.info() << "Scopes searched:";
+          dumpScopeList(lvals);
+        }
       }
 
       return false;
@@ -161,8 +167,10 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
       lookupNameRecurse(lvals, qual, path, LookupOptions(lookupOptions | LOOKUP_REQUIRED));
 #endif
       diag.error(qual) << "Undefined symbol '" << qual << "'";
-      diag.info() << "Scopes searched:";
-      dumpScopeHierarchy();
+      if (diag.enableVerboseErrors()) {
+        diag.info() << "Scopes searched:";
+        dumpScopeHierarchy();
+      }
     }
 
     return false;
@@ -618,8 +626,9 @@ Expr * AnalyzerBase::getDefnAsExpr(Defn * de, Expr * context, SLC & loc) {
     return tdef->asExpr();
   } else if (ValueDefn * vdef = dyn_cast<ValueDefn>(de)) {
     if (vdef->storageClass() == Storage_Instance && context == NULL) {
-      diag.fatal(loc) << "Cannot access non-static member '" <<
+      diag.error(loc) << "Cannot access non-static member '" <<
           vdef->name() << "' from static method.";
+      return &Expr::ErrorVal;
     }
 
     analyzeDefn(vdef, Task_PrepTypeComparison);

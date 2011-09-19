@@ -84,6 +84,9 @@ public:
 
   /** Generate a printable version of the input expression. */
   virtual void formatExpression(FormatStream & out) = 0;
+
+  /** True if any of the expressions in this choice point have errors. */
+  virtual bool hasErrors() const = 0;
 };
 
 typedef llvm::SmallVector<ChoicePoint *, 16> ChoicePointList;
@@ -126,6 +129,7 @@ public:
   const Expr * expr() const { return callExpr_; }
   bool dependsOn(int choice, const ProvisionSet & pset) const;
   void formatExpression(FormatStream & out);
+  bool hasErrors() const;
 
   // Eliminate culled candidates
   void finish();

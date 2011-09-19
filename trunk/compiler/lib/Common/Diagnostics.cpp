@@ -239,6 +239,10 @@ void Diagnostics::printStackTrace(int skipFrames) {
 #endif
 }
 
+bool Diagnostics::enableVerboseErrors() const {
+  return DebugErrors;
+}
+
 template<>
 void Diagnostics::DiagnosticAction<Diagnostics::Fatal>::write(
     const SourceLocation & loc, StringRef msg) {
