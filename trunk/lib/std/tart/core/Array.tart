@@ -9,7 +9,7 @@ import tart.gc.TraceMethod;
 import tart.gc.TraceAction;
 
 /** Built-in array class */
-@Coalesce public final class Array[%ElementType] : Collection[ElementType], Copyable[ElementType] {
+@Coalesce final class Array[%ElementType] : Collection[ElementType], Copyable[ElementType] {
   private {
     var _size:int;
     var _data:FlexibleArray[ElementType];
@@ -59,8 +59,6 @@ import tart.gc.TraceAction;
     match collection as copyable:Copyable[ElementType] {
       copyable.copyElements(addressOf(result._data[0]), 0, size);
     } else {
-      var it = collection.iterate();
-      var n = it.next();
       var index = 0;
       for el in collection {
         result._data[index++] = el;

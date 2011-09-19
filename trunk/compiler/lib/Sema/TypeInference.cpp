@@ -174,6 +174,17 @@ bool CallSite::dependsOn(int choice, const ProvisionSet & pset) const {
   return pset.count(callExpr_->candidates()[choice]->primaryProvision()) != 0;
 }
 
+bool CallSite::hasErrors() const {
+  Candidates & cd = callExpr_->candidates();
+  for (Candidates::iterator c = cd.begin(); c != cd.end(); ++c) {
+    CallCandidate * cc = *c;
+    if (cc->hasErrors()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void CallSite::reportRanks() {
   diag.indent();
   Candidates & cd = callExpr_->candidates();
@@ -242,6 +253,10 @@ void CallSite::finish() {
   for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
     // Ignore culled candidates unless there were no un-culled ones.
     CallCandidate * cc = *it;
+    // Don't bother producing a report if any of the candidates have errors.
+    if (cc->hasErrors()) {
+      return;
+    }
     if (!cc->isCulled() || remaining_ == 0) {
       ConversionRank rank = cc->conversionRank();
       if (rank > best) {
@@ -569,7 +584,11 @@ bool TypeInferencePass::unify() {
   ++searchDepth_;
   bool success = true;
   for (ChoicePointList::iterator pt = choicePoints_.begin(); pt != choicePoints_.end(); ++pt) {
-    if (!(*pt)->unify(env_, searchDepth_)) {
+    ChoicePoint * cp = *pt;
+    if (cp->hasErrors()) {
+      return false;
+    }
+    if (!cp->unify(env_, searchDepth_)) {
       success = false;
     }
   }

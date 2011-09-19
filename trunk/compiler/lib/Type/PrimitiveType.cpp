@@ -81,8 +81,7 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
     return IdenticalTypes;
   }
 
-  if (ConstantExpr * cbase = dyn_cast_or_null<ConstantExpr>(cn.fromValue)) {
-    (void) cbase;
+  if (cn.fromValue != NULL && isa<ConstantExpr>(cn.fromValue)) {
     return convertConstantToInteger(cn);
   }
 
@@ -144,7 +143,6 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
           //DFAIL("Implement");
         }
 
-        //return BoolToInteger;
         return Incompatible;
       }
     } else if (isSignedIntegerTypeId(dstId)) {
@@ -191,13 +189,11 @@ ConversionRank PrimitiveType::convertToInteger(const Conversion & cn) const {
         return Truncation;
       } else if (srcId == TypeId_Bool) {
         if (cn.fromValue && cn.resultValue) {
-          //return new CastExpr(llvm::Instruction::SExt, expr, this);
-          diag.debug() << cn.fromValue;
-          DFAIL("Implement");
+          *cn.resultValue = new CastExpr(
+              Expr::ZeroExtend, cn.fromValue->location(), this, cn.fromValue);
         }
 
         return ExactConversion;
-        //return BoolToInteger;
       }
     }
 
