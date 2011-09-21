@@ -225,7 +225,7 @@ public:
 
   /** Set the writer. */
   Writer *setWriter(Writer * writer) {
-    Writer * prev = writer;
+    Writer * prev = writer_;
     writer_ = writer;
     return prev;
   }

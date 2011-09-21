@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 #include "TestCompiler.h"
 
-#include "Tart/Common/PackageMgr.h"
+#include "tart/Common/PackageMgr.h"
 
 using namespace tart;
 

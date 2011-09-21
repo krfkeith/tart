@@ -83,8 +83,6 @@ else (GENERATE_DEBUG_INFO)
   )
 endif (GENERATE_DEBUG_INFO)
 
-set_source_files_properties("${PROJECT_BINARY_DIR}/lib/std/libstd.bc" PROPERTIES GENERATED 1)
-
 add_custom_target(testlibs DEPENDS libstd)
 
 # Create and run a test executable for each source file
@@ -149,7 +147,7 @@ foreach(SRC_FILE ${TEST_SRC})
     # Link executable
     add_executable(${EXE_FILE} EXCLUDE_FROM_ALL ${OBJ_FILE})
     # TODO: This is incorrect, should be deps of the above step but CMake doesn't allow that.
-    add_dependencies(${EXE_FILE} libstd libtesting libgc1)
+    # add_dependencies(${EXE_FILE} libstd libtesting libgc1)
     target_link_libraries(${EXE_FILE} ${TEST_LIBS})
   else (USE_LLVM_BINARIES)
     # Use tartln and don't generate assembly.
@@ -165,7 +163,7 @@ foreach(SRC_FILE ${TEST_SRC})
     # Link executable
     add_executable(${EXE_FILE} EXCLUDE_FROM_ALL ${OBJ_FILE})
     # TODO: This is incorrect, should be deps of the above step but CMake doesn't allow that.
-    add_dependencies(${EXE_FILE} libstd libtesting libgc1)
+    # add_dependencies(${EXE_FILE} libstd libtesting libgc1)
     target_link_libraries(${EXE_FILE} ${TEST_LIBS})
   endif (USE_LLVM_BINARIES)
 
