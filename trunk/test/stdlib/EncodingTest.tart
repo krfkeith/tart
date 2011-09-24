@@ -1,0 +1,121 @@
+import tart.testing.Test;
+import tart.text.encodings.Codec;
+import tart.text.encodings.Codecs;
+import tart.text.encodings.UTF8;
+import tart.text.encodings.InvalidCharacterError;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(EncodingTest);
+}
+
+class EncodingTest : Test {
+  def testUTF8CharLength() {
+    let encoder = Codecs.UTF_8;
+    var result = encoder.encodedLength(['a', 'b', 'c'], 0, 3);
+    assertEq(3, result.dstCount);
+    assertEq(3, result.srcCount);
+    assertEq(Codec.CodecState.OK, result.state);
+
+    result = encoder.encodedLength(['a', 'b', 'c'], 0, 3);
+    assertEq(3, result.dstCount);
+    assertEq(3, result.srcCount);
+    assertEq(Codec.CodecState.OK, result.state);
+
+    result = encoder.encodedLength(['a'], 0, 1);
+    assertEq(1, result.dstCount);
+    assertEq(1, result.srcCount);
+    assertEq(Codec.CodecState.OK, result.state);
+
+    result = encoder.encodedLength(['\u7f'], 0, 1);
+    assertEq(1, result.dstCount);
+    assertEq(1, result.srcCount);
+    assertEq(Codec.CodecState.OK, result.state);
+
+    result = encoder.encodedLength(['\u80'], 0, 1);
+    assertEq(2, result.dstCount);
+    assertEq(1, result.srcCount);
+    assertEq(Codec.CodecState.OK, result.state);
+
+    result = encoder.encodedLength(['\u7ff'], 0, 1);
+    assertEq(2, result.dstCount);
+    assertEq(1, result.srcCount);
+    assertEq(Codec.CodecState.OK, result.state);
+
+    result = encoder.encodedLength(['\u800'], 0, 1);
+    assertEq(3, result.dstCount);
+    assertEq(1, result.srcCount);
+    assertEq(Codec.CodecState.OK, result.state);
+
+    result = encoder.encodedLength(['\uffff'], 0, 1);
+    assertEq(3, result.dstCount);
+    assertEq(1, result.srcCount);
+    assertEq(Codec.CodecState.OK, result.state);
+
+    result = encoder.encodedLength(['\U10000'], 0, 1);
+    assertEq(4, result.dstCount);
+    assertEq(1, result.srcCount);
+    assertEq(Codec.CodecState.OK, result.state);
+
+    result = encoder.encodedLength(['\U10ffff'], 0, 1);
+    assertEq(4, result.dstCount);
+    assertEq(1, result.srcCount);
+    assertEq(Codec.CodecState.OK, result.state);
+
+    result = encoder.encodedLength(['\u2100', '\U21000', '\U10000'], 0, 3);
+    assertEq(11, result.dstCount);
+    assertEq(3, result.srcCount);
+    assertEq(Codec.CodecState.OK, result.state);
+  }
+
+  def testUTF8InvalidCharLength() {
+    let encoder = Codecs.UTF_8;
+    var result = encoder.encodedLength(['\U200000'], 0, 1, Codec.ErrorAction.REPLACE);
+    assertEq(1, result.dstCount);
+    assertEq(1, result.srcCount);
+    assertEq(Codec.CodecState.OK, result.state);
+
+    result = encoder.encodedLength(['\U200000'], 0, 1, Codec.ErrorAction.SKIP);
+    assertEq(0, result.dstCount);
+    assertEq(1, result.srcCount);
+    assertEq(Codec.CodecState.OK, result.state);
+
+    result = encoder.encodedLength(['\U200000'], 0, 1);
+    assertEq(0, result.dstCount);
+    assertEq(0, result.srcCount);
+    assertEq(Codec.CodecState.INVALID_CHAR, result.state);
+  }
+
+  def testUTF8Encode() {
+    assertEncodingEq("abc", ['a', 'b', 'c']);
+  }
+
+  def testDecodeExhaustSrc() {
+    let encoder = Codecs.UTF_8;
+    let bytes = ubyte[].of(65, 66, 67, 0xc2);
+    let chars = char[](10);
+    let result = encoder.decode(chars, 0, 10, bytes, 0, bytes.size);
+    assertEq(3, result.srcCount);
+    assertEq(3, result.dstCount);
+    assertEq(Codec.CodecState.OK, result.state);
+  }
+
+  def testDecodeExhaustDst() {
+    let encoder = Codecs.UTF_8;
+    let bytes = ubyte[].of(65, 66, 67, 0xc2);
+    let chars = char[](4);
+    let result = encoder.decode(chars, 0, 2, bytes, 0, bytes.size);
+    assertEq(2, result.srcCount);
+    assertEq(2, result.dstCount);
+    assertEq(Codec.CodecState.OK, result.state);
+  }
+
+  def assertEncodingEq(expected:String, input:char[]) {
+    let encoder = Codecs.UTF_8;
+    let buffer = ubyte[](expected.size);
+    let result = encoder.encode(buffer, 0, buffer.size, input, 0, input.size);
+    assertEq(expected.size, int32(result.dstCount));
+    let s = String(buffer);
+    assertEq(expected, s);
+  }
+}

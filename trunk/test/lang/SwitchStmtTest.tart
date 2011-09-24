@@ -1,0 +1,77 @@
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(SwitchStmtTest);
+}
+
+class SwitchStmtTest : Test {
+	private def switchTest(value:int32) -> String {
+	  switch value {
+	    case 1 { return "One"; }
+	    case 2 { return "Two"; }
+	    case 3 { return "Three"; }
+	  }
+
+	  return "Other";
+	}
+
+  private def switchElseTest(value:int32) -> String {
+    switch value {
+      case 1 { return "One"; }
+      case 2 { return "Two"; }
+      case 3 { return "Three"; }
+      case * { return "Other"; }
+    }
+  }
+
+  enum ETEST {
+    ONE = 1,
+    TWO,
+    THREE,
+  }
+
+  private def switchEnum(value:ETEST) -> String {
+    switch value {
+      case ONE { return "One"; }
+      case TWO { return "Two"; }
+      case * { return "Other"; }
+    }
+  }
+
+	def testSimpleNonConstSwitch {
+		var s = switchTest(1);
+	  assertEq("One", s);
+	  assertEq("Two", switchTest(2));
+	  assertEq("Three", switchTest(3));
+	}
+
+  def testNonConstFallThroughSwitch {
+    assertEq("Other", switchTest(4));
+  }
+
+  def testNonConstElseSwitch {
+    assertEq("Other", switchElseTest(4));
+  }
+
+  def testNonConstEnumSwitch {
+    assertEq("One", switchEnum(ETEST.ONE));
+    assertEq("Two", switchEnum(ETEST.TWO));
+    assertEq("Other", switchEnum(ETEST.THREE));
+  }
+
+  private def switchString(value:String) -> ETEST {
+    switch value {
+      case "One" { return ETEST.ONE; }
+      case "Two" case "Three" { return ETEST.TWO; }
+      case * { return ETEST.THREE; }
+    }
+  }
+
+  def testStringSwitch {
+    assertEq(ETEST.ONE, switchString("One"));
+    assertEq(ETEST.TWO, switchString("Two"));
+    assertEq(ETEST.TWO, switchString("Three"));
+    assertEq(ETEST.THREE, switchString("Other"));
+  }
+}

@@ -1,0 +1,38 @@
+/** The base class for all throwable objects. */
+class Throwable {
+  class StackFrame {
+    var caller:StackFrame?;
+    var function:String;
+    var sourceFile:String;
+    var sourceLine:uint32;
+
+    undef construct();
+  }
+
+  private {
+    // Exception structure needed by libunwind.
+    final struct UnwindException {
+      var exceptionClass:uint64;
+      var exceptionCleanup:static fn(:int32, :int32);
+      var private1:uint64;
+      var private2:uint64;
+
+	    def construct() {}
+    }
+
+    // Padding needed to align the exceptInfo
+    var stackTrace:StackFrame?;
+    //var padding:__Pointer[void];
+
+    // Exception structure instance.
+    var exceptInfo:UnwindException;
+
+  }
+
+  protected def construct() {
+    // TODO: It doesn't call the constructor for struct member types.
+    self.exceptInfo.exceptionClass = 0;
+    self.exceptInfo.private1 = 0;
+    self.exceptInfo.private2 = 0;
+  }
+}

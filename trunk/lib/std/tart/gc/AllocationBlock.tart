@@ -1,0 +1,28 @@
+import tart.core.Memory.Address;
+
+/** Class which represents a contiguous region of memory which is allocated via
+		a simple "bump pointer" strategy. */
+class AllocationBlock {
+  private var _next:AllocationBlock;
+  private var _addrs:AddressRange;
+  private var _ptr:Address[ubyte];
+  
+  def construct(addrs:AddressRange) {
+    self._addrs = addrs;
+    self._ptr = addrs.first;
+  }
+  
+  /** Return true if there is at least 'size' bytes available in this block. Does no alignment
+  		padding calculations. */
+  def canFit(size:int) -> bool {
+    return Memory.ptrDiff(self._ptr, self._addrs.last) >= size;
+  }
+
+  /** Bump the allocation pointer. Does not check if there is enough space. Does no alignment
+      calculations. */
+  def bump(size:int) -> Address[ubyte] {
+    let result = _ptr;
+    _ptr += size;
+    return result;
+  }
+}

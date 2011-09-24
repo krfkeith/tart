@@ -1,0 +1,28 @@
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(HashingTest);
+}
+
+class HashingTest : Test {
+  def testHash32 {
+    assertEq(uint32(1274422317), Hashing.hash(1));
+    assertEq(uint32(2370273378), Hashing.hash(2));
+    assertEq(uint32(875159519), Hashing.hash(3));
+  }
+
+  def testHash64 {
+    assertEq(uint64(17585511778101966624), Hashing.hash(0x100000000));
+    assertEq(uint64(14672148337832077590), Hashing.hash(0x100000001));
+    assertEq(uint64(15989724247368273950), Hashing.hash(0x100000002));
+  }
+
+  def testHashObject {
+  }
+
+  def testHashString {
+    assertEq(uint64(11772811824609541424), "Hello".computeHash());
+    assertEq(uint64(  471848232802090609), "Yello".computeHash());
+  }
+}

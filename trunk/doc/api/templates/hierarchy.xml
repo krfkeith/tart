@@ -1,0 +1,26 @@
+<html xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+<head>
+  <xi:include href="common.xml"/>
+  <title>Class Hierarchy</title>
+</head>
+<body>
+  ${page_header('hierarchy')}
+  <section class="content-section">
+    <header class="content-header">Class Hierarchy</header>
+
+    <!--! Function to write a table of definitions in the package -->
+    <py:def function="sub_list(classes)">
+      <ul py:if="classes" class="class-hierarchy">
+        <li py:for="cls in classes">
+          <a class="class-hierarchy-link" href="${cls.uri}">${cls.qualifiedName}</a> - ${cls.summary()}
+          ${sub_list(sorted(cls.inheritedBy()))}
+        </li>
+      </ul>
+    </py:def>
+
+    ${sub_list(sorted(data))}
+
+  </section>
+  ${page_footer()}
+</body>
+</html>

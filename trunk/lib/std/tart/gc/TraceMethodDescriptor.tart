@@ -1,0 +1,16 @@
+import Memory.Address;
+
+/** Trace descriptor for a trace method. */
+struct TraceMethodDescriptor {
+  /** If non-zero, it means that this is the last descriptor in the list. */
+  let endList:uint16;
+
+  /** Number of fields in the field offset table. 0 = method descriptor. */
+  let fieldCount:uint16;
+
+  /** Offset from base for this descriptor. */
+  let offset:uint32;
+
+  /** Table of field offsets. */
+  let method:static fn (baseAddr:Address[ubyte], action:TraceAction);
+}

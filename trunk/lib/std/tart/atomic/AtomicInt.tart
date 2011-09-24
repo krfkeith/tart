@@ -1,0 +1,47 @@
+import tart.annex.Intrinsic;
+
+/** An atomic 32-bit integer type. */
+struct AtomicInt[int32] {
+  def construct(n:int32) {
+    _value = n;
+  }
+  
+  def value:int32 {
+    get { return _value; }
+    set { _value = value; }
+  }
+
+	/** Compare and swap the current value with the new value 'new'.
+			Return false if the current value was not equal to 'expected'.
+	 */
+  @Intrinsic def cas(expected:int32, new:int32) -> bool;
+
+	/** Do an atomic addition with 'n'. */
+  //@Extern("atomicint32_add") def add(n:int32);
+  //@Extern("atomicint32_subtract") def subtract(v:int32);
+
+  private var _value:int32;
+}
+
+/** An atomic 64-bit integer type. */
+struct AtomicInt[int64] {
+  def construct(n:int64) {
+    _value = n;
+  }
+  
+  def value:int64 {
+    get { return _value; }
+    set { _value = value; }
+  }
+
+	/** Compare and swap the current value with the new value 'new'.
+			Return false if the current value was not equal to 'expected'.
+	 */
+  @Intrinsic def cas(expected:int64, new:int64) -> bool;
+
+	/** Do an atomic addition with 'n'. */
+  //@Extern("atomicint64_add") def add(n:int64);
+  //@Extern("atomicint64_subtract") def subtract(v:int64);
+
+  private var _value:int64;
+}

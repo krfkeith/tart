@@ -1,0 +1,137 @@
+import tart.reflect.Module;
+import tart.testing.Test;
+import tart.collections.Iterators;
+import tart.collections.ArrayList;
+
+@EntryPoint
+def main(args: String[]) -> int32 {
+  return Test.run(IteratorTest);
+}
+
+class Counter : Iterator[int32] {
+  private var value:int32;
+  private var end:int32;
+
+  def construct(end:int32) {
+    self.value = 0;
+    self.end = end;
+  }
+
+  def next -> int32 or void {
+    if (self.value < self.end) {
+      return self.value++;
+    } else {
+      return;
+    }
+  }
+}
+
+class IteratorTest : Test {
+	def testManualIteration {
+	  let ctr = Counter(5);
+	  assertTrue(ctr.next() isa int32);
+	  assertTrue(ctr.next() isa int32);
+	  assertTrue(ctr.next() isa int32);
+	  assertTrue(ctr.next() isa int32);
+	  assertTrue(ctr.next() isa int32);
+	  assertFalse(ctr.next() isa int32);
+	}
+
+	def testManualIteration2 {
+	  expect2(1, 2);
+	}
+
+	def expect2(values:int32...) {
+	  let ctr = values.iterate();
+	  assertTrue(ctr.next() isa int32);
+	  assertTrue(ctr.next() isa int32);
+	  assertFalse(ctr.next() isa int32);
+	}
+
+	def testForeach {
+	  var sum = 0;
+	  for i in Counter(5) {
+	    sum += 1;
+	    assertTrue(sum < 6);
+	  }
+
+	  assertEq(5, sum);
+	}
+
+	def testIteratorEqual {
+	  assertTrue(Iterators.equal([1, 2, 3], [1, 2, 3]));
+	  assertFalse(Iterators.equal([1, 2, 3], [1, 2, 4]));
+	  assertFalse(Iterators.equal([1, 2, 3], [1, 2, 3, 4]));
+	  assertFalse(Iterators.equal([1, 2, 3], [1, 2]));
+	}
+
+	def testForeach2 {
+	  assertEq(5, sum(1,2,2));
+	  assertEq(10, sum(1,5,4));
+	}
+
+	def testEnumerator {
+	  var total:int = 0;
+	  for i, value in Iterators.enumerate(["One", "Two", "Three"]) {
+	    total += i;
+	  }
+
+	  assertEq(3, total);
+	}
+
+	def testRange {
+	  var sum = 0;
+	  for i in range(5) {
+	    sum += 1;
+	  }
+	  assertEq(5, sum);
+	}
+
+	def testRangeStart {
+	  var sum = 0;
+	  for i in range(4, 5) {
+	    sum += 1;
+	  }
+	  assertEq(1, sum);
+	}
+
+  def testCountingIterator {
+    let list = ArrayList[int]();
+    for i in Iterators.CountingIterator(5) {
+      list.append(i);
+    }
+    for i in Iterators.CountingIterator(5) {
+      assertEq(i+1, list[i]+1);
+    }
+  }
+
+  def testMap {
+    let s1:int[] = [1, 2, 3];
+    let s2 = Iterators.map(fn n:int -> int { return n * 2; }, s1.iterate());
+    let s3:int[] = [2, 4, 6];
+    assertTrue(Iterators.equal(s3.iterate(), s2));
+  }
+
+/*  def testMapWithInference {
+    let s1:int[] = [1, 2, 3];
+    let s2:Iterator[int] = Iterators.map(fn n { return n * 2; }, s1.iterate());
+    let s3:int[] = [2, 4, 6];
+    assertTrue(Iterators.equal(s3.iterate(), s2));
+  } */
+
+/*  def testMapWithInference2 {
+    let s1:int[] = [1, 2, 3];
+    let s2 = Iterators.map(fn n { return n * 2; }, s1.iterate());
+    let s3:int[] = [2, 4, 6];
+    assertTrue(Iterators.equal(s3.iterate(), s2));
+  } */
+}
+
+def sum(nums:int32...) -> int32 {
+  var sum:int32 = 0;
+  for i in nums {
+    sum += i;
+  }
+
+  return sum;
+}

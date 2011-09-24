@@ -1,0 +1,369 @@
+/** Conversion methods for dealing with 'Ref' types. */
+namespace Refs {
+  private {
+    /// Convert signed integers to their unsigned equivalents. Supresses conversion warnings.
+
+    def asUnsigned(v:int8) -> uint8 { return uint8(v); }
+    def asUnsigned(v:int16) -> uint16 { return uint16(v); }
+    def asUnsigned(v:int32) -> uint32 { return uint32(v); }
+    def asUnsigned(v:int64) -> uint64 { return uint64(v); }
+
+    /// Convenience functions to check whether the given input is within the numeric range
+    /// of the type specified by the type parameter.
+
+    def rangeCheck[%T](value:int32) {
+	    if value < T.minVal or value > T.maxVal {
+	      throw TypecastError();
+	    }
+	  }
+
+	  def rangeCheck[%T](value:int64) {
+      if value < T.minVal or value > T.maxVal {
+        throw TypecastError();
+      }
+    }
+
+    def rangeCheck[%T](value:uint32) {
+      if value > asUnsigned(T.maxVal) {
+        throw TypecastError();
+      }
+    }
+
+    def rangeCheck[%T](value:uint64) {
+      if value > asUnsigned(T.maxVal) {
+        throw TypecastError();
+      }
+    }
+
+    def rangeCheck[%T](value:char) {
+      if uint32(value) > asUnsigned(T.maxVal) {
+        throw TypecastError();
+      }
+    }
+
+    def check(value:bool) {
+      if not value {
+        throw TypecastError();
+      }
+    }
+
+    /// Check to insure that the input value is not negative.
+
+    def signCheck(value:int32) {
+      if value < 0 {
+        throw TypecastError();
+      }
+    }
+
+    def signCheck(value:int64) {
+      if value < 0 {
+        throw TypecastError();
+      }
+    }
+  }
+
+	/** Typecast an object into a boolean value.
+	    Returns: The boolean value.
+	    Throws:
+	      TypecastError - if 'ref' was not convertible into a boolean.
+    */
+  def valueOf[bool](ref:Object) -> bool {
+    match ref {
+      as v:Ref[bool]   { return v.value; }
+      else {
+        throw TypecastError();
+      }
+    }
+  }
+
+	/** Typecast an object into a character value.
+	    Returns: The character value.
+	    Throws:
+	      TypecastError - if 'ref' was not convertible into a char type, or was a negative integer
+	         value.
+    */
+  def valueOf[char](ref:Object) -> char {
+    match ref {
+      as v:Ref[int8]   { signCheck(v.value); return char(v.value); }
+      as v:Ref[int16]  { signCheck(v.value); return char(v.value); }
+      as v:Ref[int32]  {
+        check(v.value >= 0 and uint32(v.value) <= uint32(char.maxVal));
+        return char(v.value);
+      }
+      as v:Ref[int64]  {
+        check(v.value >= 0 and uint64(v.value) <= uint64(char.maxVal));
+        return char(v.value);
+      }
+      as v:Ref[uint8]  { return char(v.value); }
+      as v:Ref[uint16] { return char(v.value); }
+      as v:Ref[uint32] { check(v.value <= uint32(char.maxVal)); return char(v.value); }
+      as v:Ref[uint64] { check(v.value <= uint64(char.maxVal)); return char(v.value); }
+      as v:Ref[char]   { return v.value; }
+      else {
+        throw TypecastError();
+      }
+    }
+  }
+
+	/** Typecast an object into an 'int8'.
+	    Returns: The value converted to an 'int8'.
+	    Throws:
+	      TypecastError - if 'ref' was not convertible into an integer, or if the value was
+	        outside the range expressible as an 'int8'.
+    */
+  def valueOf[int8](ref:Object) -> int8 {
+    match ref {
+      as v:Ref[int8]   { return v.value; }
+      as v:Ref[int16]  { rangeCheck[int8](v.value); return int8(v.value); }
+      as v:Ref[int32]  { rangeCheck[int8](v.value); return int8(v.value); }
+      as v:Ref[int64]  { rangeCheck[int8](v.value); return int8(v.value); }
+      as v:Ref[uint8]  { rangeCheck[int8](v.value); return int8(v.value); }
+      as v:Ref[uint16] { rangeCheck[int8](v.value); return int8(v.value); }
+      as v:Ref[uint32] { rangeCheck[int8](v.value); return int8(v.value); }
+      as v:Ref[uint64] { rangeCheck[int8](v.value); return int8(v.value); }
+      as v:Ref[char]   { rangeCheck[int8](v.value); return int8(v.value); }
+      else {
+        throw TypecastError();
+      }
+    }
+  }
+
+	/** Typecast an object into an 'int16'.
+	    Returns: The value converted to an 'int16'.
+	    Throws:
+	      TypecastError - if 'ref' was not convertible into an integer, or if the value was
+	        outside the range expressible as an 'int16'.
+    */
+  def valueOf[int16](ref:Object) -> int16 {
+    match ref {
+      as v:Ref[int8]   { return int16(v.value); }
+      as v:Ref[int16]  { return v.value; }
+      as v:Ref[int32]  { rangeCheck[int16](v.value); return int16(v.value); }
+      as v:Ref[int64]  { rangeCheck[int16](v.value); return int16(v.value); }
+      as v:Ref[uint8]  { return int16(v.value); }
+      as v:Ref[uint16] { rangeCheck[int16](v.value); return int16(v.value); }
+      as v:Ref[uint32] { rangeCheck[int16](v.value); return int16(v.value); }
+      as v:Ref[uint64] { rangeCheck[int16](v.value); return int16(v.value); }
+      as v:Ref[char]   { rangeCheck[int16](v.value); return int16(v.value); }
+      else {
+        throw TypecastError();
+      }
+    }
+  }
+
+	/** Typecast an object into an 'int32'.
+	    Returns: The value converted to an 'int32'.
+	    Throws:
+	      TypecastError - if 'ref' was not convertible into an integer, or if the value was
+	        outside the range expressible as an 'int32'.
+    */
+  def valueOf[int32](ref:Object) -> int32 {
+    match ref {
+      as v:Ref[int8]   { return v.value; }
+      as v:Ref[int16]  { return int32(v.value); }
+      as v:Ref[int32]  { return v.value; }
+      as v:Ref[int64]  { rangeCheck[int32](v.value); return int32(v.value); }
+      as v:Ref[uint8]  { return int32(v.value); }
+      as v:Ref[uint16] { return int32(v.value); }
+      as v:Ref[uint32] { rangeCheck[int32](v.value); return int32(v.value); }
+      as v:Ref[uint64] { rangeCheck[int32](v.value); return int32(v.value); }
+      as v:Ref[char]   { rangeCheck[int32](v.value); return int32(v.value); }
+      else {
+        throw TypecastError();
+      }
+    }
+  }
+
+	/** Typecast an object into an 'int64'.
+	    Returns: The value converted to an 'int64'.
+	    Throws:
+	      TypecastError - if 'ref' was not convertible into an integer, or if the value was
+	        outside the range expressible as an 'int64'.
+    */
+  def valueOf[int64](ref:Object) -> int64 {
+    match ref {
+      as v:Ref[int8]   { return int64(v.value); }
+      as v:Ref[int16]  { return int64(v.value); }
+      as v:Ref[int32]  { return int64(v.value); }
+      as v:Ref[int64]  { return v.value; }
+      as v:Ref[uint8]  { return int64(v.value); }
+      as v:Ref[uint16] { return int64(v.value); }
+      as v:Ref[uint32] { return int64(v.value); }
+      as v:Ref[uint64] { rangeCheck[int64](v.value); return int64(v.value); }
+      as v:Ref[char]   { rangeCheck[int64](v.value); return int64(v.value); }
+      else {
+        throw TypecastError();
+      }
+    }
+  }
+
+	/** Typecast an object into a 'uint8'.
+	    Returns: The value converted to a 'uint8'.
+	    Throws:
+	      TypecastError - if 'ref' was not convertible into an integer, or if the value was
+	        outside the range expressible as a 'uint8'.
+    */
+  def valueOf[uint8](ref:Object) -> uint8 {
+    match ref {
+      as v:Ref[int8]   { signCheck(v.value); return uint8(v.value); }
+      as v:Ref[int16]  {
+        check(v.value >= 0 and v.value <= int16(uint8.maxVal));
+        return uint8(v.value);
+      }
+      as v:Ref[int32]  {
+        check(v.value >= 0 and v.value <= int32(uint8.maxVal));
+        return uint8(v.value);
+      }
+      as v:Ref[int64]  {
+        check(v.value >= 0 and v.value <= int64(uint8.maxVal));
+        return uint8(v.value);
+      }
+      as v:Ref[uint8]  { return v.value; }
+      as v:Ref[uint16] { rangeCheck[uint8](v.value); return uint8(v.value); }
+      as v:Ref[uint32] { rangeCheck[uint8](v.value); return uint8(v.value); }
+      as v:Ref[uint64] { rangeCheck[uint8](v.value); return uint8(v.value); }
+      as v:Ref[char]   { rangeCheck[uint8](v.value); return uint8(v.value); }
+      else {
+        throw TypecastError();
+      }
+    }
+  }
+
+	/** Typecast an object into a 'uint16'.
+	    Returns: The value converted to a 'uint16'.
+	    Throws:
+	      TypecastError - if 'ref' was not convertible into an integer, or if the value was
+	        outside the range expressible as a 'uint16'.
+    */
+  def valueOf[uint16](ref:Object) -> uint16 {
+    match ref {
+      as v:Ref[int8]   { signCheck(v.value); return uint16(v.value); }
+      as v:Ref[int16]  { signCheck(v.value); return uint16(v.value); }
+      as v:Ref[int32]  {
+        check(v.value >= 0 and v.value <= int32(uint16.maxVal));
+        return uint16(v.value);
+      }
+      as v:Ref[int64]  {
+        check(v.value >= 0 and v.value <= int64(uint16.maxVal));
+        return uint16(v.value);
+      }
+      as v:Ref[uint8]  { return v.value; }
+      as v:Ref[uint16] { return v.value; }
+      as v:Ref[uint32] { rangeCheck[uint16](v.value); return uint16(v.value); }
+      as v:Ref[uint64] { rangeCheck[uint16](v.value); return uint16(v.value); }
+      as v:Ref[char]   { rangeCheck[uint16](v.value); return uint16(v.value); }
+      else {
+        throw TypecastError();
+      }
+    }
+  }
+
+	/** Typecast an object into a 'uint32'.
+	    Returns: The value converted to a 'uint32'.
+	    Throws:
+	      TypecastError - if 'ref' was not convertible into an integer, or if the value was
+	        outside the range expressible as a 'uint32'.
+    */
+  def valueOf[uint32](ref:Object) -> uint32 {
+    match ref {
+      as v:Ref[int8]   { signCheck(v.value); return uint32(v.value); }
+      as v:Ref[int16]  { signCheck(v.value); return uint32(v.value); }
+      as v:Ref[int32]  { signCheck(v.value); return uint32(v.value); }
+      as v:Ref[int64]  {
+        check(v.value >= 0 and v.value <= int64(uint32.maxVal));
+        return uint32(v.value);
+      }
+      as v:Ref[uint8]  { return uint32(v.value); }
+      as v:Ref[uint16] { return uint32(v.value); }
+      as v:Ref[uint32] { return v.value; }
+      as v:Ref[uint64] { rangeCheck[uint32](v.value); return uint32(v.value); }
+      as v:Ref[char]   { return uint32(v.value); }
+      else {
+        throw TypecastError();
+      }
+    }
+  }
+
+	/** Typecast an object into a 'uint64'.
+	    Returns: The value converted to a 'uint64'.
+	    Throws:
+	      TypecastError - if 'ref' was not convertible into an integer, or if the value was
+	        outside the range expressible as a 'uint64'.
+    */
+  def valueOf[uint64](ref:Object) -> uint64 {
+    match ref {
+      as v:Ref[int8]   { signCheck(v.value); return uint64(v.value); }
+      as v:Ref[int16]  { signCheck(v.value); return uint64(v.value); }
+      as v:Ref[int32]  { signCheck(v.value); return uint64(v.value); }
+      as v:Ref[int64]  { signCheck(v.value); return uint64(v.value); }
+      as v:Ref[uint8]  { return uint64(v.value); }
+      as v:Ref[uint16] { return uint64(v.value); }
+      as v:Ref[uint32] { return uint64(v.value); }
+      as v:Ref[uint64] { return v.value; }
+      as v:Ref[char]   { return uint64(v.value); }
+      else {
+        throw TypecastError();
+      }
+    }
+  }
+
+	/** Typecast an object into a 'float'.
+	    Returns: The value converted to a 'float'.
+	    Throws:
+	      TypecastError - if 'ref' was not convertible into a float.
+    */
+  def valueOf[float](ref:Object) -> float {
+    match ref {
+      as v:Ref[int8]   { return float(v.value); }
+      as v:Ref[int16]  { return float(v.value); }
+      as v:Ref[int32]  { return float(v.value); }
+      as v:Ref[int64]  { return float(v.value); }
+      as v:Ref[uint8]  { return float(v.value); }
+      as v:Ref[uint16] { return float(v.value); }
+      as v:Ref[uint32] { return float(v.value); }
+      as v:Ref[uint64] { return float(v.value); }
+      as v:Ref[float]  { return v.value; }
+      as v:Ref[double] { return float(v.value); }
+      else {
+        throw TypecastError();
+      }
+    }
+  }
+
+	/** Typecast an object into a 'double'.
+	    Returns: The value converted to a 'double'.
+	    Throws:
+	      TypecastError - if 'ref' was not convertible into a double.
+    */
+  def valueOf[double](ref:Object) -> double {
+    match ref {
+      as v:Ref[int8]   { return double(v.value); }
+      as v:Ref[int16]  { return double(v.value); }
+      as v:Ref[int32]  { return double(v.value); }
+      as v:Ref[int64]  { return double(v.value); }
+      as v:Ref[uint8]  { return double(v.value); }
+      as v:Ref[uint16] { return double(v.value); }
+      as v:Ref[uint32] { return double(v.value); }
+      as v:Ref[uint64] { return double(v.value); }
+      as v:Ref[float]  { return double(v.value); }
+      as v:Ref[double] { return v.value; }
+      else {
+        throw TypecastError();
+      }
+    }
+  }
+
+	/** Typecast an object into an arbitrary value type.
+	    Returns: The value converted to type 'T'.
+	    Throws:
+	      TypecastError - if 'ref' was not convertible into the specified type.
+    */
+  def valueOf[%T](ref:Object) -> T {
+    match ref {
+      as v:Ref[T]   { return v.value; }
+      else {
+        throw TypecastError();
+      }
+    }
+  }
+}

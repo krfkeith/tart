@@ -1,0 +1,17 @@
+import tart.annex.Intrinsic;
+
+/** Attribute that allows the linkage name of this function to be
+    explicitly specified. */
+@Attribute(Attribute.Target.CALLABLE)
+public class LinkageName {
+  let name:String;
+
+  /** Construct an LinkageNameAttribute.
+      'name' - The linkage name of the attributed method or variable.
+   */
+  def construct(name:String) {
+    self.name = name;
+  }
+
+  @Intrinsic def apply(t:tart.reflect.Type);
+}

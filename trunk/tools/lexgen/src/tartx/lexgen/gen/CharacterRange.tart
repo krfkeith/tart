@@ -1,0 +1,70 @@
+/** Represents a contiguous range of characters, such as a-z. */
+struct CharacterRange {
+  let begin:char; /**< The first character in the range, inclusive. */
+  let end:char;   /**< The last character in the range, exclusive. */
+
+  def construct(begin:char, end:char) {
+    Preconditions.checkArgument(begin < end);
+    self.begin = begin;
+    self.end = end;
+  }
+
+  /** True if the character 'c' falls within this range. */
+  def contains(c:char) -> bool {
+    return c >= begin and c < end;
+  }
+
+  /** True if the character range 'r' is included within this range. */
+  def contains(r:CharacterRange) -> bool {
+    return r.begin >= begin and r.end <= end;
+  }
+
+  /** True if the range of characters from 'first' to 'last' is included within this range. */
+  def contains(first:char, last:char) -> bool {
+    return first >= begin and last <= end;
+  }
+
+  /** Compute a hash value for this character range. */
+  def computeHash() -> uint64 {
+    return Hashing.hash(begin) + Hashing.hash(end);
+  }
+
+  /** Format this range as a string. */
+  def format(sb:StringBuilder) {
+    if int(end) == int(begin) + 1 {
+      formatChar(sb, begin);
+    } else {
+      formatChar(sb, begin);
+      sb.append('-');
+      formatChar(sb, end - 1);
+    }
+  }
+
+  static def formatChar(sb:StringBuilder, ch:char) {
+    switch ch {
+      case '\n' { sb.append("\\n"); }
+      case '\r' { sb.append("\\r"); }
+      case '\t' { sb.append("\\t"); }
+      case '\b' { sb.append("\\b"); }
+      case ']'  { sb.append("\\]"); }
+      case '\\' { sb.append("\\\\"); }
+      case '\'' { sb.append("\\\'"); }
+      case '\"' { sb.append("\\\""); }
+      case '\-' { sb.append("\\-"); }
+      case * {
+		    if ch >= 32 and ch <= 127 {
+		      sb.append(ch);
+    	  } else if ch < 32 {
+    	    sb.append(ch.toString());
+		    } else {
+    	    // TODO: Implement
+		    }
+      }
+    }
+  }
+}
+
+// TODO: Delete this and insted create a built-in comparator
+public def infixEqual(cr1:CharacterRange, cr2:CharacterRange) -> bool {
+  return cr1.begin == cr2.begin and cr1.end == cr2.end;
+}

@@ -1,0 +1,88 @@
+import tart.text.encodings.Codec;
+import tart.text.encodings.Codecs;
+
+/** Interface for writing text to a file or output device. */
+interface TextWriter : ScopedObject {
+  /** The current text codec for this writer. */
+  def encoder:Codec { get; set; }
+
+  /** Write an array of characters to an output stream.
+      Parameters:
+        chars: The array of characters to write.
+        start: The index of the first character to be written.
+        count: The number of characters to write to the stream.
+      Returns: The writer, for chaining.
+      Throws:
+        IOError: If there was an i/o error.
+        InvalidCharacterError: If there was a character encoding error.
+   */
+  def write(chars:char[], start:int = 0, count:int = int.maxVal) -> TextWriter;
+
+  /** Write a string of text to the output stream.
+      Parameters:
+        text: The text to write.
+      Returns: The writer, for chaining.
+      Throws:
+        IOError: If there was an i/o error.
+        InvalidCharacterError: If there was a character encoding error.
+   */
+  def write(text:String) -> TextWriter;
+
+  /** Concatenate strings and write them to the output stream.
+      Parameters:
+        text: The list of text strings to write.
+      Returns: The writer, for chaining.
+      Throws:
+        IOError: If there was an i/o error.
+        InvalidCharacterError: If there was a character encoding error.
+   */
+  def write(text:String...) -> TextWriter;
+
+  /** Write a string of text to the output stream followed by a line break.
+      Parameters:
+        text: The text to write.
+      Returns: The writer, for chaining.
+      Throws:
+        IOError: If there was an i/o error.
+        InvalidCharacterError: If there was a character encoding error.
+   */
+  def writeLn(text:String) -> TextWriter;
+
+  /** Concatenate strings and write them to the output stream, followed by a line break.
+      Parameters:
+        text: The list of text strings to write.
+      Returns: The writer, for chaining.
+      Throws:
+        IOError: If there was an i/o error.
+        InvalidCharacterError: If there was a character encoding error.
+   */
+  def writeLn(text:String...) -> TextWriter;
+
+  /** Write values to the output stream using a format string.
+      Parameters:
+        format: The format string.
+        text: The field values for the format string.
+      Returns: The writer, for chaining.
+      Throws:
+        IOError: If there was an i/o error.
+        InvalidCharacterError: If there was a character encoding error.
+   */
+  def writeFmt(format:String, values:Object...) -> TextWriter;
+
+  /** Write values to the output stream using a format string, followed by a line break.
+      Parameters:
+        format: The format string.
+        text: The field values for the format string.
+      Returns: The writer, for chaining.
+      Throws:
+        IOError: If there was an i/o error.
+        InvalidCharacterError: If there was a character encoding error.
+   */
+  def writeLnFmt(format:String, values:Object...) -> TextWriter;
+
+  /** Close the reader and release any resources held by the reader instance. */
+  def close();
+
+  /** Flush any pending writes. */
+  def flush();
+}

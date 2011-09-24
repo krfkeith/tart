@@ -1,0 +1,210 @@
+import tart.collections.ArrayList;
+
+/** Utility functions for operating on file paths. */
+namespace Path {
+  let DIRECTORY_SEPARATOR:char = '/';
+  let DIRECTORY_SEPARATOR_STR:String = "/";
+  let ALT_DIRECTORY_SEPARATOR:char = '\\';
+  let VALID_PATH_SEPARATORS:String = "\\/";
+
+  let CURRENT_DIRECTORY_NAME:String = ".";
+  let PARENT_DIRECTORY_NAME:String = "..";
+
+  private {
+    /** Return true if character 'ch' is a directory separator character. */
+    def isDirectorySeparator(ch:char) -> bool {
+      return ch == DIRECTORY_SEPARATOR;
+    }
+
+    /** Find the first separator character in 'path' occuring at or after position 'pos'.
+        Returns -1 if no separator can be found. */
+    def findSeparatorFwd(path:String, pos:int = 0) -> int {
+      let size = path.size;
+      while pos < size {
+        let ch = path[pos];
+        if isDirectorySeparator(ch) { return pos; }
+        ++pos;
+      }
+      return -1;
+    }
+
+    /** Find the last separator character in 'path' occuring before position 'pos'.
+        Returns -1 if no separator can be found. */
+    def findSeparatorRvs(path:String, pos:int = int.maxVal) -> int {
+      pos = Math.min(pos, path.size);
+      while pos > 0 {
+        let ch = path[--pos];
+        if isDirectorySeparator(ch) { return pos; }
+      }
+      return -1;
+    }
+
+    /** Return the index of the file extension (not including the dot), or -1 if none can be found. */
+    def findExtension(path:String) -> int {
+      var pos:int = path.size;
+      while pos > 0 {
+        let ch = path[--pos];
+        if ch == '.' { return pos + 1; }
+        if isDirectorySeparator(ch) { return -1; }
+      }
+      return -1;
+    }
+
+		/** Return true if the last character in the string is a directory separator. */
+    def hasTrailingSeparator(path:String) -> bool {
+      return path.size > 0 and isDirectorySeparator(path.charAt(path.size - 1));
+    }
+
+    /** If this path begins with an absolute path root such as '/', locate the end of the root.
+        Otherwise, return 0. */
+    def findRoot(path:String) -> int {
+    	// TODO: Windows drive letters.
+      if path.startsWith(DIRECTORY_SEPARATOR_STR) {
+        return DIRECTORY_SEPARATOR_STR.size;
+      }
+      return 0;
+    }
+  }
+
+  // def makeAbsolute(path:String) -> String;
+  // def exists(path:String) -> bool;
+
+  def normalize(path:String) -> String {
+    var result = ArrayList[ubyte](capacity=path.size);
+    var root = findRoot(path);
+    var end = path.size;
+    var pos = 0;
+
+    // The path root, if any, is copied verbatim.
+    while pos < root {
+			result.append(path[pos++]);
+    }
+
+    // Now copy the directory components after the root.
+    var head = root; // Length of path prefix that can't be removed via '..'.
+    while pos < end {
+      // Find the next dir sep or end of the path.
+      var next = findSeparatorFwd(path, pos);
+      if next < 0 { next = end; }
+      var isSingleDot = next == pos + 1 and path[pos] == '.';
+      var isDoubleDot = next == pos + 2 and path[pos] == '.' and path[pos + 1] == '.';
+			if isSingleDot {
+			  // It's a current-dir component, so just skip over it.
+			} else if isDoubleDot and result.size > head {
+			  // It's a parent-dir component. Delete the previous dir component, unless there
+			  // is nothing to delete.
+		  	var prevSep = result.size - 1;
+		  	while prevSep > root and not isDirectorySeparator(path[prevSep]) { --prevSep; }
+		  	result.size = prevSep;
+			} else {
+  			// Append a directory separator.
+  			if result.size > root {
+  			  result.append(DIRECTORY_SEPARATOR);
+  			}
+
+  			// And the path component
+  			while pos < next {
+  			  result.append(path[pos++]);
+  			}
+
+  			if isDoubleDot {
+  			  head = pos;
+  			}
+			}
+
+      // Skip to the next character past the directory separator.
+      pos = next + 1;
+    }
+
+    return String.fromBytes(result);
+  }
+
+  // def isReadable(path:String) -> bool;
+  // def isWritable(path:String) -> bool;
+
+  def isAbsolute(path:String) -> bool {
+    return findRoot(path) != 0;
+  }
+
+  // def isDirectory(path:String) -> bool;
+
+	/** Return the filename portion of the path - that is, everything past the last directory separator
+	    character. If there's no separator, then return the entire input path unchanged.
+	    If the last character in the path is a separator, then this will return a 0-length
+	    string. */
+  def filename(path:String) -> String {
+    let sep = findSeparatorRvs(path);
+    if sep >= 0 {
+      return path.substr(sep + 1);
+    } else {
+      return path;
+    }
+  }
+
+	/** Returns a string containing all characters in 'path' prior to the last path separator.
+	    If there is no directory separator, then it returns the empty string. If the path consists only
+	    of a single separator, then it returns the path unchanged.
+	  */
+  def parent(path:String) -> String {
+    let sep = findSeparatorRvs(path);
+    if sep == 0 {
+      return DIRECTORY_SEPARATOR_STR;
+    } else if sep > 0 {
+      return path.substr(0, sep);
+    } else {
+      return "";
+    }
+  }
+
+	/** Split the path on the final directory separator, returning the portion before and after the
+	    separator as separate strings. If there is no separator, then it returns an empty string for
+	    the first part, and the original input string for the second part. */
+  def split(path:String) -> (String, String) {
+    let sep = findSeparatorRvs(path);
+    if sep >= 0 {
+      return path.substr(0, sep), path.substr(sep + 1);
+    } else {
+      return "", path;
+    }
+  }
+
+  /** Return the file extension of 'path' or the empty string if no file extension can be found. */
+  def extension(path:String) -> String {
+    let ext = findExtension(path);
+    if ext < 0 { return ""; }
+    return path.substr(ext);
+  }
+
+	/** Replace the extension of 'path' with the string 'ext'. 'ext' should not have a leading '.' character. */
+  def changeExtension(path:String, ext:String) -> String {
+    let pos = findExtension(path);
+    if pos < 0 {
+      return String.concat(path, ".", ext);
+    } else {
+      return String.concat(path.substr(0, pos), ext);
+    }
+  }
+
+	/** Combine 'basepath' and 'newpath' by resolving 'newpath' relative to 'basepath'. If 'newpath'
+	    is an absolute path, then 'newpath' will be returned. This function does not normalize
+	    the result. */
+  def join(basepath:String, newpath:String) -> String {
+    if isAbsolute(newpath) {
+      return newpath;
+    } else if hasTrailingSeparator(basepath) {
+      return String.concat(basepath, newpath);
+    } else {
+      return String.concat(basepath, DIRECTORY_SEPARATOR_STR, newpath);
+    }
+  }
+
+	/** Combine 'basepath' and 'newpath' by resolving 'newpath' relative to 'basepath'. If 'newpath'
+	    is an absolute path, then 'newpath' will be returned. In all cases, the returned path
+	    will be normalized. */
+  def combine(basepath:String, newpath:String) -> String {
+    return normalize(join(basepath, newpath));
+  }
+
+  // def toNative(path:String) -> String;
+  // def fromNative(path:String) -> String;
+}

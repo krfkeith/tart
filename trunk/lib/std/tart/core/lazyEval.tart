@@ -1,0 +1,14 @@
+/** Lazy evaluation macro. The first argument is a variable whose initial
+    value is 'null'. The second argument is an initialization expression
+    for the value. If the variable has not yet been initialized (is still
+    null), then the initialization expression is evaluated and the result
+    assigned to the variable. If the variable is non-null, then the
+    initialization expression is not evaluated, and the variable is unchanged.
+    In either case, the value of the variable is returned.
+ */
+macro lazyEval[%T](lval:T?, init:T) -> T {
+  if lval is null {
+    lval = init;
+  }
+  return typecast[T](lval);
+}

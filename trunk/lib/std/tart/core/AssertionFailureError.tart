@@ -1,0 +1,22 @@
+/** Exception thrown when an assertion fails. */
+public class AssertionFailureError : Exception {
+  private var _location:String;
+  
+  def construct(msg:String) {
+    super(msg);
+    _location = "";
+  }
+
+  def construct(location:String, msg:String) {
+    super(msg);
+    _location = location;
+  }
+  
+  override toString() -> String {
+    if _location.size > 0 {
+      return String.concat(_location, " Assertion failed: ", message);
+    } else {
+      return String.concat("Assertion failed: ", message);
+    }
+  }
+}

@@ -1,0 +1,17 @@
+/** Exception that is thrown when a method detects a concurrent mutation of an object
+    when such mutation is not permitted.
+
+    For example, it is generally not permitted to modify a Collection while iterating
+    over its contents.
+ */
+public class ConcurrentMutationError : Exception {
+  /** Construct a ConcurrentMutationError. */
+  def construct() {
+    super();
+  }
+
+  /** Construct a ConcurrentMutationError with the message 'msg'. */
+  def construct(msg:String) {
+    super(msg);
+  }
+}

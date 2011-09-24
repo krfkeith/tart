@@ -1,0 +1,83 @@
+import tart.collections.Collection;
+import tart.collections.List;
+import tart.core.Memory.Address;
+import tart.gc.TraceMethod;
+import tart.gc.TraceAction;
+
+/** An immutable list of types that points to a statically-initialized array.
+    InheritDoc: members
+*/
+final class TypeList : List[Type] {
+  private {
+    var _size:int;
+    var _data:FlexibleArray[Type];
+
+		/** Custom trace method for garbage collection to handle variable-length object. */
+    @TraceMethod def __trace(action:TraceAction) {
+      for i = 0; i < _size; ++i {
+        action.trace(_data[i]);
+      }
+    }
+  }
+
+  undef construct;
+
+  undef append(e:Type);
+  undef appendAll(e:Collection[Type]);
+  undef insert(position:int, e:Type);
+  undef insertAll(position:int, e:Collection[Type]);
+  undef replace(index:int, count:int, src:Collection[Type]);
+  undef remove(index:int);
+  undef clear;
+
+  def [index:int]:Type {
+    get {
+      return _data[index];
+    }
+
+    set {
+      throw UnsupportedOperationError();
+    }
+  }
+
+  def size:int {
+    get { return self._size; }
+  }
+
+  def isEmpty:bool {
+    get { return self._size == 0; }
+  }
+
+  def contains(type:Type) -> bool {
+    for i = 0; i < _size; ++i {
+			if self._data[i] == type {
+			  return true;
+			}
+    }
+    return false;
+  }
+
+  def iterate -> Iterator[Type] {
+    return IteratorImpl(self);
+  }
+
+  private final class IteratorImpl : Iterator[Type], HasLength {
+    private var _typeList:TypeList;
+    private var _index:int;
+
+    def construct(typeList:TypeList) {
+      self._typeList = typeList;
+      self._index = 0;
+    }
+
+    def next() -> Type or void {
+      if (self._index < self._typeList._size) {
+        return self._typeList._data[self._index++];
+      } else {
+        return;
+      }
+    }
+
+    def length:int { get { return _typeList._size; } }
+  }
+}

@@ -1,0 +1,37 @@
+import tart.core.Memory.Address;
+import tart.text.encodings.Codecs;
+
+/** Contains the standard input & output streams. */
+public namespace Console {
+  private {
+    // POSIX mandates these numbers
+    static let FILEDESC_STDIN:int = 0;
+    static let FILEDESC_STDOUT:int = 1;
+    static let FILEDESC_STDERR:int = 2;
+
+    var _cin:TextReader?;
+    var _cout:TextWriter?;
+    var _cerr:TextWriter?;
+  }
+
+  /** The input TextReader for stdin. */
+  def cin:TextReader {
+    get {
+      return lazyEval(_cin, StreamTextReader(FileStream(FILEDESC_STDIN), Codecs.UTF_8));
+    }
+  }
+
+  /** The TextWriter for stdout. */
+  def cout:TextWriter {
+    get {
+      return lazyEval(_cout, StreamTextWriter(FileStream(FILEDESC_STDOUT), Codecs.UTF_8));
+    }
+  }
+
+  /** The TextWriter for stderr. */
+  def cerr:TextWriter {
+    get {
+      return lazyEval(_cerr, StreamTextWriter(FileStream(FILEDESC_STDERR), Codecs.UTF_8));
+    }
+  }
+}

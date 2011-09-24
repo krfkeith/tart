@@ -1,0 +1,19 @@
+import tart.reflect.Type;
+import tart.reflect.CompositeType;
+
+/// Test the basic reflection functionality.
+@EntryPoint
+def main(args:String[]) -> int32 {
+  testGetClassType();
+  return 0;
+}
+
+class TestClass {
+  var dataField:int;
+}
+
+def testGetClassType {
+  let ty = Type.of(TestClass);
+  Debug.assertTrue(ty.isClass);
+  Debug.assertEq(Type.TypeKind.CLASS, ty.typeKind);
+}

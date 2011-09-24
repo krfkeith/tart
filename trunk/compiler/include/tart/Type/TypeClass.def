@@ -1,0 +1,31 @@
+// Definition of all CFG type classes
+
+TYPE_CLASS(Primitive)         // A primitive type
+TYPE_CLASS(Class)             // A composite reference type
+TYPE_CLASS(Struct)            // A composite value type
+TYPE_CLASS(Interface)         // An interface type
+TYPE_CLASS(Protocol)          // A protocol
+TYPE_CLASS(Enum)              // An enumeration type
+TYPE_CLASS(Function)          // A function type
+TYPE_CLASS(Tuple)             // A tuple type
+TYPE_CLASS(Union)             // A disjoint type
+TYPE_CLASS(NAddress)          // A machine address
+TYPE_CLASS(NArray)            // A primitive array of values
+TYPE_CLASS(FlexibleArray)     // Zero-length array for object epilogue
+TYPE_CLASS(Unit)              // A type which consists of a single constant value
+TYPE_CLASS(TypeLiteral)       // A type of a type literal.
+
+// Non-type placeholders for types.
+TYPE_CLASS(Alias)             // A named alias for a type expression
+TYPE_CLASS(TypeVar)           // A type variable
+TYPE_CLASS(Assignment)        // The value of a type variable within an environment.
+
+// Types that have not been completely resolved
+TYPE_CLASS(AmbiguousResult)   // Unresolved result type of function
+TYPE_CLASS(AmbiguousParameter)// Unresolved param type of function
+TYPE_CLASS(AmbiguousPhi)      // Unresolved possible alternate values
+TYPE_CLASS(AmbiguousTypeParam)// Unresolved param of template
+
+TYPE_RANGE(Composites, Class, Protocol)
+TYPE_RANGE(AmbiguousTypes, AmbiguousResult, AmbiguousTypeParam)
+TYPE_RANGE(TypeConstraints, AmbiguousResult, AmbiguousTypeParam)

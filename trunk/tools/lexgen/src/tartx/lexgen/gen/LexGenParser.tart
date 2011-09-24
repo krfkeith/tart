@@ -1,0 +1,530 @@
+import tart.collections.ArrayList;
+import tart.collections.Map;
+import tart.collections.HashMap;
+import tart.io.TextReader;
+import tartx.lexgen.gen.LexGenScanner.LToken;
+import tartx.lexgen.gen.LexGenScanner.LState;
+import tartx.lexgen.gen.ast.Action;
+import tartx.lexgen.gen.ast.Literal;
+import tartx.lexgen.gen.ast.MatchCharacterRange;
+import tartx.lexgen.gen.ast.Node;
+import tartx.lexgen.gen.ast.NodeType;
+import tartx.lexgen.gen.ast.Operator;
+import tartx.lexgen.gen.ast.SubRule;
+import tartx.lexgen.shared.LogWriter;
+
+class LexGenParser {
+  private {
+    var sourceFile:String;
+    var scanner:LexGenScanner;
+    var log:LogWriter;
+  }
+
+  def construct(sourceFile:String, reader:TextReader, log:LogWriter) {
+    self.sourceFile = sourceFile;
+    self.log = log;
+    self.scanner = LexGenScanner(sourceFile, reader, log);
+    self.scanner.next();
+  }
+
+  def parse(grammar:Grammar) -> bool {
+    repeat {
+      if scanner.token == LToken.ERROR { return false; }
+      if scanner.token == LToken.EOF { return true; }
+      continue if parseLexerDef(grammar);
+      fail("Unexpected token: {0}".format(scanner.tokenText));
+    }
+  }
+
+  def parseLexerDef(grammar:Grammar) -> bool {
+    if matchToken(LToken.LEXER) {
+      let lexerName = parseClassName();
+      if lexerName is null {
+        fail("Lexer class name expected");
+      }
+
+      let braceLoc = scanner.scanLoc;
+      if not matchToken(LToken.OPEN_BRACE) {
+        fail("Open brace expected after lexer name");
+      }
+
+      let sclass = ScannerGrammar(lexerName);
+      sclass.initCode = parseCodeBlock();
+      repeat {
+        if matchToken(LToken.CLOSE_BRACE) {
+          return true;
+        }
+
+        if matchToken(LToken.ERROR) {
+          break;
+        }
+
+        if matchToken(LToken.EOF) {
+          log.fatal(braceLoc, "Unterminated '}'");
+        }
+
+        continue if parseOptions(grammar);
+        continue if parseState(grammar);
+        continue if parseLexRule(grammar);
+
+        log.fatal(braceLoc, "Unexpected token: " + scanner.token.toString());
+        break;
+      }
+    }
+
+    return false;
+
+    /*
+        public bool ParseLexerDef() {
+            if (Match(LToken.Lexer)) {
+                string lexerName = ParseClassName();
+
+                if (lexerName == null)
+                    Fail("Lexer class name expected");
+
+                if (!Match(LToken.OpenBrace))
+                    Fail("Open brace expected after lexer name");
+
+                ScannerGrammar sclass = new ScannerGrammar(lexerName);
+                sclass.initCode = parseCodeBlock();
+                for (;;) {
+                    if (Match(LToken.CloseBrace)) {
+                        mRecognizers.Add(sclass);
+                        return true;
+                    }
+                    if (mScanner.Token == LToken.Error)
+                        Fail("Error while parsing lexer");
+                    if (mScanner.Token == LToken.EoF)
+                        Fail("Unexpected EoF");
+
+                    if (ParseOptions(sclass)) continue;
+                    else if (ParseState(sclass)) continue;
+                    else if (ParseLexRule(sclass)) continue;
+                    else {
+                        Fail("Unexpected token: " + mScanner.Token.ToString());
+                    }
+                }
+            }
+            return false;
+        }
+    */
+  }
+
+  def parseOptions(grammar:Grammar) -> bool {
+    if not matchToken(LToken.OPTIONS) {
+      return false;
+    }
+    if not matchToken(LToken.OPEN_BRACE) {
+      fail("'{' expected");
+    }
+
+    var options:Map[String, String] = HashMap[String, String]();
+    while not matchToken(LToken.CLOSE_BRACE) {
+      break if scanner.token == LToken.ERROR;
+      if scanner.token == LToken.EOF {
+        fail("Unexpected EoF in option block");
+      }
+
+      var name:String? = matchIdent();
+      if name is not null {
+        if not matchToken(LToken.COLON) {
+          fail("':' expected after option name");
+        }
+
+        var optionValue:String;
+        if (scanner.token == LToken.ID or scanner.token == LToken.STRING) {
+          optionValue = scanner.tokenText;
+          scanner.next();
+        } else {
+          fail("Option value expected");
+          return false;
+        }
+
+        if not matchToken(LToken.SEMI) {
+          fail("Semicolon expected");
+        }
+
+        grammar.setOption(name, optionValue);
+      } else {
+        fail("Expecting close brace or option");
+      }
+    }
+
+    return true;
+  }
+
+  def parseState(grammar:Grammar) -> bool {
+    return false;
+  }
+
+
+/*        public bool ParseState(ScannerClass sclass) {
+            string stateName;
+            if (!Match(LToken.State)) return false;
+            if ((stateName = MatchIdent()) != null) {
+                if (Match(LToken.OpenBrace)) {
+                    sclass.AddState(stateName, Location);
+
+                    for (;;) {
+                        if (Match(LToken.CloseBrace)) return true;
+                        if (mScanner.Token == LToken.Error) return false;
+                        if (mScanner.Token == LToken.EoF)
+                            Fail("Premature end of file while parsing state" + stateName);
+                        if (ParseLexRule(sclass)) {}
+                        else {
+                            Fail("Unexpected token: " + mScanner.Token.ToString());
+                        }
+                    }
+                }
+
+                // Deprecated code
+                if (!Match(LToken.Colon))
+                    Fail(": expected");
+
+                sclass.CurrentState = sclass.CreateNode(NodeType.State, Location, stateName);
+                sclass.States.Add(sclass.CurrentState);
+                return true;
+            } else {
+                Fail("State name expected");
+                return false;
+            }
+        }
+        */
+
+  def parseLexRule(grammar:Grammar) -> bool {
+    if let ruleName = matchIdent() {
+      if not matchToken(LToken.COLON) {
+        fail("Rule definition expected");
+        return false;
+      }
+
+      if let expr = parseExpression() {
+        if not matchToken(LToken.SEMI) {
+          fail("Missing semicolon");
+          return false;
+        }
+
+        // Production
+        /*
+                    Production newRule = new Production(ruleName, Location, expr);
+                    sclass.AddProduction(newRule);
+                    return true;
+        */
+      } else {
+        fail("Rule definition expected");
+        return false;
+      }
+    }
+    return false;
+  }
+
+  def parseExpression -> Node? {
+    return parseAlternative();
+  }
+
+  def parseAlternative -> Node? {
+    let first = parseSequence();
+    if first is null {
+      return first;
+    }
+    let operands = ArrayList[Node](first);
+    while matchToken(LToken.ALTERNATIVE) {
+      let next = parseSequence();
+      if next is null {
+        fail("Expression expected after '|'");
+        return null;
+      }
+      operands.append(next);
+    }
+    if operands.size == 1 {
+      return operands[0];
+    }
+    return Operator(NodeType.ALTERNATIVE, first.location, operands);
+  }
+
+  def parseSequence -> Node? {
+    let nodes = ArrayList[Node]();
+    let loc = scanner.tokenLoc;
+    while let node = parseAction() {
+      nodes.append(node);
+    }
+
+    if nodes.isEmpty {
+      return null;
+    } if nodes.size == 1 {
+      return nodes[0];
+    } else {
+      let result = Operator(NodeType.CONCAT, loc);
+      result.operands.appendAll(nodes);
+      return result;
+    }
+  }
+
+  def parseAction -> Node? {
+    var opt = parseOptional();
+    if opt is null { return null; }
+
+    // Parse an action block
+    let loc = scanner.tokenLoc;
+    let actions = ArrayList[Node]();
+    while let code = parseCodeBlock() {
+      actions.append(Action(loc, code));
+    }
+
+    if actions.isEmpty {
+      return opt;
+    }
+
+    let result = Operator(NodeType.CONCAT, loc, opt);
+    result.operands.appendAll(actions);
+    return result;
+  }
+
+  def parseOptional -> Node? {
+    var result = parseComplement();
+    if result is null {
+      return null;
+    }
+
+    let loc = scanner.tokenLoc;
+    return switch scanner.token {
+      case * { result }
+      case OPTIONAL {
+        scanner.next();
+        Operator(NodeType.OPTIONAL, loc, result)
+      }
+      case ONE_OR_MORE {
+        scanner.next();
+        Operator(NodeType.ONE_OR_MORE, loc, result, greedy = not matchToken(LToken.OPTIONAL))
+      }
+      case ZERO_OR_MORE {
+        scanner.next();
+        Operator(NodeType.ZERO_OR_MORE, loc, result, greedy = not matchToken(LToken.OPTIONAL))
+      }
+    }
+  }
+
+  def parseComplement -> Node? {
+    let loc = scanner.tokenLoc;
+    let complement = matchToken(LToken.COMPLEMENT);
+    var result = parsePrimary();
+    if result is not null and complement {
+      result = Operator(NodeType.COMPLEMENT, loc, result);
+    }
+    return result;
+  }
+
+  def parsePrimary -> Node? {
+    var ch:char;
+    var loc = scanner.tokenLoc;
+    if let name = matchIdent() {
+      // Subrule reference
+      if matchToken(LToken.COLON) {
+        if let name2 = matchIdent() {
+          return SubRule(loc, name2, name);
+        } else {
+          fail("Expecting identifier after ':'");
+        }
+      } else {
+        return SubRule(loc, name, null);
+      }
+    } else if let strVal = matchString() {
+      return Literal(loc, strVal);
+    } else if matchToken(LToken.OPEN_PAREN) {
+      // Subexpression
+      let result = parseExpression();
+      if result is not null and not matchToken(LToken.CLOSE_PAREN) {
+        log.fatal(loc, "Unbalanced parentheses");
+        return null;
+      }
+      return result;
+    } else if matchToken(LToken.DOT) {
+      return Node(NodeType.MATCH_DOT, loc);
+    } else {
+      let ch = parseCharacterConstant();
+      if ch != char(-1) {
+        var first = ch;
+        if matchToken(LToken.DOT_DOT) {
+          var last = parseCharacterConstant();
+          if last != char(-1) {
+            return MatchCharacterRange(loc, CharacterRange(first, last + 1));
+          }
+          fail("Character constant expected after range operator");
+        } else {
+          return MatchCharacterRange(loc, CharacterRange(first, first + 1));
+        }
+      }
+    }
+    return null;
+  }
+
+/*        public bool ParseProduction(ParserClass pclass) {
+            string productionName;
+            if ((productionName = MatchIdent()) != null) {
+                IList paramList = ParseArgumentList(pclass);
+                IList returnList = null;
+                if (Match(LToken.Returns)) {
+                    returnList = ParseArgumentList(pclass);
+                    if (returnList.Count != 1)
+                        Fail("Must have one return argument");
+                }
+                if (Match(LToken.Colon)) {
+                    SyntaxNode expr = ParseExpression(pclass);
+
+                    if (!Match(LToken.Semi)) {
+                        Fail("Missing semicolon");
+                    }
+                    Production newProd = new Production(productionName, Location, expr);
+                    newProd.Params = paramList;
+                    newProd.Returns = returnList;
+                    pclass.AddProduction(newProd);
+                    return true;
+                }
+
+            }
+            return false;
+        } */
+
+  /*
+        public IList ParseArgumentList() {
+            // Parse the argument list of the production
+            ArrayList paramList = new ArrayList();
+            if (MatchAndSetState(LToken.OpenBracket, LState.Parameter)) {
+                string argText = "";
+                int nestingLevel = 0;
+                for (;;) {
+                    if (mScanner.Token == LToken.ParamText) {
+                        argText += mScanner.TokenText;
+                        mScanner.Next();
+                    } else if (mScanner.Token == LToken.OpenBracket) {
+                        nestingLevel++;
+                        argText += mScanner.TokenText;
+                        mScanner.Next();
+                    } else if (mScanner.Token == LToken.CloseBracket) {
+                        if (nestingLevel == 0) {
+                            argText = argText.Trim();
+                            if (argText.Length > 0) paramList.Add(argText);
+                            mScanner.State = LState.Start;
+                            mScanner.Next();
+                            break;
+                        } else {
+                            argText += mScanner.TokenText;
+                            nestingLevel--;
+                            mScanner.Next();
+                        }
+                    } else if (mScanner.Token == LToken.Comma) {
+                        argText = argText.Trim();
+                        if (argText.Length == 0) {
+                            Fail("Parameter Expected");
+                        }
+                        paramList.Add(argText);
+                        argText = "";
+                        mScanner.Next();
+                    } else {
+                        Fail("Comma or close paren expected");
+                    }
+                }
+                return paramList;
+            }
+            return null;
+        }
+*/
+
+  def parseClassName -> String? {
+    match matchIdent() as id:String {
+      let className = StringBuilder(id);
+      while matchToken(LToken.DOT) {
+        match matchIdent() as id:String {
+          className.append('.').append(id);
+        } else {
+          fail("Identifier expected after '.'");
+          return null;
+        }
+      }
+      return className.toString();
+    } else {
+      return null;
+    }
+  }
+
+  def parseCodeBlock -> CodeBlock? {
+    if matchAndSetState(LToken.OPEN_BRACE, LState.ACTION) {
+      let codeText = StringBuilder();
+      var depth:int = 1;
+      repeat {
+        if scanner.token == LToken.START_BLOCK { depth++; }
+        else if scanner.token == LToken.END_BLOCK { depth--; }
+        else if scanner.token == LToken.ERROR { break; }
+        else if scanner.token != LToken.ACTION_TEXT {
+          fail("Unexpected token: {0}".format(scanner.tokenText));
+          break;
+        }
+
+        break if depth == 0;
+        codeText.append(scanner.tokenText);
+        scanner.next();
+      }
+
+      scanner.state = LState.START;
+      scanner.next();
+      return CodeBlock(codeText.toString());
+    }
+    return null;
+  }
+
+  def parseCharacterConstant -> char {
+    if scanner.token == LToken.CHAR_CONSTANT {
+      Debug.assertEq(1, scanner.tokenLength);
+      // TODO: Need a better way to do this.
+      let result = scanner.tokenText.charAt(0);
+      scanner.next();
+      return result;
+    }
+    return char(-1);
+  }
+
+  /** If the current token is an identifier, return it's value and advance to the next token,
+      otherwise return null. */
+  def matchIdent -> String? {
+    if scanner.token == LToken.ID {
+      let result = scanner.tokenText;
+      scanner.next();
+      return result;
+    }
+    return null;
+  }
+
+  /** If the current token is a quoted string, return it's value and advance to the next token,
+      otherwise return null. */
+  def matchString -> String? {
+    if scanner.token == LToken.STRING {
+      let result = scanner.tokenText;
+      scanner.next();
+      return result;
+    }
+    return null;
+  }
+
+  /** If the current token is 'token', then advance to the next token and return true, otherwise
+      return false. */
+  def matchToken(token:LToken) -> bool {
+    if scanner.token == token {
+      scanner.next();
+      return true;
+    }
+    return false;
+  }
+
+  def matchAndSetState(token:LToken, state:LState) -> bool {
+    if scanner.token == token {
+      scanner.state = state;
+      scanner.next();
+      return true;
+    }
+    return false;
+  }
+
+  private def fail(msg:String) {
+    log.fatal(scanner.tokenLoc, msg);
+  }
+}

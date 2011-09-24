@@ -1,0 +1,58 @@
+/** Represents a particular instant in time, measured in microseconds from the Unix Epoch,
+		which is typically described as January 1st 1970, midnight UTC (ISO Calendar).
+ */
+struct TimeVal {
+  let uSecs:int64;
+
+  def construct(uSecs:int64) { self.uSecs = uSecs; }
+}
+
+/** Implements addition operator for TimeVal + int64 */
+def infixAdd(tv:TimeVal, offset:int64) -> TimeVal {
+  return TimeVal(tv.uSecs + offset);
+}
+
+/** Implements addition operator for TimeVal + TimeSpan */
+def infixAdd(tv:TimeVal, offset:TimeSpan) -> TimeVal {
+  return TimeVal(tv.uSecs + offset.uSecs);
+}
+
+/** Implements subtraction operator for TimeVal - int64 */
+def infixSubtract(tv:TimeVal, offset:TimeSpan) -> TimeVal {
+  return TimeVal(tv.uSecs - offset.uSecs);
+}
+
+/** Implements subtraction operator for TimeVal - TimeSpan */
+def infixSubtract(tv:TimeVal, offset:int64) -> TimeVal {
+  return TimeVal(tv.uSecs - offset);
+}
+
+/** Implements equality comparison for TimeVal */
+def infixEqual(ls:TimeVal, rs:TimeVal) -> bool {
+  return ls.uSecs == rs.uSecs;
+}
+
+/** Implements inequality comparison for TimeVal */
+def infixNotEqual(ls:TimeVal, rs:TimeVal) -> bool {
+  return ls.uSecs != rs.uSecs;
+}
+
+/** Implements less-than comparison for TimeVal */
+def infixLT(ls:TimeVal, rs:TimeVal) -> bool {
+  return ls.uSecs < rs.uSecs;
+}
+
+/** Implements less-than-or-equal comparison for TimeVal */
+def infixLE(ls:TimeVal, rs:TimeVal) -> bool {
+  return ls.uSecs <= rs.uSecs;
+}
+
+/** Implements greater-than comparison for TimeVal */
+def infixGT(ls:TimeVal, rs:TimeVal) -> bool {
+  return ls.uSecs > rs.uSecs;
+}
+
+/** Implements greater-than-or-equal comparison for TimeVal */
+def infixGE(ls:TimeVal, rs:TimeVal) -> bool {
+  return ls.uSecs >= rs.uSecs;
+}

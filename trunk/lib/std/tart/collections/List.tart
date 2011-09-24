@@ -1,0 +1,53 @@
+/** List interface */
+interface List[%ElementType] : Collection[ElementType] {
+
+  /** Access a list element by index. */
+  def [index:int]:ElementType { get; set; }
+
+  /** Append an item to the end of the list.
+      Parameters: e - the element to append to the list.
+   */
+  def append(e:ElementType);
+
+  /** Append all of the items in a collection to the end of the list.
+      Parameters:
+        src: The collection of elements to append.
+   */
+  def appendAll(src:Collection[ElementType]);
+
+  /** Insert the element 'e' at the specific position 'position'.
+      Parameters:
+        position: The insertion point.
+        e: The element to insert.
+   */
+  def insert(position:int, e:ElementType);
+
+  /** Insert all of the elements of the collection 'collection' at the specific position 'position'.
+      Parameters:
+        position: The insertion point.
+        src: The collection of elements to insert.
+   */
+  def insertAll(position:int, src:Collection[ElementType]);
+
+  /** Replace 'count' elements, starting from 'index', with the contents of 'src'.
+      Parameters:
+        index: The starting index of the elements to replace.
+        count: The number of elements to remove.
+        src: The set of replacement elements.
+   */
+  def replace(index:int, count:int, src:Collection[ElementType]);
+
+  /** Remove the item at the specified index. */
+  def remove(index:int);
+
+  /** Remove all items from the list. */
+  def clear();
+
+  /** Return true if the specified item is in the collection. */
+  def contains(item:ElementType) -> bool;
+
+  /** The number of items in the list. */
+  def size:int { get; }
+
+  // TODO: Define list slices.
+}

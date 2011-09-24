@@ -1,0 +1,130 @@
+import tart.collections.HashSet;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(HashSetTest);
+}
+
+class HashSetTest : Test {
+  def testEmptySet {
+    let h = HashSet[String]();
+    assertEq(0, h.size);
+    assertTrue(h.isEmpty);
+    assertFalse("Hello" in h);
+  }
+  
+  def testAdd {
+    let h = HashSet[String]();
+    assertTrue(h.add("Hello"));
+    assertEq(1, h.size);
+    assertFalse(h.isEmpty);
+    assertTrue("Hello" in h);
+  }
+  
+  def testRemoveNonExisting {
+    let h = HashSet[String]();
+    assertTrue(h.add("Hello"));
+    assertFalse(h.remove("World"));
+    assertEq(1, h.size);
+    assertFalse(h.isEmpty);
+    assertTrue("Hello" in h);
+  }
+  
+  def testAddRemove {
+    let h = HashSet[String]();
+    assertTrue(h.add("Hello"));
+    assertTrue(h.remove("Hello"));
+    assertEq(0, h.size);
+    assertTrue(h.isEmpty);
+    assertFalse("Hello" in h);
+  }
+  
+  def testAddTwice {
+    let h = HashSet[String]();
+    assertTrue(h.add("Hello"));
+    assertFalse(h.add("Hello"));
+    assertEq(1, h.size);
+    assertFalse(h.isEmpty);
+  }
+  
+  def testAddRemoveOutOfOrder {
+    let h = HashSet[String]();
+    assertTrue(h.add("Hello"));
+    assertTrue(h.add("World"));
+    assertTrue("Hello" in h);
+    assertTrue("World" in h);
+    assertTrue(h.remove("Hello"));
+    assertFalse("Hello" in h);
+    assertTrue("World" in h);
+    assertEq(1, h.size);
+    assertFalse(h.isEmpty);
+  }
+  
+  def testClear {
+    let h = HashSet[String]();
+    assertTrue(h.add("Hello"));
+    h.clear();
+    assertEq(0, h.size);
+    assertTrue(h.isEmpty);
+    assertFalse("Hello" in h);
+  }
+  
+  def testAddAll {
+    let h = HashSet[String]();
+    h.addAll("One", "Two", "Three", "Four");
+    assertEq(4, h.size);
+    assertFalse(h.isEmpty);
+    assertTrue("One" in h);
+    assertTrue("Two" in h);
+    assertTrue("Three" in h);
+    assertTrue("Four" in h);
+  }
+  
+  def testAddMany {
+    let h = HashSet[String]();
+    h.addAll("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14",
+             "15", "16", "17");
+    assertEq(17, h.size);
+    assertFalse(h.isEmpty);
+    assertTrue("1" in h);
+    assertTrue("2" in h);
+    assertTrue("3" in h);
+    assertTrue("4" in h);
+    assertTrue("16" in h);
+    assertTrue("17" in h);
+  }
+  
+  def testIterate() {
+    let h = buildLargeStringSet();
+    var i = 0;
+    for entry in h {
+      i++;
+    }
+    assertEq(26, i);
+  }
+  
+  def buildLargeStringSet() -> HashSet[String] {
+    let h = HashSet[String]();
+    h.addAll("a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
+             "k", "l", "m", "n", "o", "p", "q", "r", "s", "t",
+             "u", "v", "w", "x", "y", "z");
+    return h;
+  }
+  
+  /**
+  def construct(capacity:int32 = 0) {
+  }
+
+  def addAll(items:Collection[ItemType]) {
+  def addAll(items:Iterator[ItemType]) {
+  def remove(item:ItemType) -> bool {
+  def removeAll(items:Collection[ItemType]) {
+  def removeAll(items:Iterator[ItemType]) {
+  def iterate -> Iterator[ItemType] {
+  def containsAll(items:Collection[ItemType]) -> bool {
+  def containsAll(items:Iterator[ItemType]) -> bool {
+  def containsAny(items:Collection[ItemType]) -> bool {
+  def containsAny(items:Iterator[ItemType]) -> bool {
+  */
+}

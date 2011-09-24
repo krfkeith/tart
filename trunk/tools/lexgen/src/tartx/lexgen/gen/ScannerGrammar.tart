@@ -1,0 +1,45 @@
+class ScannerGrammar : Grammar {
+  private var vocab:CharacterRange;
+  private var stateTypeName:String;
+  private var startStateName:String;
+
+  def construct(className:String) {
+    super(className);
+  }
+
+  def setOption(key:String, value:String) {
+    switch key {
+      case "TargetLanguage" {
+        targetLanguage = value;
+      }
+
+      case "TokenType" {
+        tokenTypeName = value;
+      }
+
+      case "TokenPrefix" {
+        tokenNamePrefix = value;
+      }
+
+      case "StateType" {
+        stateTypeName = value;
+      }
+
+      case "StartState" {
+        startStateName = value;
+      }
+
+      case "VocabStart" {
+        //vocab.begin = (char)int.Parse( value ); break;
+      }
+
+      case "VocabEnd" {
+        //vocab.end = (char)int.Parse( value ); break;
+      }
+
+      case * {
+        // log unknown option
+      }
+    }
+  }
+}

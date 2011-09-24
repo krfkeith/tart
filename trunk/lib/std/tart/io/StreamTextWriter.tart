@@ -1,0 +1,147 @@
+import tart.text.encodings.Codec;
+import tart.text.encodings.Codecs;
+import tart.text.encodings.InvalidCharacterError;
+
+/** Class that writes text to an output stream.
+    TODO: Shortcuts for identity encoding
+ */
+class StreamTextWriter : TextWriter {
+  private {
+    var stream:IOStream;
+    var codec:Codec;
+    var buffer:ubyte[];
+    var bufferPos:int;
+    var highWaterMark:int;
+  }
+
+  def construct(stream:IOStream, codec:Codec = Codecs.UTF_8) {
+    self.stream = stream;
+    self.codec = codec;
+    self.buffer = ubyte[](512);
+    self.bufferPos = 0;
+    self.highWaterMark = buffer.size * 3 / 4;
+  }
+
+  final def encoder:Codec {
+    get { return codec; }
+    set { codec = value; }
+  }
+
+  private final def writeImpl(chars:char[]) {
+    var start = 0;
+    var count = chars.size;
+    while count > 0 {
+      let encodeResult = codec.encode(
+          buffer, bufferPos, buffer.size - bufferPos,
+          chars, start, count);
+      Preconditions.checkState(encodeResult.srcCount >= 0); // Did we make progress?
+      start += encodeResult.srcCount;
+      count -= encodeResult.srcCount;
+      bufferPos += encodeResult.dstCount;
+
+      if encodeResult.state != Codec.CodecState.OK {
+        throw InvalidCharacterError();
+      }
+
+      // Empty the buffer if it's more than 3/4 full.
+      if bufferPos >= highWaterMark {
+        stream.write(buffer, 0, bufferPos);
+        bufferPos = 0;
+      }
+    }
+  }
+
+  private final def writeLineBreak() {
+    if bufferPos == buffer.size {
+      stream.write(buffer, 0, bufferPos);
+      bufferPos = 0;
+    }
+    buffer[bufferPos++] = ubyte('\n');
+  }
+
+  final def write(chars:char[], start:int = 0, count:int = int.maxVal) -> TextWriter {
+    Preconditions.checkIndex(start >= 0 and count >= 0);
+    start = Math.min(start, chars.size);
+    count = Math.min(count, chars.size - start);
+    while count > 0 {
+      let encodeResult = codec.encode(
+          buffer, bufferPos, buffer.size - bufferPos,
+          chars, start, count);
+      Preconditions.checkState(encodeResult.srcCount >= 0); // Did we make progress?
+      start += encodeResult.srcCount;
+      count -= encodeResult.srcCount;
+      bufferPos += encodeResult.dstCount;
+
+      if encodeResult.state != Codec.CodecState.OK {
+        throw InvalidCharacterError();
+      }
+
+      // Empty the buffer if it's more than 3/4 full.
+      if bufferPos >= highWaterMark {
+        stream.write(buffer, 0, bufferPos);
+        bufferPos = 0;
+      }
+    }
+    return self;
+  }
+
+  final def write(text:String) -> TextWriter {
+    writeImpl(text.toCharArray());
+    return self;
+  }
+
+  final def write(text:String...) -> TextWriter {
+    let sb = StringBuilder();
+    for s in text {
+      sb.append(s);
+    }
+    write(sb.chars, 0, sb.size);
+    return self;
+  }
+
+  final def writeLn(text:String) -> TextWriter {
+    writeImpl(text.toCharArray());
+    writeLineBreak();
+    return self;
+  }
+
+  final def writeLn(text:String...) -> TextWriter {
+    let sb = StringBuilder();
+    for s in text {
+      sb.append(s);
+    }
+    write(sb.chars, 0, sb.size);
+    writeLineBreak();
+    return self;
+  }
+
+  final def writeFmt(format:String, values:Object...) -> TextWriter {
+    let sb = StringFormatter(format, values).toBuilder();
+    write(sb.chars, 0, sb.size);
+    return self;
+  }
+
+  final def writeLnFmt(format:String, values:Object...) -> TextWriter {
+    let sb = StringFormatter(format, values).toBuilder();
+    write(sb.chars, 0, sb.size);
+    writeLineBreak();
+    return self;
+  }
+
+  final def close() {
+    flush();
+    stream.close();
+  }
+
+  final def flush() {
+    if bufferPos > 0 {
+      stream.write(buffer, 0, bufferPos);
+      stream.flush();
+      bufferPos = 0;
+    }
+  }
+
+  final def exit() {
+    close();
+  }
+}

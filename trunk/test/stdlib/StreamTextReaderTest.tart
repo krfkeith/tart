@@ -1,0 +1,107 @@
+import tart.testing.Test;
+import tart.io.IOStream;
+import tart.io.FileStream;
+import tart.io.MemoryStream;
+import tart.io.StreamTextWriter;
+import tart.io.StreamTextReader;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(StreamTextReaderTest);
+}
+
+class StreamTextReaderTest : Test {
+  def testConstruct {
+    let reader = StreamTextReader(createStream("ab"));
+    assertEq("UTF8", reader.decoder.name);
+  }
+
+  def testReadChar {
+    let reader = StreamTextReader(createStream("ab"));
+    assertEq('a', reader.readCh());
+    assertEq('b', reader.readCh());
+    assertEq(StreamTextReader.EOF, reader.readCh());
+    assertEq(StreamTextReader.EOF, reader.readCh());
+  }
+
+  def testReadChars {
+    let reader = StreamTextReader(createStream("abcd"));
+    let chars = char[](10);
+
+    var actual = reader.read(chars, 0, 2);
+    assertEq(2, actual);
+    assertEq('a', chars[0]);
+    assertEq('b', chars[1]);
+
+    actual = reader.read(chars, 0, 4);
+    assertEq(2, actual);
+    assertEq('c', chars[0]);
+    assertEq('d', chars[1]);
+  }
+
+  def testReadLn {
+    let reader = StreamTextReader(createStream("aaa\nbbb\r\nccc\rddd"));
+    let line1 = reader.readLn();
+    assertEq("aaa", typecast[String](line1));
+    let line2 = reader.readLn();
+    assertEq("bbb", typecast[String](line2));
+    let line3 = reader.readLn();
+    assertEq("ccc", typecast[String](line3));
+    let line4 = reader.readLn();
+    assertEq("ddd", typecast[String](line4));
+    let line5 = reader.readLn();
+    assertTrue(line5 isa void);
+  }
+
+  def testReadLnFromFile {
+    let reader = StreamTextReader(FileStream("iotest.txt"));
+    let line1 = reader.readLn();
+    assertEq("# Test data for i/o read test.", typecast[String](line1));
+    let line2 = reader.readLn();
+    assertEq("Line 2", typecast[String](line2));
+    let line3 = reader.readLn();
+    assertEq("Line 3", typecast[String](line3));
+    let line4 = reader.readLn();
+    assertTrue(line4 isa void);
+    reader.close();
+  }
+
+  def testIterate {
+    let reader = StreamTextReader(createStream("aaa\nbbb\r\nccc\rddd"));
+    var count = 0;
+    for line in reader.lines() {
+      ++count;
+    }
+    assertEq(4, count);
+  }
+
+  def testSkip {
+    let reader = StreamTextReader(createStream("aaa\nbbb\r\nccc\rddd"));
+    reader.skip(4);
+    let line1 = reader.readLn();
+    assertEq("bbb", typecast[String](line1));
+    reader.skip(4);
+    let line2 = reader.readLn();
+    assertEq("ddd", typecast[String](line2));
+  }
+
+  def testReadAll {
+    let reader = StreamTextReader(createStream("aaa\nbbb\r\nccc\rddd"));
+    let s = reader.readAll();
+    assertEq("aaa\nbbb\r\nccc\rddd", s);
+  }
+
+  def createStream(content:String) -> MemoryStream {
+    var mstream = MemoryStream();
+    var writer = StreamTextWriter(mstream);
+    writer.write(content);
+    writer.flush();
+    mstream.seek(IOStream.SeekFrom.START, 0);
+    return mstream;
+  }
+}
+
+/*
+  def readAll -> String;
+  def skip(count:int64);
+*/
