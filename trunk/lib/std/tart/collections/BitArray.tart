@@ -1,0 +1,174 @@
+/** Efficient fixed-length array of booleans. */
+final class BitArray {
+  private {
+    var _size:int;
+    var data:FlexibleArray[int32];
+
+    /** Array allocator function */
+    static def alloc(size:int) -> BitArray {
+      let self:BitArray =  __flexAlloc((size + 31) >> 5);
+      self._size = size;
+      return self;
+    }
+
+    def maskForIndex(index:int) -> int32 {
+      return int32(1 << (index & 31));
+    }
+
+    def wordCount -> int {
+      return (size + 31) >> 5;
+    }
+  }
+
+  /** Construct an array of a given length */
+  static def create(size:int) -> BitArray {
+    Preconditions.checkArgument(size >= 0);
+    let self:BitArray = alloc(size);
+    self.clear();
+    return self;
+  }
+
+  /** Factory function to build a bit-array from a list of boolean arguments. */
+  static def of(elements:bool...) -> BitArray {
+    return of(elements);
+  }
+
+  /** Static factory function which builds a new 'BitArray' from a boolean collection. */
+  static def of(collection:Collection[bool]) -> BitArray {
+    let size = collection.size;
+    let result:BitArray = alloc(size);
+    var wordIndex = 0;
+    var bitIndex:int32 = 0;
+    var wordVal:int32 = 0;
+    for el in collection {
+      if el {
+        wordVal |= (1 << bitIndex);
+      }
+      ++bitIndex;
+      if bitIndex >= 32 {
+        result.data[wordIndex++] = wordVal;
+        bitIndex = 0;
+        wordVal = 0;
+      }
+    }
+
+    if bitIndex > 0 {
+      result.data[wordIndex] = wordVal;
+    }
+
+    return result;
+  }
+
+  /** Create a copy of a bit array. */
+  static def copyOf(src:BitArray) -> BitArray {
+    let self:BitArray = alloc(src.size);
+    Memory.arrayCopy(
+        Memory.addressOf(self.data[0]),
+        Memory.addressOf(src.data[0]),
+        self.wordCount());
+    return self;
+  }
+
+  /** True if the array is zero size. */
+  def isEmpty:bool {
+    get { return self._size == 0; }
+  }
+
+  /** The length of the array. */
+  def size:int {
+    get { return _size; }
+  }
+
+  /** Array element access. */
+  def [index:int]:bool {
+    get {
+      Preconditions.checkIndex(index >= 0 and index < _size);
+      let mask = maskForIndex(index);
+      return (self.data[index >> 5] & mask) != 0;
+    }
+    set {
+      Preconditions.checkArgument(index >= 0 and index < _size);
+      let mask = maskForIndex(index);
+      self.data[index >> 5] = value;
+    }
+  }
+
+  /** Set all bits to 0. */
+  def clear() {
+    let numWords = wordCount();
+    for i = 0; i < numWords; ++i {
+      data[i] = 0;
+    }
+  }
+
+  /** Set all bits to their complement. */
+  def invert() {
+    let numWords = wordCount();
+    for i = 0; i < numWords; ++i {
+      data[i] ^= int32(-1);
+    }
+  }
+
+  /** Set this bit array to the intersection (and) of itself and 'other' */
+  def intersectWith(other:BitArray) -> BitArray {
+    Preconditions.checkArgument(other.size == _size);
+    let numWords = wordCount();
+    for i = 0; i < numWords; ++i {
+      data[i] &= other.data[i];
+    }
+    return self;
+  }
+
+  /** Set this bit array to the union (or) of itself and 'other' */
+  def unionWith(other:BitArray) -> BitArray {
+    Preconditions.checkArgument(other.size == _size);
+    let numWords = wordCount();
+    for i = 0; i < numWords; ++i {
+      data[i] |= other.data[i];
+    }
+    return self;
+  }
+
+  def xorWith(other:BitArray) -> BitArray {
+    Preconditions.checkArgument(other.size == _size);
+    let numWords = wordCount();
+    for i = 0; i < numWords; ++i {
+      data[i] ^= other.data[i];
+    }
+    return self;
+  }
+
+  /** Return true if this bit array is equal to 'other' */
+  def equals(other:BitArray) -> bool {
+    if other.size != size {
+      return false;
+    }
+    let numWords = wordCount();
+    for i = 0; i < numWords; ++i {
+      if data[i] != other.data[i] {
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
+def infixBitOr(lhs:BitArray, rhs:BitArray) -> BitArray {
+  return BitArray.copyOf(lhs).unionWith(rhs);
+}
+
+def infixBitAnd(lhs:BitArray, rhs:BitArray) -> BitArray {
+  return BitArray.copyOf(lhs).intersectWith(rhs);
+}
+
+def infixBitXor(lhs:BitArray, rhs:BitArray) -> BitArray {
+  return BitArray.copyOf(lhs).xorWith(rhs);
+}
+
+def infixEqual(lhs:BitArray, rhs:BitArray) -> bool {
+  return lhs.equals(rhs);
+}
+
+def infixNotEqual(lhs:BitArray, rhs:BitArray) -> bool {
+  return not lhs.equals(rhs);
+}

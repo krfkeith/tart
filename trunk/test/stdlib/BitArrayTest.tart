@@ -1,0 +1,104 @@
+import tart.collections.BitArray;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(BitArrayTest);
+}
+
+class BitArrayTest : Test {
+  def testConstructEmpty() {
+    let b = BitArray(0);
+    assertEq(0, b.size);
+    assertTrue(b.isEmpty);
+  }
+
+  def testConstructNonEmpty() {
+    let b = BitArray(10);
+    assertEq(10, b.size);
+    assertFalse(b.isEmpty);
+
+    b[0] = true;
+    assertTrue(b[0]);
+    b[0] = false;
+    assertFalse(b[0]);
+  }
+
+  def testConstructFromBoolArgs() {
+    let b = BitArray.of(true, false, true);
+    assertEq(3, b.size);
+    assertFalse(b.isEmpty);
+
+    assertTrue(b[0]);
+    assertFalse(b[1]);
+    assertTrue(b[2]);
+  }
+
+  def testConstructFromBoolCollection() {
+    let b = BitArray.of([true, false, true]);
+    assertEq(3, b.size);
+    assertFalse(b.isEmpty);
+
+    assertTrue(b[0]);
+    assertFalse(b[1]);
+    assertTrue(b[2]);
+  }
+
+  def testCopy() {
+    let b = BitArray.of([true, false, true]);
+    let b2 = BitArray.copyOf(b);
+    assertEq(3, b2.size);
+    assertFalse(b2.isEmpty);
+
+    assertTrue(b2[0]);
+    assertFalse(b2[1]);
+    assertTrue(b2[2]);
+  }
+
+  def testClear() {
+    let b = BitArray.of(true, false, true);
+    b.clear();
+    assertFalse(b[0]);
+    assertFalse(b[1]);
+    assertFalse(b[2]);
+  }
+
+  def testInvert() {
+    let b = BitArray.of(true, false, true);
+    b.invert();
+    assertFalse(b[0]);
+    assertTrue(b[1]);
+    assertFalse(b[2]);
+  }
+
+  def testEquals() {
+    let b = BitArray.of(true, false, true);
+    let b2 = BitArray.of(true, false, true);
+    let b3 = BitArray.of(true, false, false);
+    assertTrue(b == b2);
+    assertFalse(b != b2);
+    assertFalse(b == b3);
+    assertTrue(b != b3);
+  }
+
+  def testAnd() {
+    let b1 = BitArray.of(false, true, false, true);
+    let b2 = BitArray.of(false, false, true, true);
+    let b3 = b1 & b2;
+    assertEq(BitArray.of(false, false, false, true), b3);
+  }
+
+  def testOr() {
+    let b1 = BitArray.of(false, true, false, true);
+    let b2 = BitArray.of(false, false, true, true);
+    let b3 = b1 | b2;
+    assertEq(BitArray.of(false, true, true, true), b3);
+  }
+
+  def testXor() {
+    let b1 = BitArray.of(false, true, false, true);
+    let b2 = BitArray.of(false, false, true, true);
+    let b3 = b1 ^ b2;
+    assertEq(BitArray.of(false, true, true, false), b3);
+  }
+}
