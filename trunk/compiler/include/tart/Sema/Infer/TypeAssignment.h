@@ -103,7 +103,7 @@ public:
 
   // Overrides
 
-  void expand(QualifiedTypeSet & out) const;
+  void expandImpl(QualifiedTypeSet & out, unsigned qualifiers) const;
   bool isSingular() const;
   bool isReferenceType() const;
   TypeShape typeShape() const {

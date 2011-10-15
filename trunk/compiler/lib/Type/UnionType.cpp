@@ -367,7 +367,7 @@ int UnionType::getTypeIndex(const Type * type) const {
 }
 
 Expr * UnionType::createDynamicCast(Expr * from, const Type * toType) const {
-  const Type * fromType = dealias(from->type());
+  QualifiedType fromType = dealias(from->type());
   if (TypeRelation::isEqual(toType, fromType)) {
     return from;
   }

@@ -71,6 +71,9 @@ public:
   /** Update the compatibility score for this candidate. */
   ConversionRank updateConversionRank();
 
+  /** Report any conversion errors. */
+  void reportConversionErrors();
+
   /** Return the compatibility score for this candidate. */
   ConversionRank conversionRank() const { return conversionRank_; }
 
@@ -83,7 +86,7 @@ private:
   Expr * base_;
   const TupleType * args_;
   const TupleType * params_;
-  ConstTypeList typeParamDefaults_;
+  QualifiedTypeList typeParamDefaults_;
   TemplateConditionList conditions_;
   ConversionRank conversionRank_;
 };

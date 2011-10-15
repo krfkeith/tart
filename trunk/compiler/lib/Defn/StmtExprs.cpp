@@ -73,7 +73,7 @@ bool IfExpr::isSingular() const {
   return test_->isSingular() &&
       thenVal_->isSingular() &&
       (elseVal_ == NULL || elseVal_->isSingular()) &&
-      (type() == NULL || type()->isSingular());
+      (type().isNull() || type()->isSingular());
 }
 
 // -------------------------------------------------------------------
@@ -215,7 +215,7 @@ bool SwitchExpr::isSideEffectFree() const {
 bool SwitchExpr::isSingular() const {
   return value_->isSingular() &&
       all(args_.begin(), args_.end(), &Expr::isSingular) &&
-      (type() == NULL || type()->isSingular());
+      (type().isNull() || type()->isSingular());
 }
 
 /// -------------------------------------------------------------------
@@ -278,7 +278,7 @@ bool MatchExpr::isSideEffectFree() const {
 bool MatchExpr::isSingular() const {
   return value_->isSingular() &&
       all(args_.begin(), args_.end(), &Expr::isSingular) &&
-      (type() == NULL || type()->isSingular());
+      (type().isNull() || type()->isSingular());
 }
 
 /// -------------------------------------------------------------------

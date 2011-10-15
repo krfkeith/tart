@@ -15,4 +15,3 @@ TEST(DefnTest, Casting) {
   EXPECT_TRUE(isa<ValueDefn>(new VariableDefn(Defn::Var, NULL, "test")));
   EXPECT_TRUE(isa<ValueDefn>(new VariableDefn(Defn::Let, NULL, "test")));
 }
-

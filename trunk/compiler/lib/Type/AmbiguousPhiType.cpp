@@ -15,22 +15,22 @@ namespace tart {
 // -------------------------------------------------------------------
 // AmbiguousPhiConstraint
 
-void AmbiguousPhiType::add(const Type * type) {
-  DASSERT(type != NULL);
+void AmbiguousPhiType::add(QualifiedType type) {
+  DASSERT(type);
   types_.push_back(type);
 }
 
 void AmbiguousPhiType::listProspects(ProspectList & out, const ProvisionSet & add) const {
-  for (ConstTypeList::const_iterator it = types_.begin(), itEnd = types_.end(); it != itEnd; ++it) {
-    const Type * ty = *it;
-    AmbiguousType::listProspects(out, ty, add);
+  for (QualifiedTypeList::const_iterator it = types_.begin(), itEnd = types_.end();
+      it != itEnd; ++it) {
+    AmbiguousType::listProspects(out, *it, add);
   }
 }
 
-void AmbiguousPhiType::expand(QualifiedTypeSet & out) const {
-  for (ConstTypeList::const_iterator it = types_.begin(), itEnd = types_.end(); it != itEnd; ++it) {
-    const Type * ty = *it;
-    ty->expand(out);
+void AmbiguousPhiType::expandImpl(QualifiedTypeSet & out, unsigned qualifiers) const {
+  for (QualifiedTypeList::const_iterator it = types_.begin(), itEnd = types_.end();
+      it != itEnd; ++it) {
+    it->expand(out, qualifiers);
   }
 }
 
@@ -49,12 +49,13 @@ bool AmbiguousPhiType::isReferenceType() const {
 
 void AmbiguousPhiType::trace() const {
   Type::trace();
-  markList(types_.begin(), types_.end());
+  markArray(llvm::ArrayRef<QualifiedType>(types_));
 }
 
 void AmbiguousPhiType::format(FormatStream & out) const {
   out << "{PHI: ";
-  for (ConstTypeList::const_iterator it = types_.begin(), itEnd = types_.end(); it != itEnd; ++it) {
+  for (QualifiedTypeList::const_iterator it = types_.begin(), itEnd = types_.end();
+      it != itEnd; ++it) {
     if (it != types_.begin()) {
       out << "|";
     }

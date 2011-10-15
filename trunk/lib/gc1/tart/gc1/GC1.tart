@@ -21,7 +21,7 @@ namespace GC1 {
   /** The header structure of an object - redeclared here with public fields so that the
       collector can access the gcstate flags and the relocation pointer. */
   struct ObjectHeader {
-    var newLocation:Object;
+    var newLocation:readonly(Object);
     var gcstate:uint;
   }
 
@@ -157,7 +157,7 @@ namespace GC1 {
       and leaves a fowarding pointer at the old location. */
   private final class TraceActionImpl : TraceAction {
     //var count:int;
-    protected def tracePointer(ptrAddr:Address[Object]) {
+    protected def tracePointer(ptrAddr:Address[readonly(Object)]) {
       let addr:Address[ubyte] = Memory.bitCast(ptrAddr[0]);
       if fromSpace.contains(addr) {
         let header:Address[ObjectHeader] = Memory.bitCast(addr);
@@ -169,8 +169,17 @@ namespace GC1 {
             ptrAddr[0] = header.newLocation;
           } else {
             let size = header.gcstate & uint(~3);
+            //if size == 0 {
+              //let ao:Address[Object] = Memory.bitCast(addr);
+              //let o:Object = Memory.objectReference(ao);
+              //Debug.writeLnFmt("  Obj: {0}", o.__typeName);
+              //Debug.fail("Invaid size!");
+            //}
+            //Debug.writeIntLn("  Size: ", int(size));
             let newAddr:Address[ubyte] = toSpace.alloc(size);
+            //Debug.writeIntLn("  Alloc: ", int(Memory.ptrToInt(newAddr)) - int(Memory.ptrToInt(toSpace.begin)));
             Memory.arrayCopy(newAddr, addr, size);
+            //Debug.writeIntLn("  Copy:  ", int(Memory.ptrToInt(addr)) - int(Memory.ptrToInt(fromSpace.begin)));
             header.newLocation = ptrAddr[0] = Memory.bitCast(newAddr);
             header.gcstate = uint(GCFlags.RELOCATED);
             //++count;

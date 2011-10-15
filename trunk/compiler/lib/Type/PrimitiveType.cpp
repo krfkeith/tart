@@ -558,7 +558,7 @@ ConversionRank PrimitiveType::convertToBool(const Conversion & cn) const {
       if (cn.fromValue && cn.resultValue) {
         // Compare with 0.
         *cn.resultValue = new CompareExpr(SourceLocation(), llvm::CmpInst::ICMP_NE, cn.fromValue,
-            ConstantInteger::get(SourceLocation(), cn.fromValue->type(), 0));
+            ConstantInteger::get(SourceLocation(), cn.fromValue->type().unqualified(), 0));
       }
 
       return IntegerToBool;
@@ -628,10 +628,10 @@ ConversionRank PrimitiveType::convertFromObject(const Conversion & cn) const {
 }
 
 void PrimitiveType::defineConstant(const char * name, ConstantExpr * value) {
-  if (value->type() != this) {
+  if (value->type().unqualified() != this) {
     diag.error() << value->type() << " != " << this;
   }
-  DASSERT(value->type() == this);
+  DASSERT(value->type().unqualified() == this);
   VariableDefn * var = new VariableDefn(Defn::Let, NULL, name, value);
   var->setStorageClass(Storage_Static);
   addMember(var);

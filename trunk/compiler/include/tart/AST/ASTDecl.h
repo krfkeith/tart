@@ -361,6 +361,8 @@ public:
     IS_INSTANCE,
     IS_SUBTYPE,
     IS_SUPERTYPE,
+    IS_QUALIFIER,
+    IS_TYPE_CTOR,
   };
 
   ASTTypeVariable(const SourceLocation & loc, StringRef name, ASTNode * typ,

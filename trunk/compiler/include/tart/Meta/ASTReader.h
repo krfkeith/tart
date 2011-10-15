@@ -35,16 +35,16 @@ public:
   ASTReader(SourceLocation loc, StringTable & stringTable, const char * buffer, size_t size)
     : loc_(loc)
     , stringTable_(stringTable)
-    , pos_(buffer)
-    , end_(buffer + size)
+    , pos_(reinterpret_cast<const unsigned char *>(buffer))
+    , end_(reinterpret_cast<const unsigned char *>(buffer) + size)
     , nextIndex_(0)
   {}
 
   ASTReader(SourceLocation loc, StringTable & stringTable, StringRef str)
     : loc_(loc)
     , stringTable_(stringTable)
-    , pos_(str.data())
-    , end_(str.data() + str.size())
+    , pos_(reinterpret_cast<const unsigned char *>(str.data()))
+    , end_(reinterpret_cast<const unsigned char *>(str.data()) + str.size())
     , nextIndex_(0)
   {}
 
@@ -71,8 +71,8 @@ private:
 
   SourceLocation loc_;
   StringTable & stringTable_;
-  const char * pos_;
-  const char * end_;
+  const unsigned char * pos_;
+  const unsigned char * end_;
   llvm::SmallVector<StringRef, 16> idTable_;
   uint32_t nextIndex_;
 };

@@ -64,33 +64,6 @@ public:
 };
 
 /// -------------------------------------------------------------------
-/// A reference to a scope name
-class ScopeNameExpr : public Expr {
-private:
-  Defn * value_;
-
-public:
-  ScopeNameExpr(const SourceLocation & loc, Defn * value)
-    : Expr(ScopeName, loc, NULL)
-    , value_(value)
-  {}
-
-  // Overrides
-
-  void format(FormatStream & out) const;
-  void trace() const;
-  bool isSideEffectFree() const { return true; }
-  bool isSingular() const;
-  const Defn * value() const { return value_; }
-  Defn * value() { return value_; }
-
-  static inline bool classof(const ScopeNameExpr *) { return true; }
-  static inline bool classof(const Expr * ex) {
-    return ex->exprType() == ScopeName;
-  }
-};
-
-/// -------------------------------------------------------------------
 /// An assignment expression
 class AssignmentExpr : public Expr {
 private:
@@ -399,10 +372,11 @@ public:
 /// A typecast operator
 class CastExpr : public UnaryExpr {
 public:
-  static CastExpr * bitCast(Expr * value, const Type * toType);
-  static CastExpr * upCast(Expr * value, const Type * toType);
-  static CastExpr * tryCast(Expr * value, const Type * toType);
-  static CastExpr * dynamicCast(Expr * value, const Type * toType);
+  static CastExpr * bitCast(Expr * value, QualifiedType toType);
+  static CastExpr * upCast(Expr * value, QualifiedType toType);
+  static CastExpr * tryCast(Expr * value, QualifiedType toType);
+  static CastExpr * dynamicCast(Expr * value, QualifiedType toType);
+  static CastExpr * qualCast(Expr * value, QualifiedType toType);
 
   /** Constructor. */
   CastExpr(ExprType k, const SourceLocation & loc, QualifiedType type, Expr * a)

@@ -29,14 +29,14 @@ void AmbiguousResultType::listProspects(ProspectList & out, const ProvisionSet &
   }
 }
 
-void AmbiguousResultType::expand(QualifiedTypeSet & out) const {
+void AmbiguousResultType::expandImpl(QualifiedTypeSet & out, unsigned qualifiers) const {
   const Candidates & cd = callExpr_->candidates();
   for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
     if ((*it)->isCulled()) {
       continue;
     }
 
-    candidateResultType(*it)->expand(out);
+    candidateResultType(*it).expand(out, qualifiers);
   }
 }
 

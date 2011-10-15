@@ -29,14 +29,14 @@ void AmbiguousParameterType::listProspects(ProspectList & out, const ProvisionSe
   }
 }
 
-void AmbiguousParameterType::expand(QualifiedTypeSet & out) const {
+void AmbiguousParameterType::expandImpl(QualifiedTypeSet & out, unsigned qualifiers) const {
   const Candidates & cd = callExpr_->candidates();
   for (Candidates::const_iterator it = cd.begin(); it != cd.end(); ++it) {
     if ((*it)->isCulled()) {
       continue;
     }
 
-    (*it)->paramType(argIndex_)->expand(out);
+    (*it)->paramType(argIndex_).expand(out, qualifiers);
   }
 }
 
@@ -48,11 +48,13 @@ void AmbiguousParameterType::trace() const {
 void AmbiguousParameterType::format(FormatStream & out) const {
   if (callExpr_->candidates().empty()) {
     out << "{.param[]}";
-  } else {
+  } else if (out.isVerbose()) {
     out << "{" << callExpr_->candidates().front()->method()->name() << ".param[" <<
         argIndex_ << "]: ";
     TypeSetConstraint::format(out);
     out << "}";
+  } else {
+    TypeSetConstraint::format(out);
   }
 }
 

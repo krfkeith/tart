@@ -44,60 +44,6 @@ private:
   TypeVariableList & vars_;
 };
 
-// -------------------------------------------------------------------
-// TypeVariable
-
-TypeVariable::TypeVariable(const SourceLocation & location, StringRef name,
-    QualifiedType value)
-  : TypeImpl(TypeVar, Shape_Unset)
-  , location_(location)
-  , value_(value)
-  , upperBound_(NULL)
-  , name_(name)
-  , isVariadic_(false)
-{}
-
-llvm::Type * TypeVariable::createIRType() const {
-  DFAIL("Invalid");
-}
-
-bool TypeVariable::canBindTo(QualifiedType value) const {
-  if (Qualified<UnitType> nt = value.dyn_cast<UnitType>()) {
-    if (!value_) {
-      return false;
-    }
-
-    ConstantExpr * expr = nt->value();
-    return TypeConversion::check(expr, value_);
-  } else if (value->typeClass() == Type::Assignment) {
-    return true;
-  } else if (!value_) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-bool TypeVariable::isReferenceType() const {
-  return false;
-}
-
-bool TypeVariable::isSingular() const {
-  return false;
-}
-
-void TypeVariable::trace() const {
-  TypeImpl::trace();
-  location_.trace();
-}
-
-void TypeVariable::format(FormatStream & out) const {
-  out << "%" << name_;
-  if (isVariadic_) {
-    out << "...";
-  }
-}
-
 /// -------------------------------------------------------------------
 /// Template
 
@@ -182,7 +128,11 @@ void Template::trace() const {
   safeMark(ast_);
   safeMark(typeParams_);
   markList(conditions_.begin(), conditions_.end());
-  safeMarkList(typeParamDefaults_.begin(), typeParamDefaults_.end());
+  for (QualifiedTypeList::const_iterator it = typeParamDefaults_.begin(); it != typeParamDefaults_.end(); ++it) {
+    if (*it) {
+      (*it)->mark();
+    }
+  }
   markList(vars_.begin(), vars_.end());
   for (SpecializationMap::const_iterator it = specializations_.begin();
       it != specializations_.end(); ++it) {
@@ -224,10 +174,9 @@ Defn * Template::instantiate(const SourceLocation & loc, const QualifiedTypeVarM
     TypeVariable * var = *it;
     QualifiedType value = subst(var);
     DASSERT_OBJ(value, var);
-    //DASSERT_OBJ(!value->isNullType(), var);
     if (!var->canBindTo(value)) {
       diag.error(loc) << "Type of expression " << value <<
-          " incompatible with template parameter " << var << ":" << var->value();
+          " incompatible with template parameter " << var << ":" << var->metaType();
       DASSERT(var->canBindTo(value));
     }
 
@@ -244,7 +193,7 @@ Defn * Template::instantiate(const SourceLocation & loc, const QualifiedTypeVarM
     diag.fatal(loc) << "Expected non-throwaway template instantiation.";
   }
 
-  const TupleType * typeArgs = cast<TupleType>(subst(typeParams_));
+  const TupleType * typeArgs = cast<TupleType>(subst(typeParams_).unqualified());
   if (!typeArgs->isSingular()) {
     if (isExpectedSingular) {
       diag.fatal(loc) << "Non-singular parameters [" << typeArgs << "]";
@@ -307,12 +256,16 @@ Defn * Template::instantiate(const SourceLocation & loc, const QualifiedTypeVarM
   for (size_t i = 0; i < vars_.size(); ++i) {
     TypeVariable * var = vars_[i];
     QualifiedType value = paramValues[i];
+    if (!value.isEffectiveReadOnly()) {
+      // If it's not read-only, make the type explicitly mutable
+      //value.addQualifiers(QualifiedType::MUTABLE);
+    }
 
     Defn * argDefn;
     if (value.isa<UnitType>()) {
       Expr * cval = value.as<UnitType>()->value();
-      if (cval != NULL && var->value()) {
-        cval = var->value()->implicitCast(loc, cval);
+      if (cval != NULL && var->metaType()) {
+        cval = var->metaType()->implicitCast(loc, cval);
       }
       argDefn = new VariableDefn(Defn::Let, result->module(), var->name(), cval);
       argDefn->setStorageClass(Storage_Static);
@@ -370,11 +323,11 @@ const Type * Template::instantiateType(
   SubstitutionTransform subst(varValues);
   for (TypeVariableList::iterator it = vars_.begin(); it != vars_.end(); ++it) {
     TypeVariable * var = *it;
-    QualifiedType value = subst(var);
+    QualifiedType value = subst(QualifiedType(var));
     DASSERT_OBJ(value, var);
     if (!var->canBindTo(value)) {
       diag.fatal(loc) << "Type of expression " << value <<
-          " incompatible with template parameter " << var << ":" << var->value();
+          " incompatible with template parameter " << var << ":" << var->metaType();
       DASSERT(var->canBindTo(value));
     }
 

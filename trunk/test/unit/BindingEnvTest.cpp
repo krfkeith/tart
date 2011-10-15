@@ -35,7 +35,7 @@ TEST_F(BindingEnvTest, EmptyEnv) {
 
 TEST_F(BindingEnvTest, Assign) {
   BindingEnv env;
-  TypeVariable * tv = new TypeVariable(SourceLocation(), "T");
+  TypeVariable * tv = new TypeVariable(SourceLocation(), "T", TypeVariable::TYPE_EXPRESSION);
   TypeAssignment * ta = env.assign(tv, NULL, NULL);
   EXPECT_FALSE(env.empty());
   ASSERT_TRUE(ta != NULL);
@@ -45,7 +45,7 @@ TEST_F(BindingEnvTest, Assign) {
 
 TEST_F(BindingEnvTest, TypeAssignment) {
   BindingEnv env;
-  TypeVariable * tv = new TypeVariable(SourceLocation(), "T");
+  TypeVariable * tv = new TypeVariable(SourceLocation(), "T", TypeVariable::TYPE_EXPRESSION);
   TypeAssignment * ta = env.assign(tv, NULL, NULL);
 
   Constraint * s = ta->constraints().insert(
@@ -69,7 +69,7 @@ TEST_F(BindingEnvTest, AssignmentProvisions) {
   BindingEnv env;
   MockProvision trueProvision;
   MockProvision falseProvision;
-  TypeVariable * tv = new TypeVariable(SourceLocation(), "T");
+  TypeVariable * tv = new TypeVariable(SourceLocation(), "T", TypeVariable::TYPE_EXPRESSION);
   TypeAssignment * ta = env.assign(tv, NULL, NULL);
   ProvisionSet psTrue;
   ProvisionSet psFalse;

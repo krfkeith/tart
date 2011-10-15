@@ -14,7 +14,6 @@ namespace tart {
 class ClosureEnvExpr;
 class LValueExpr;
 class BoundMethodExpr;
-class ScopeNameExpr;
 class AssignmentExpr;
 class MultiAssignExpr;
 class CallExpr;
@@ -71,7 +70,6 @@ public:
 
   virtual Expr * visitLValue(LValueExpr * in);
   virtual Expr * visitBoundMethod(BoundMethodExpr * in);
-  virtual Expr * visitScopeName(ScopeNameExpr * in);
   virtual Expr * visitElementRef(BinaryExpr * in);
 
   virtual Expr * visitAssign(AssignmentExpr * in);

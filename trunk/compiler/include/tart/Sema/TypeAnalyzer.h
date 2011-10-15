@@ -18,6 +18,8 @@ namespace tart {
 class ASTNode;
 class ASTFunctionDecl;
 class FunctionType;
+class ParameterDefn;
+class TupleType;
 
 /// -------------------------------------------------------------------
 /// Analyzer class for type expressions.
@@ -46,15 +48,20 @@ public:
   Type * typeFromAST(const ASTNode * ast);
 
   /** Construct a qualified type from an AST. */
-  QualifiedType qualifiedTypeFromAST(const ASTNode * ast);
+  QualifiedType qualifiedTypeFromAST(const ASTNode * ast, unsigned defaultQualifiers = 0);
 
   /** Given an AST, find all type definitions. */
   bool typeDefnListFromAST(const ASTNode * ast, DefnList & defns);
 
   /** Construct a function type from an AST. */
-  FunctionType * typeFromFunctionAST(const ASTFunctionDecl * ast);
+  FunctionType * functionTypeFromAST(const ASTFunctionDecl * ast);
+
+  /** Construct a function type from a AST list of type expressions. */
+  TupleType * tupleTypeFromASTNodeList(const ASTNodeList & args);
 
   virtual Type * reduceTypeVariable(const ASTTypeVariable * ast);
+
+  void setParamType(ParameterDefn * param, QualifiedType paramType);
 
   bool getUnionTypes(const ASTNode * ast, QualifiedTypeList & result);
 

@@ -61,7 +61,7 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
     // Upcast the self argument type.
     if (fnType->selfParam() != NULL) {
       const Type * selfType = fnType->selfParam()->type().dealias().unqualified();
-      selfArg = genUpCastInstr(selfArg, in->selfArg()->type(), selfType);
+      selfArg = genUpCastInstr(selfArg, in->selfArg()->type().unqualified(), selfType);
     }
 
     if (fn->storageClass() == Storage_Instance) {
@@ -72,7 +72,7 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
   const ExprList & inArgs = in->args();
   for (ExprList::const_iterator it = inArgs.begin(); it != inArgs.end(); ++it) {
     const Expr * arg = *it;
-    const Type * argType = arg->canonicalType();
+    QualifiedType argType = arg->canonicalType();
 
     Value * argVal = genArgExpr(arg, saveIntermediateStackRoots);
     if (argVal == NULL) {
@@ -101,7 +101,7 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
     fnVal = genCallableDefn(fn);
   }
 
-  Value * result = genCallInstr(fnVal, args.begin(), args.end(), fn->name());
+  Value * result = genCallInstr(fnVal, args, fn->name());
   if (in->exprType() == Expr::CtorCall) {
     // Constructor call returns the 'self' argument.
     TypeShape selfTypeShape = in->selfArg()->type()->typeShape();
@@ -122,7 +122,7 @@ Value * CodeGenerator::genCall(const tart::FnCallExpr* in) {
 
 Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
   const Expr * fn = in->function();
-  const Type * fnType = dealias(fn->type());
+  const Type * fnType = dealias(fn->type().unqualified());
   bool saveIntermediateStackRoots = true;
 
   Value * fnValue;
@@ -155,7 +155,7 @@ Value * CodeGenerator::genIndirectCall(const tart::IndirectCallExpr* in) {
     args.push_back(argVal);
   }
 
-  llvm::Value * result = genCallInstr(fnValue, args.begin(), args.end(), "indirect");
+  llvm::Value * result = genCallInstr(fnValue, args, "indirect");
 
   // Clear out all the temporary roots
   popRootStack(savedRootCount);
@@ -243,7 +243,7 @@ Value * CodeGenerator::genITableLookup(const FunctionDefn * method, const Compos
   args.push_back(getInt32Val(methodIndex));
   Twine methodName = Twine("method.") + method->name();
   Twine methodPtrName = Twine("method.ptr.") + method->name();
-  Value * methodPtr = genCallInstr(dispatcher, args.begin(), args.end(), methodPtrName);
+  Value * methodPtr = genCallInstr(dispatcher, args, methodPtrName);
   return builder_.CreateBitCast(methodPtr, method->type()->irType()->getPointerTo(), methodName);
 }
 
@@ -301,7 +301,7 @@ Value * CodeGenerator::genBoundMethod(const BoundMethodExpr * in) {
 }
 
 Value * CodeGenerator::genNew(const tart::NewExpr* in) {
-  if (const CompositeType * ctdef = dyn_cast<CompositeType>(in->type())) {
+  if (const CompositeType * ctdef = dyn_cast<CompositeType>(in->type().unqualified())) {
     llvm::Type * type = ctdef->irTypeComplete();
     if (ctdef->typeClass() == Type::Struct) {
       if (ctdef->typeShape() == Shape_ZeroSize) {
@@ -336,22 +336,20 @@ Value * CodeGenerator::defaultAlloc(const tart::Expr * size) {
       builder_.getInt8PtrTy());
 }
 
-Value * CodeGenerator::genCallInstr(Value * func, ValueList::iterator firstArg,
-    ValueList::iterator lastArg, const Twine & name) {
-  checkCallingArgs(func, firstArg, lastArg);
+Value * CodeGenerator::genCallInstr(Value * func, ArrayRef<Value *> args, const Twine & name) {
+  checkCallingArgs(func, args);
   if (isUnwindBlock_) {
     Function * f = currentFn_;
     BasicBlock * normalDest = BasicBlock::Create(context_, "nounwind", f);
     moveToEnd(normalDest);
-    Value * result = builder_.CreateInvoke(
-        func, normalDest, getUnwindBlock(), makeArrayRef(firstArg, lastArg));
+    Value * result = builder_.CreateInvoke(func, normalDest, getUnwindBlock(), args);
     builder_.SetInsertPoint(normalDest);
     if (!result->getType()->isVoidTy()) {
       result->setName(name);
     }
     return result;
   } else {
-    Value * result = builder_.CreateCall(func, makeArrayRef(firstArg, lastArg));
+    Value * result = builder_.CreateCall(func, args);
     if (!result->getType()->isVoidTy()) {
       result->setName(name);
     }
@@ -359,15 +357,14 @@ Value * CodeGenerator::genCallInstr(Value * func, ValueList::iterator firstArg,
   }
 }
 
-void CodeGenerator::checkCallingArgs(const llvm::Value * fn,
-    ValueList::const_iterator first, ValueList::const_iterator last) {
+void CodeGenerator::checkCallingArgs(const llvm::Value * fn, ArrayRef<Value *> args) {
 #if !NDEBUG
   const llvm::FunctionType * fnType = cast<llvm::FunctionType>(fn->getType()->getContainedType(0));
-  size_t argCount = last - first;
+  size_t argCount = args.size();
   DASSERT(fnType->getNumParams() == argCount);
   for (size_t i = 0; i < argCount; ++i) {
     llvm::Type * paramType = fnType->getContainedType(i + 1);
-    llvm::Type * argType = first[i]->getType();
+    llvm::Type * argType = args[i]->getType();
     if (paramType != argType) {
       diag.error() << "Incorrect type for argument " << i << ": expected '" << *paramType << "'";
       diag.info() << "but was '" << *argType << "'";
@@ -379,7 +376,7 @@ void CodeGenerator::checkCallingArgs(const llvm::Value * fn,
 }
 
 llvm::Value * CodeGenerator::genArgExpr(const Expr * in, bool saveIntermediateStackRoots) {
-  const Type * argType = in->type();
+  const Type * argType = in->type().unqualified();
   if (saveIntermediateStackRoots && argType->containsReferenceType()) {
     switch (in->exprType()) {
       // Operations which are known not to generate a stack root.
@@ -489,6 +486,9 @@ llvm::Value * CodeGenerator::genArgExpr(const Expr * in, bool saveIntermediateSt
       case Expr::DynamicCast:
         return genDynamicCast(static_cast<const CastExpr *>(in), false, true);
 
+      case Expr::QualCast:
+        return genExpr(static_cast<const CastExpr *>(in)->arg());
+
       case Expr::BitCast:
         return genBitCast(static_cast<const CastExpr *>(in), true);
 
@@ -539,7 +539,7 @@ llvm::Value * CodeGenerator::genArgExpr(const Expr * in, bool saveIntermediateSt
       return argVal;
     }
 
-    addTempRoot(in->type(), argVal, "temp.root");
+    addTempRoot(in->type().unqualified(), argVal, "temp.root");
     return argVal;
   } else {
     return genExpr(in);

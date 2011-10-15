@@ -12,7 +12,7 @@ class StringFormatter {
 
     var formatString:String;
     var formatIndex:int;
-    var args:Object[];
+    var args:readonly(Object[]);
     var argIndex:int;
     var builder:StringBuilder;
   }

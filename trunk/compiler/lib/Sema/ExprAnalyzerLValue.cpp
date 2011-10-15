@@ -39,7 +39,7 @@ Expr * ExprAnalyzer::reduceLoadValue(const ASTNode * ast) {
     return &Expr::ErrorVal;
   }
 
-  DASSERT_OBJ(lvalue->type() != NULL, lvalue);
+  DASSERT_OBJ(lvalue->type(), lvalue);
 
   if (CallExpr * call = dyn_cast<CallExpr>(lvalue)) {
     if (LValueExpr * lval = dyn_cast<LValueExpr>(call->function())) {
@@ -49,8 +49,6 @@ Expr * ExprAnalyzer::reduceLoadValue(const ASTNode * ast) {
       }
     }
   }
-
-  // TODO: Check for indexer...
 
   return lvalue;
 }
@@ -136,7 +134,7 @@ Expr * ExprAnalyzer::reduceStoreValue(const SourceLocation & loc, Expr * lhs, Ex
 }
 
 Expr * ExprAnalyzer::reduceSymbolRef(const ASTNode * ast, bool store) {
-  ExprList values;
+  LookupResults values;
   lookupName(values, ast, LOOKUP_REQUIRED);
 
   if (values.size() == 0) {
@@ -146,13 +144,11 @@ Expr * ExprAnalyzer::reduceSymbolRef(const ASTNode * ast, bool store) {
     diag.error(ast) << "Multiply defined symbol " << ast;
     return &Expr::ErrorVal;
   } else {
-    Expr * value = values.front();
-    if (LValueExpr * lval = dyn_cast<LValueExpr>(value)) {
-      return reduceLValueExpr(lval, store);
-    } else if (TypeLiteralExpr * typeExpr = dyn_cast<TypeLiteralExpr>(value)) {
-      return typeExpr;
-    } else if (ScopeNameExpr * scopeName = dyn_cast<ScopeNameExpr>(value)) {
-      return scopeName;
+    const LookupResult & sym = values.front();
+    if (ValueDefn * val = dyn_cast_or_null<ValueDefn>(sym.defn())) {
+      return getLValue(ast->location(), val, sym.expr(), store);
+    } else if (TypeDefn * tdef = dyn_cast_or_null<TypeDefn>(sym.defn())) {
+      return new TypeLiteralExpr(ast->location(), tdef->value());
     } else {
       diag.error(ast) << "Not an l-value " << ast;
       DFAIL("Not an LValue");
@@ -177,7 +173,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
   const ASTNode * base = ast->arg(0);
   Expr * arrayExpr;
   if (base->nodeType() == ASTNode::Id || base->nodeType() == ASTNode::Member) {
-    ExprList values;
+    LookupResults values;
     lookupName(values, base, LOOKUP_REQUIRED);
 
     if (values.size() == 0) {
@@ -185,15 +181,13 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
     } else {
       // For type names and function names, brackets always mean specialize, not index.
       bool isTypeOrFunc = false;
-      for (ExprList::iterator it = values.begin(); it != values.end(); ++it) {
-        if (isa<TypeLiteralExpr>(*it)) {
+      for (LookupResults::iterator it = values.begin(); it != values.end(); ++it) {
+        if (isa<TypeDefn>(it->defn())) {
           isTypeOrFunc = true;
           break;
-        } else if (LValueExpr * lv = dyn_cast<LValueExpr>(*it)) {
-          if (isa<FunctionDefn>(lv->value())) {
-            isTypeOrFunc = true;
-            break;
-          }
+        } else if (isa<FunctionDefn>(it->defn())) {
+          isTypeOrFunc = true;
+          break;
         }
       }
 
@@ -246,9 +240,17 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
                 return new TypeLiteralExpr(loc, type);
               }
             } else {
+              // It can only be a function
               Defn * defn = spFinal->def()->templateSignature()->instantiate(loc, vars);
               if (defn != NULL) {
-                return getDefnAsExpr(defn, spFinal->base(), loc);
+                if (defn->storageClass() == Storage_Instance && spFinal->base() == NULL) {
+                  diag.error(loc) << "Cannot access non-static method '" <<
+                      defn->name() << "' from static method.";
+                  return &Expr::ErrorVal;
+                }
+
+                analyzeDefn(defn, Task_PrepTypeComparison);
+                return LValueExpr::get(loc, spFinal->base(), cast<ValueDefn>(defn));
               }
             }
             return &Expr::ErrorVal;
@@ -264,9 +266,11 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
         return &Expr::ErrorVal;
       }
 
-      arrayExpr = values.front();
-      if (LValueExpr * lval = dyn_cast<LValueExpr>(arrayExpr)) {
-        arrayExpr = reduceLValueExpr(lval, store);
+      const LookupResult & sym = values.front();
+      if (ValueDefn * val = dyn_cast_or_null<ValueDefn>(sym.defn())) {
+        arrayExpr = getLValue(ast->location(), val, sym.expr(), store);
+      } else if (sym.defn() == NULL && sym.expr() != NULL) {
+        arrayExpr = sym.expr();
       } else {
         diag.error(base) << "Expression " << base << " is neither an array type nor a template";
         return &Expr::ErrorVal;
@@ -284,8 +288,8 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
 
   // What we want is to determine whether or not the expression is a template. Or even a type.
 
-  const Type * arrayType = dealias(arrayExpr->type());
-  DASSERT_OBJ(arrayType != NULL, arrayExpr);
+  QualifiedType arrayType = dealias(arrayExpr->type());
+  DASSERT_OBJ(arrayType, arrayExpr);
 
   // Reduce all of the arguments
   ExprList args;
@@ -304,7 +308,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
   }
 
   // Memory address type
-  if (const AddressType * maType = dyn_cast<AddressType>(arrayType)) {
+  if (Qualified<AddressType> maType = arrayType.dyn_cast<AddressType>()) {
     QualifiedType elemType = maType->typeParam(0);
     if (!AnalyzerBase::analyzeType(elemType, Task_PrepTypeComparison)) {
       return &Expr::ErrorVal;
@@ -333,8 +337,8 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
    }*/
 
   // Handle native arrays.
-  if (const NativeArrayType * naType = dyn_cast<NativeArrayType>(arrayType)) {
-    if (!AnalyzerBase::analyzeType(naType, Task_PrepTypeComparison)) {
+  if (Qualified<NativeArrayType> naType = arrayType.dyn_cast<NativeArrayType>()) {
+    if (!AnalyzerBase::analyzeType(naType.unqualified(), Task_PrepTypeComparison)) {
       return &Expr::ErrorVal;
     }
 
@@ -359,8 +363,8 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
   }
 
   // Handle flexible arrays.
-  if (const FlexibleArrayType * faType = dyn_cast<FlexibleArrayType>(arrayType)) {
-    if (!AnalyzerBase::analyzeType(faType, Task_PrepTypeComparison)) {
+  if (Qualified<FlexibleArrayType> faType = arrayType.dyn_cast<FlexibleArrayType>()) {
+    if (!AnalyzerBase::analyzeType(faType.unqualified(), Task_PrepTypeComparison)) {
       return &Expr::ErrorVal;
     }
 
@@ -385,7 +389,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
   }
 
   // Handle tuples
-  if (const TupleType * tt = dyn_cast<TupleType>(arrayType)) {
+  if (const TupleType * tt = dyn_cast<TupleType>(arrayType.type())) {
     if (args.size() != 1) {
       diag.fatal(ast) << "Incorrect number of array subscripts";
       return &Expr::ErrorVal;
@@ -394,7 +398,7 @@ Expr * ExprAnalyzer::reduceElementRef(const ASTOper * ast, bool store, bool allo
     DASSERT(arrayExpr->isSingular()) << "Non-singular tuple expression: " << arrayExpr;
 
     Expr * indexExpr = args[0];
-    const Type * indexType = indexExpr->type();
+    const Type * indexType = indexExpr->type().type();
     if (TypeConversion::check(
         indexExpr, &Int32Type::instance, TypeConversion::COERCE) == Incompatible) {
       diag.fatal(args[0]) << "Tuple subscript must be integer type, is " << indexType;
@@ -553,73 +557,69 @@ Expr * ExprAnalyzer::reduceGetParamPropertyValue(const SourceLocation & loc, Cal
 #endif
 }
 
-Expr * ExprAnalyzer::reduceLValueExpr(LValueExpr * lvalue, bool store) {
-  ValueDefn * valueDefn = lvalue->value();
-  DASSERT(valueDefn != NULL);
-  analyzeDefn(valueDefn, Task_PrepTypeComparison);
-  DASSERT(valueDefn->type());
-  lvalue->setType(valueDefn->type());
-  if (ParameterDefn * param = dyn_cast<ParameterDefn>(valueDefn)) {
-    lvalue->setType(param->internalType());
+/** Given a symbol lookup result, attempt to return an LValue reference for that symbol. */
+Expr * ExprAnalyzer::getLValue(SLC & loc, ValueDefn * val, Expr * base, bool store) {
+  DASSERT(val != NULL);
+  analyzeDefn(val, Task_PrepTypeComparison);
+  DASSERT(val->type());
+  if (store && val->isReadOnly()) {
+    diag.error(loc) << "Attempt to write to read-only field '" << val << "'";
   }
 
-  checkAccess(lvalue->location(), valueDefn);
-  switch (valueDefn->storageClass()) {
+  checkAccess(loc, val);
+  switch (val->storageClass()) {
     case Storage_Global:
     case Storage_Static:
-      lvalue->setBase(NULL);
+      base = NULL;
 
       // If it's a let-variable, then make sure that the initialization value
       // gets evaluated.
-      if (valueDefn->defnType() == Defn::Let &&
-          valueDefn->module() != module() &&
-          valueDefn->module() != NULL) {
-        analyzeDefn(valueDefn, Task_PrepConstruction);
+      if (val->defnType() == Defn::Let &&
+          val->module() != module() &&
+          val->module() != NULL) {
+        analyzeDefn(val, Task_PrepConstruction);
       }
       break;
 
     case Storage_Local: {
-      lvalue->setBase(NULL);
+      base = NULL;
       break;
     }
 
     case Storage_Instance: {
-      Expr * base = lvalueBase(lvalue);
-      if (base == NULL || base->exprType() == Expr::ScopeName) {
-        diag.error(lvalue) << "Attempt to reference non-static member " <<
-        valueDefn->name() << " with no object";
+      if (base == NULL) {
+        diag.error(loc) << "Cannot access non-static member '" << val->name() <<
+            "' from static method.";
         return &Expr::ErrorVal;
       }
-
-      lvalue->setBase(base);
-
-      // TODO: Handle type names and such
-
+      if (store && base->type().isEffectiveReadOnly() && !val->isExplicitMutable()) {
+        diag.error(loc) << "Attempt to write to read-only field '" << val << "'";
+      }
       break;
     }
 
     case Storage_Class:
     default:
       DFAIL("Invalid storage class");
+      break;
   }
 
   // Addresses are implicitly dereferenced.
-  if (lvalue->base() != NULL && lvalue->base()->type()->typeClass() == Type::NAddress) {
-    lvalue->setBase(new UnaryExpr(Expr::PtrDeref, lvalue->base()->location(),
-        lvalue->base()->type()->typeParam(0), lvalue->base()));
+  if (base != NULL && base->type()->typeClass() == Type::NAddress) {
+    base = new UnaryExpr(Expr::PtrDeref, base->location(), base->type()->typeParam(0), base);
   }
 
-  return lvalue;
+  LValueExpr * result = LValueExpr::get(loc, base, val);
+  if (ParameterDefn * param = dyn_cast<ParameterDefn>(val)) {
+    DASSERT(param->passes().isFinished(ParameterDefn::TypeModifierPass));
+    result->setType(param->internalType());
+  }
+  return result;
 }
 
 /** Given an LValue, return the base expression. */
 Expr * ExprAnalyzer::lvalueBase(LValueExpr * lval) {
-  Expr * base = lval->base();
-  if (LValueExpr * lvbase = dyn_cast_or_null<LValueExpr>(base)) {
-    return reduceLValueExpr(lvbase, false);
-  }
-
-  return base;
+  return lval->base();
 }
 
 }

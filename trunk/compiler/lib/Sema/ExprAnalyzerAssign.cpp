@@ -20,7 +20,7 @@ Expr * ExprAnalyzer::reduceAssign(const ASTOper * ast) {
     return &Expr::ErrorVal;
   }
 
-  DASSERT_OBJ(lhs->type() != NULL, lhs);
+  DASSERT_OBJ(lhs->type(), lhs);
   Expr * rhs = reduceExpr(ast->arg(1), lhs->type());
   if (isErrorResult(rhs)) {
     return &Expr::ErrorVal;
@@ -64,7 +64,7 @@ Expr * ExprAnalyzer::reduceMultipleAssign(const ASTOper * ast) {
       return &Expr::ErrorVal;
     }
 
-    DASSERT_OBJ(dstLVal->type() != NULL, dstLVal);
+    DASSERT_OBJ(dstLVal->type(), dstLVal);
     dstVars.push_back(dstLVal);
     varTypes.push_back(dstLVal->type());
   }

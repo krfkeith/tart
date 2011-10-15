@@ -324,16 +324,9 @@ void CallSite::reportErrors(const char * msg) {
   diag.info(callExpr_->location()) << "Candidates are:";
   for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
     CallCandidate * cc = *it;
-    StrFormatStream errStrm;
     backtrack(0);
-    DBREAK;
     cc->updateConversionRank();
-    if (!errStrm.str().empty()) {
-      diag.info(cc->method()) << Format_Type << cc->method() << " : " << errStrm.str();
-    } else {
-      diag.info(cc->method()) << Format_Type  << cc->method() << Format_Dealias <<
-          " [" << cc->conversionRank() << "] ";
-    }
+    cc->reportConversionErrors();
   }
 }
 
@@ -352,7 +345,7 @@ void AssignmentSite::update() {
 void TupleCtorSite::update() {
   rank_ = IdenticalTypes;
   TupleCtorExpr * tct = static_cast<TupleCtorExpr *>(expr_);
-  const TupleType * tt = dyn_cast<TupleType>(tct->type());
+  const TupleType * tt = dyn_cast<TupleType>(tct->type().unqualified());
   size_t size = tt->size();
   for (size_t i = 0; i < size; ++i) {
     rank_ = std::min(rank_, TypeConversion::check(tct->arg(i), tt->member(i)));
@@ -363,11 +356,11 @@ void TupleCtorSite::update() {
 // PHISite
 
 void PHISite::update() {
-  const AmbiguousPhiType * phiType = cast<AmbiguousPhiType>(expr_->type());
+  Qualified<AmbiguousPhiType> phiType = expr_->type().cast<AmbiguousPhiType>();
   QualifiedTypeSet types;
   QualifiedType solution = NULL;
 
-  phiType->expand(types);
+  phiType.expand(types);
   if (phiType->expected()) {
     solution = phiType->expected();
   } else {
@@ -397,9 +390,9 @@ void PHISite::update() {
 }
 
 void PHISite::report() {
-  const AmbiguousPhiType * phiType = cast<AmbiguousPhiType>(expr_->type());
+  Qualified<AmbiguousPhiType> phiType = expr_->type().cast<AmbiguousPhiType>();
   QualifiedTypeSet types;
-  phiType->expand(types);
+  phiType.expand(types);
   diag.info() << "expression: " << expr_;
   if (phiType->expected()) {
     diag.info() << "expected result type: " << phiType->expected();
@@ -477,7 +470,7 @@ Expr * GatherConstraintsPass::visitMatch(MatchExpr * in) {
 }
 
 void GatherConstraintsPass::visitPHI(Expr * in) {
-  if (isa<AmbiguousPhiType>(in->type())) {
+  if (in->type().isa<AmbiguousPhiType>()) {
     constraints_.push_back(new PHISite(in));
   }
 }
@@ -486,7 +479,7 @@ void GatherConstraintsPass::visitPHI(Expr * in) {
 // TypeInference
 
 Expr * TypeInferencePass::run(Module * module, Expr * in, BindingEnv & env,
-    const Type * expected, bool strict) {
+    QualifiedType expected, bool strict) {
   TypeInferencePass instance(module, in, env, expected, strict);
   return instance.runImpl();
 }
@@ -562,6 +555,15 @@ Expr * TypeInferencePass::runImpl() {
   // Remove all culled candidates
   for (ChoicePointList::iterator pt = choicePoints_.begin(); pt != choicePoints_.end(); ++pt) {
     (*pt)->finish();
+  }
+
+  // Report constraint errors.
+  for (ConstraintSiteSet::iterator cs = cstrSites_.begin(); cs != cstrSites_.end(); ++cs) {
+    ConstraintSite * site = *cs;
+    if (site->rank() <= QualifierLoss) {
+      diag.info(site->expr()) << compatibilityError(site->rank()) << Format_Dealias <<
+          " executing " << site->expr();
+    }
   }
 
   env_.updateAssignments(rootExpr_->location(), NULL);
@@ -656,6 +658,16 @@ void TypeInferencePass::simplifyConstraints() {
     }
   } while (changed);
 
+  // Remove primary provisions, because they are now redundant.
+  for (TypeAssignment * ta = env_.assignments(); ta != NULL; ta = ta->next()) {
+    if (ta->primaryProvision() != NULL) {
+      for (ConstraintSet::iterator csi = ta->constraints().begin(); csi != ta->constraints().end();
+          ++csi) {
+        (*csi)->provisions().erase(ta->primaryProvision());
+      }
+    }
+  }
+
   selectConstantIntegerTypes();
   env_.sortAssignments();
 
@@ -709,7 +721,7 @@ void TypeInferencePass::update() {
 
   env_.reconcileConstraints(NULL);
 
-  if (expectedType_ != NULL) {
+  if (expectedType_) {
     ConversionRank rootRank = TypeConversion::check(rootExpr_, expectedType_);
     if (!strict_ && rootRank < NonPreferred) {
       rootRank = NonPreferred;

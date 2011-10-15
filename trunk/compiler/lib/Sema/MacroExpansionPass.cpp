@@ -71,7 +71,9 @@ Expr * MacroExpansionPass::visitFnCall(FnCallExpr * in) {
     for (size_t i = 0; i < argCount; ++i) {
       ParameterDefn * param = macro->params()[i];
       Expr * arg = in->arg(i);
-      DASSERT(TypeRelation::isEqual(arg->type(), param->internalType()));
+      DASSERT(TypeRelation::isEqual(
+          arg->type().unqualified(), param->internalType().unqualified())) <<
+          "Type mismatch in macro parameter: " << arg->type() << " vs. " << param->internalType();
       VariableDefn * binding = new VariableDefn(Defn::MacroArg, NULL, param->name());
       binding->setInitValue(arg);
       binding->setType(param->internalType());

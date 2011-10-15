@@ -12,8 +12,8 @@
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/FunctionType.h"
 #include "tart/Type/NativeType.h"
-#include "tart/Sema/TypeTransform.h"
 
+#include "tart/Sema/TypeTransform.h"
 #include "tart/Sema/VarAnalyzer.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/ExprAnalyzer.h"
@@ -27,7 +27,8 @@ namespace tart {
 
 static const VariableDefn::PassSet PASS_SET_RESOLVETYPE = VariableDefn::PassSet::of(
   VariableDefn::AttributePass,
-  VariableDefn::VariableTypePass
+  VariableDefn::VariableTypePass,
+  VariableDefn::TypeModifierPass
 );
 
 static const VariableDefn::PassSet PASS_SET_CONSTRUCT = VariableDefn::PassSet::of(
@@ -151,22 +152,22 @@ bool VarAnalyzer::resolveVarType() {
       if (ast->type() != NULL) {
         TypeAnalyzer ta(module_, activeScope_);
         ta.setSubject(subject_);
-        Type * varType = ta.typeFromAST(ast->type());
-        if (varType == NULL) {
+        QualifiedType varType = ta.qualifiedTypeFromAST(ast->type());
+        if (!varType) {
           target->passes().finish(VariableDefn::VariableTypePass);
           return false;
         }
 
         if (varType->isVoidType()) {
           diag.error(target) << "Variable type cannot be void";
-        } else if (FunctionType * fnType = dyn_cast<FunctionType>(varType)) {
+        } else if (Qualified<FunctionType> fnType = varType.dyn_cast<FunctionType>()) {
           if (!fnType->isStatic()) {
             DFAIL("Shoulda been converted to a Function object");
           }
         }
 
         //diag.info(target) << "Analyzing type of var '" << target << "' : " << varType;
-        setTargetType(varType);
+        target->setType(varType);
       }
     }
 
@@ -206,13 +207,13 @@ bool VarAnalyzer::resolveVarType() {
         target->passes().finish(VariableDefn::VariableTypePass);
         return false;
       } else {
-        const Type * initType = initExpr->type();
-        DASSERT_OBJ(initType != NULL, target);
+        QualifiedType initType = initExpr->type();
+        DASSERT_OBJ(initType, target);
 
         // TODO: Only if this is a var, not a let
         if (!target->type()) {
           initType = IntegerSizingTransform().transform(initType).unqualified();
-          setTargetType(initType);
+          target->setType(initType);
           analyzeType(initType, Task_PrepTypeComparison);
         }
 
@@ -255,7 +256,7 @@ bool VarAnalyzer::resolveVarType() {
   return true;
 }
 
-void VarAnalyzer::setTargetType(const Type * type) {
+void VarAnalyzer::setTargetType(QualifiedType type) {
   target->setType(type);
   if (ParameterDefn * pdef = dyn_cast<ParameterDefn>(target)) {
     pdef->setType(type);
@@ -269,11 +270,16 @@ void VarAnalyzer::setTargetType(const Type * type) {
 
 bool VarAnalyzer::analyzeTypeModifiers() {
   if (target->passes().begin(VariableDefn::TypeModifierPass)) {
-    if (target->storageClass() != Storage_Instance) {
-      if (target->isMutable()) {
-        diag.error(target) << "Only instance variables can be declared 'mutable'";
-      } else if (target->modifiers().flags & (ReadOnly | Immutable)) {
-        diag.error(target) << "Type modifiers are only allowed on instance variables";
+    if (target->defnType() == Defn::Parameter) {
+      setTargetType(target->type());
+    } else {
+      // It's a 'let' or 'var'.
+      if (target->storageClass() != Storage_Instance) {
+        if (target->isExplicitMutable()) {
+          diag.error(target) << "Only instance variables can be declared 'mutable'";
+        } else if (target->modifiers().flags & (ReadOnly | Immutable)) {
+          diag.error(target) << "Type modifiers are only allowed on instance variables";
+        }
       }
     }
     target->passes().finish(VariableDefn::TypeModifierPass);

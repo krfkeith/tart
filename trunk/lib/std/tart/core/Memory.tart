@@ -38,7 +38,7 @@ namespace Memory {
       contiguous storage of elements. */
   struct Buffer[%T] {
     protected {
-      var _container:Object;  // Reference to the container for GC purposes.
+      var _container:adopted(Object);  // Reference to the container for GC purposes.
       var _offset:int;        // Offset from the start of '_container' to the first element.
       var _size:int;          // Number of elements in the sequence.
 
@@ -54,7 +54,7 @@ namespace Memory {
           begin - the address of the first element of the sequence.
           size - the number of elements in the sequence.
      */
-    def construct(container:Object, begin:Address[T], size:int) {
+    def construct(container:adopted(Object), begin:Address[adopted(T)], size:int) {
       let offset:int = ptrDiff[ubyte](
           reinterpretPtr(objectAddress(container)),
           reinterpretPtr(begin));
@@ -67,7 +67,7 @@ namespace Memory {
           offset - the offset from the container address to the first element.
           size - the number of elements in the sequence.
      */
-    def construct(container:Object, offset:int, size:int) {
+    def construct(container:adopted(Object), offset:int, size:int) {
       Preconditions.checkArgument(offset > 0);
       Preconditions.checkArgument(size >= 0);
       self._container = container;
@@ -76,19 +76,13 @@ namespace Memory {
     }
 
     /** Read-only access to the beginning of the buffer. */
-    def begin:Address[T] { get { return reinterpretPtr(baseAddress); } }
+    def begin:Address[adopted(T)] { get { return reinterpretPtr(baseAddress); } }
 
     /** Read-only access to the end of the buffer. */
-    def end:Address[T] { get { return addressOf(begin[_size]); } }
+    def end:Address[adopted(T)] { get { return addressOf(begin[_size]); } }
 
     /** The number of elements in the sequence. */
     def size:int { get { return _size; } }
-  }
-
-  /** Extension of Buffer to support mutatbility of elements. */
-  struct MutableBuffer[%T] : Buffer[T] {
-    def mutableBegin:Address[T] { get { return begin(); } }
-    def mutableEnd:Address[T] { get { return end(); } }
   }
 
   /** The null pointer, converted to an object reference. */
@@ -99,11 +93,11 @@ namespace Memory {
       pointer. 'Value' can be a complex expression that resolves to an l-value.
   */
   @Intrinsic
-  def addressOf[%P](value:P) -> Address[P];
+  def addressOf[%P, %Mod(?)](value:Mod(P)) -> Address[Mod(P)];
 
   /** Convert an object reference into a native address. */
   @Intrinsic
-  def objectAddress(value:Object) -> Address[Object];
+  def objectAddress[%Mod(?)](value:Mod(Object)) -> Address[Mod(Object)];
 
   /** Convert a native address into an object reference. */
   @Intrinsic
@@ -123,7 +117,11 @@ namespace Memory {
 
   /** An unchecked cast of one pointer type to another. */
   @Unsafe @Intrinsic
-  def reinterpretPtr[%S, %T](from:Address[S]) -> Address[T];
+  def reinterpretPtr[%S, %T](from:readonly(Address[S])) -> readonly(Address[T]);
+  @Unsafe @Intrinsic
+  def reinterpretPtr[%S, %T](from:mutable(Address[S])) -> Address[T];
+  @Unsafe @Intrinsic
+  def reinterpretPtr[%S, %T](from:mutable(Address[S])) -> readonly(Address[T]);
 
   /** An unchecked cast of one type to another. Types must be the same size. */
   @Unsafe @Intrinsic
@@ -131,7 +129,7 @@ namespace Memory {
 
   /** Dereference a pointer value. */
   @Unsafe @Intrinsic
-  def deref[%T](from:Address[T]) -> T;
+  def deref[%T](from:readonly(Address[T])) -> T;
 
   /** Copies a range of elements from one native array to another. Does not check array bounds.
       Does not guarantee correct behavior if the source and destination overlap.

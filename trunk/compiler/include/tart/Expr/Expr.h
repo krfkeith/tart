@@ -67,11 +67,11 @@ public:
   ExprType exprType() const { return exprType_; }
 
   /** The type of this expression. */
-  const Type * type() const { return type_.type(); }
+  const QualifiedType type() const { return type_; }
   void setType(QualifiedType type) { type_ = type; }
 
   /** The type of this expression with aliases removed. */
-  const Type * canonicalType() const;
+  const QualifiedType canonicalType() const;
 
   /** Return true if this expression is a constant. */
   virtual bool isConstant() const { return false; }

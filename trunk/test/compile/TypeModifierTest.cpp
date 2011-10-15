@@ -4,58 +4,15 @@
 
 #include "TestCompiler.h"
 
-#include "Tart/Common/PackageMgr.h"
-
 using namespace tart;
 
-class TypeModifierTest : public testing::Test {
-public:
-  testing::AssertionResult expectSuccess(const char * src) {
-    TestCompiler tc("TypeModifierTest");
-    tc.compile(src);
-    if (tc.errorCount() > 0) {
-      return testing::AssertionFailure() << "Compilation error: '" << tc.errorLog() << "'.";
-    } else {
-      return testing::AssertionSuccess();
-    }
-  }
-
-  testing::AssertionResult expectError(const char * src, llvm::StringRef errStr) {
-    TestCompiler tc("TypeModifierTest");
-    tc.compile(src);
-    if (tc.errorCount() == 0) {
-      return testing::AssertionFailure() <<
-          "Expected error [" << errStr << "] for input '" << src << "'";
-    } else if (!tc.matchError(errStr)) {
-      return testing::AssertionFailure() <<
-          "Expected error [" << errStr << "], actual error was '" << tc.errorLog() << "'.";
-    } else {
-      return testing::AssertionSuccess();
-    }
-  }
-
-  testing::AssertionResult expectWarning(const char * src, llvm::StringRef errStr) {
-    TestCompiler tc("TypeModifierTest");
-    tc.compile(src);
-    if (tc.errorCount() != 0) {
-      return testing::AssertionFailure() <<
-          "Expected warning [" << errStr << "] for input '" << src << "'";
-    } else if (!tc.matchError(errStr)) {
-      return testing::AssertionFailure() <<
-          "Expected warning [" << errStr << "], actual error was '" << tc.errorLog() << "'.";
-    } else {
-      return testing::AssertionSuccess();
-    }
-  }
-};
-
-TEST_F(TypeModifierTest, ModifierConflict) {
+TEST(TypeModifierTest, ModifierConflict) {
   EXPECT_COMPILE_FAILURE("readonly immutable class Test {}", "Conflicting");
   EXPECT_COMPILE_FAILURE("readonly mutable class Test {}", "Conflicting");
   EXPECT_COMPILE_FAILURE("mutable immutable class Test {}", "Conflicting");
 }
 
-TEST_F(TypeModifierTest, ClassDefnModifiers) {
+TEST(TypeModifierTest, ClassDefnModifiers) {
   EXPECT_COMPILE_FAILURE("adopted class Test {}", "adopted");
   EXPECT_COMPILE_SUCCESS("readonly class Test {}");
   EXPECT_COMPILE_FAILURE("mutable class Test {}", "mutable");
@@ -74,7 +31,7 @@ TEST_F(TypeModifierTest, ClassDefnModifiers) {
   EXPECT_COMPILE_SUCCESS("immutable protocol Test {}");
 }
 
-TEST_F(TypeModifierTest, EnumDefnModifiers) {
+TEST(TypeModifierTest, EnumDefnModifiers) {
   EXPECT_COMPILE_FAILURE("abstract enum Test {}", "abstract");
   EXPECT_COMPILE_FAILURE("final enum Test {}", "final");
   EXPECT_COMPILE_FAILURE("adopted enum Test {}", "cannot be used as a declaration modifier");
@@ -83,7 +40,7 @@ TEST_F(TypeModifierTest, EnumDefnModifiers) {
   EXPECT_COMPILE_FAILURE("immutable enum Test {}", "modifiers");
 }
 
-TEST_F(TypeModifierTest, NamespaceDefnModifiers) {
+TEST(TypeModifierTest, NamespaceDefnModifiers) {
   EXPECT_COMPILE_FAILURE("abstract namespace Test {}", "abstract");
   EXPECT_COMPILE_FAILURE("final namespace Test {}", "final");
   EXPECT_COMPILE_FAILURE("adopted namespace Test {}", "cannot be used as a declaration modifier");
@@ -92,7 +49,7 @@ TEST_F(TypeModifierTest, NamespaceDefnModifiers) {
   EXPECT_COMPILE_FAILURE("immutable namespace Test {}", "modifiers");
 }
 
-TEST_F(TypeModifierTest, GlobalValueDefnModifiers) {
+TEST(TypeModifierTest, GlobalValueDefnModifiers) {
   EXPECT_COMPILE_FAILURE("adopted var test:int;", "cannot be used as a declaration modifier");
   EXPECT_COMPILE_FAILURE("readonly var test:int;", "Use 'let'");
   EXPECT_COMPILE_FAILURE("mutable var test:int;", "instance");
@@ -107,7 +64,7 @@ TEST_F(TypeModifierTest, GlobalValueDefnModifiers) {
   EXPECT_COMPILE_FAILURE("immutable def test:int { get { return 0; } }", "modifiers");
 }
 
-TEST_F(TypeModifierTest, MemberValueDefnModifiers) {
+TEST(TypeModifierTest, MemberValueDefnModifiers) {
   EXPECT_COMPILE_FAILURE("class Test { adopted var test:int; }", "declaration modifier");
   EXPECT_COMPILE_FAILURE("class Test { readonly var test:int; }", "Use 'let'");
   EXPECT_COMPILE_SUCCESS("class Test { mutable var test:int; }");
@@ -124,16 +81,37 @@ TEST_F(TypeModifierTest, MemberValueDefnModifiers) {
       "class Test { immutable def test:int { get { return 0; } } }", "modifiers");
 }
 
-TEST_F(TypeModifierTest, GlobalFunctionDefnModifiers) {
+TEST(TypeModifierTest, GlobalFunctionDefnModifiers) {
   EXPECT_COMPILE_FAILURE("adopted def test -> void {}", "declaration modifier");
   EXPECT_COMPILE_FAILURE("readonly def test -> void {}", "Only instance");
   EXPECT_COMPILE_FAILURE("mutable def test -> void {}", "invalid type modifier");
   EXPECT_COMPILE_FAILURE("immutable def test -> void {}", "invalid type modifier");
 }
 
-TEST_F(TypeModifierTest, MemberFunctionDefnModifiers) {
+TEST(TypeModifierTest, MemberFunctionDefnModifiers) {
   EXPECT_COMPILE_FAILURE("class Test { adopted def test -> void {} }", "declaration modifier");
   EXPECT_COMPILE_SUCCESS("class Test { readonly def test -> void {} }");
   EXPECT_COMPILE_FAILURE("class Test { mutable def test -> void {} }", "invalid type modifier");
   EXPECT_COMPILE_FAILURE("class Test { immutable def test -> void {} }", "invalid type modifier");
 }
+
+TEST(TypeModifierTest, ReadOnlyMethod) {
+  EXPECT_COMPILE_FAILURE(
+      "class Test { var m:int; readonly def test -> void { m = 0; } }",
+      "write to read-only");
+}
+
+#if 0
+TEST(TypeModifierTest, ReadonlyParam) {
+  EXPECT_COMPILE_FAILURE(
+      "def test(a:int[]) -> void { a[0] = 1; }",
+      "write to read-only");
+}
+
+TEST(TypeModifierTest, ReadonlyField) {
+  EXPECT_COMPILE_FAILURE(
+      "class Test { var m:int; } def test(t:Test) -> void { t.m = 1; }",
+      "write to read-only");
+  EXPECT_COMPILE_SUCCESS("class Test { mutable var m:int; } def test(t:Test) -> void { t.m = 1; }");
+}
+#endif

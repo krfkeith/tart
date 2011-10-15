@@ -34,7 +34,7 @@ void SpCandidate::relabelTypeVars(BindingEnv & env) {
   DASSERT(params_ == NULL);
   TypeList typeParams;
   const Template * tm = def_->templateSignature();
-  const TypeList & tmDefaults = def_->templateSignature()->typeParamDefaults();
+  const QualifiedTypeList & tmDefaults = def_->templateSignature()->typeParamDefaults();
 
   if (def_->hasUnboundTypeParams()) {
     size_t numParams = tm->typeParams()->size();
@@ -47,7 +47,7 @@ void SpCandidate::relabelTypeVars(BindingEnv & env) {
 
     // Transform the parameters into type assignments.
     RelabelTransform rt(assignments);
-    params_ = cast<TupleType>(rt(tm->typeParams()));
+    params_ = cast<TupleType>(rt(tm->typeParams()).unqualified());
     typeParamDefaults_.resize(tmDefaults.size());
     std::transform(tmDefaults.begin(), tmDefaults.end(), typeParamDefaults_.begin(), rt);
   } else {
@@ -59,8 +59,8 @@ void SpCandidate::relabelTypeVars(BindingEnv & env) {
 void SpCandidate::relabelTypeVars(RelabelTransform & rt) {
   DASSERT(params_ == NULL);
   const Template * tm = def_->templateSignature();
-  params_ = cast<TupleType>(rt(tm->typeParams()));
-  const TypeList & tmDefaults = tm->typeParamDefaults();
+  params_ = cast<TupleType>(rt(tm->typeParams()).unqualified());
+  const QualifiedTypeList & tmDefaults = tm->typeParamDefaults();
   typeParamDefaults_.resize(tmDefaults.size());
   std::transform(tmDefaults.begin(), tmDefaults.end(), typeParamDefaults_.begin(), rt);
 }
@@ -113,7 +113,8 @@ Type * SpCandidate::toType(SourceContext * source, BindingEnv & env) {
       env.updateAssignments(source->location());
       QualifiedTypeVarMap vars;
       env.toTypeVarMap(vars, this);
-      return const_cast<Type *>(tdef->templateSignature()->instantiateType(source->location(), vars));
+      return const_cast<Type *>(
+          tdef->templateSignature()->instantiateType(source->location(), vars));
     } else {
       unify(&candidateSite, env);
       DFAIL("Unify failed...");
@@ -142,6 +143,20 @@ ConversionRank SpCandidate::updateConversionRank() {
   }
 
   return conversionRank_;
+}
+
+void SpCandidate::reportConversionErrors() {
+  for (size_t i = 0; i < args_->size(); ++i) {
+    QualifiedType pattern = (*params_)[i];
+    QualifiedType value = (*args_)[i];
+    ConversionRank rank = TypeConversion::check(value, pattern);
+    if (rank != IdenticalTypes) {
+      diag.indent();
+      diag.info() << "Template argument " << i << " type '" << value <<
+          "' does not match parameter type '" << pattern << "'.";
+      diag.unindent();
+    }
+  }
 }
 
 bool SpCandidate::isMoreSpecific(const SpCandidate * other) const {

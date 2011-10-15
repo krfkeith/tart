@@ -25,10 +25,10 @@ public:
   {}
 
   // Add a possible type.
-  void add(const Type * type);
+  void add(QualifiedType type);
 
   // The set of input types
-  const ConstTypeList & types() const { return types_; }
+  const QualifiedTypeList & types() const { return types_; }
 
   // The common type of the input types
   QualifiedType common() const { return common_; }
@@ -40,7 +40,7 @@ public:
   // Overrides
 
   void listProspects(ProspectList & out, const ProvisionSet & add) const;
-  void expand(QualifiedTypeSet & out) const;
+  void expandImpl(QualifiedTypeSet & out, unsigned qualifiers) const;
   QualifiedType singularValue() const;
   bool isSingular() const;
   bool isReferenceType() const;
@@ -53,7 +53,7 @@ public:
   }
 
 private:
-  ConstTypeList types_;
+  QualifiedTypeList types_;
   QualifiedType expected_;
   mutable QualifiedType common_;
 };

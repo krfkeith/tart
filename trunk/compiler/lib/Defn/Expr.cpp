@@ -108,7 +108,7 @@ UnaryExpr Expr::VoidVal(Expr::NoOp, SourceLocation(), &VoidType::instance, NULL)
 
 const ExprList Expr::emptyList;
 
-const Type * Expr::canonicalType() const {
+const QualifiedType  Expr::canonicalType() const {
   return dealias(type());
 }
 
@@ -320,19 +320,6 @@ bool LValueExpr::isLValue() const {
   }
 
   return base_->isLValue();
-}
-
-// -------------------------------------------------------------------
-// ScopeNameExpr
-bool ScopeNameExpr::isSingular() const { return true; }
-
-void ScopeNameExpr::format(FormatStream & out) const {
-  out << value_;
-}
-
-void ScopeNameExpr::trace() const {
-  Expr::trace();
-  safeMark(value_);
 }
 
 // -------------------------------------------------------------------
@@ -570,10 +557,10 @@ void CallExpr::format(FormatStream & out) const {
       out << ":" << (*it)->type();
     }*/
   }
-  out << ") ";
+  out << ")";
 
   if (out.getShowType() && expectedReturnType_) {
-    out << "-> " << expectedReturnType_ << " ";
+    out << " -> " << expectedReturnType_;
   }
 }
 
@@ -683,20 +670,24 @@ void NewExpr::format(FormatStream & out) const {
 
 // -------------------------------------------------------------------
 // CastExpr
-CastExpr * CastExpr::bitCast(Expr * value, const Type * toType) {
+CastExpr * CastExpr::bitCast(Expr * value, QualifiedType toType) {
   return new CastExpr(Expr::BitCast, value->location(), toType, value);
 }
 
-CastExpr * CastExpr::upCast(Expr * value, const Type * toType) {
+CastExpr * CastExpr::upCast(Expr * value, QualifiedType toType) {
   return new CastExpr(Expr::UpCast, value->location(), toType, value);
 }
 
-CastExpr * CastExpr::tryCast(Expr * value, const Type * toType) {
+CastExpr * CastExpr::tryCast(Expr * value, QualifiedType toType) {
   return new CastExpr(Expr::TryCast, value->location(), toType, value);
 }
 
-CastExpr * CastExpr::dynamicCast(Expr * value, const Type * toType) {
+CastExpr * CastExpr::dynamicCast(Expr * value, QualifiedType toType) {
   return new CastExpr(Expr::DynamicCast, value->location(), toType, value);
+}
+
+CastExpr * CastExpr::qualCast(Expr * value, QualifiedType toType) {
+  return new CastExpr(Expr::QualCast, value->location(), toType, value);
 }
 
 void CastExpr::format(FormatStream & out) const {

@@ -29,10 +29,12 @@ class ThrowStmt;
 class ReturnStmt;
 class ReturnStmt;
 class DeclStmt;
+class TypeVariable;
 
 enum AnalysisOptions {
   AO_EXPLICIT_CAST = (1<<1),        // Force a cast to the expected type, suppress warnings.
   AO_IMPLICIT_CAST = (1<<2),        // Do implicit conversion to the expected type.
+  AO_IGNORE_QUALIFIERS = (1<<3),    // Ignore type qualifiers (used when comparing).
 };
 
 /// -------------------------------------------------------------------
@@ -71,7 +73,7 @@ public:
       Report an error if the cast is not possible. */
   Expr * doImplicitCast(Expr * in, QualifiedType toType, unsigned options = AO_IMPLICIT_CAST);
   Expr * doBoxCast(Expr * in);
-  Expr * doUnboxCast(Expr * in, const Type * toType);
+  Expr * doUnboxCast(Expr * in, QualifiedType toType);
 
   // Literals
 
@@ -90,7 +92,6 @@ public:
   Expr * reduceValueRef(const ASTNode * ast, bool store);
   Expr * reduceSymbolRef(const ASTNode * ast, bool store);
   Expr * reduceElementRef(const ASTOper * ast, bool store, bool allowOverloads);
-  Expr * reduceLValueExpr(LValueExpr * lvalue, bool store);
   Expr * reduceGetParamPropertyValue(const SourceLocation & loc, CallExpr * call);
   Expr * reduceSetParamPropertyValue(const SourceLocation & loc, CallExpr * call, Expr * value);
 
@@ -110,6 +111,7 @@ public:
   Expr * reduceComplement(const ASTOper * ast);
   Expr * reduceArrayLiteral(const ASTOper * ast, QualifiedType expected);
   Expr * reduceTuple(const ASTOper * ast, QualifiedType expected);
+  Expr * reduceTypeModification(const ASTOper * ast, QualifiedType expected);
 
   // Statements
 
@@ -154,6 +156,9 @@ public:
 
   /** Evaluate a call to a constructor. */
   Expr * callConstructor(const SourceLocation & loc, TypeDefn * tdef, const ASTNodeList & args);
+
+  /** Evaluate a call to a type function. */
+  Expr * callTypeFunction(SLC & loc, QualifiedType callable, const ASTNodeList & args);
 
   /** Add all overloaded constructors to the given call expression. */
   bool addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDefn * tdef,
@@ -233,6 +238,9 @@ public:
   /** Report that there were no matching candidates. */
   void noCandidatesError(CallExpr * call, const ExprList & methods);
 
+  /** Given a value symbol and a base expression, return an LValue reference for that symbol. */
+  Expr * getLValue(SLC & loc, ValueDefn * val, Expr * base, bool store);
+
   /** Given an LValue, return the base expression. */
   Expr * lvalueBase(LValueExpr * lval);
 
@@ -253,12 +261,12 @@ protected:
   bool inMacroExpansion_;
 
 private:
-  ConstantExpr * reduceCaseValue(const ASTNode * ast, const Type * testType);
+  ConstantExpr * reduceCaseValue(const ASTNode * ast, QualifiedType testType);
   LocalScope * createLocalScope(const char * scopeName);
   Defn * createLocalDefn(const ASTDecl * ast);
   Expr * createTempVar(Defn::DefnType kind, const char * name, Expr * value);
   VariableDefn * createTempVar(
-      const SourceLocation & loc, Defn::DefnType kind, const Type * type, const char * name);
+      const SourceLocation & loc, Defn::DefnType kind, QualifiedType type, const char * name);
   Expr * reduceTestExpr(const ASTNode * test, LocalScope *& implicitScope, bool castToBool = true);
   Defn * astToDefn(const ASTDecl * ast);
   bool astToDefnList(const ASTVarDecl * ast, DefnList & vars);

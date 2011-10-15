@@ -40,7 +40,6 @@ private:
   Expr * visitCallExpr(CallExpr * in);
   Expr * visitLValue(LValueExpr * in);
   Expr * visitBoundMethod(BoundMethodExpr * in);
-  Expr * visitScopeName(ScopeNameExpr * in);
   Expr * visitElementRef(BinaryExpr * in);
   Expr * visitAssign(AssignmentExpr * in);
   Expr * visitPostAssign(AssignmentExpr * in);

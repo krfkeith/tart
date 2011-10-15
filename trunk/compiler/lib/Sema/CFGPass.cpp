@@ -69,9 +69,6 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::BoundMethod:
       return visitBoundMethod(static_cast<BoundMethodExpr *>(in));
 
-    case Expr::ScopeName:
-      return visitScopeName(static_cast<ScopeNameExpr *>(in));
-
     case Expr::ElementRef:
       return visitElementRef(static_cast<BinaryExpr *>(in));
 
@@ -109,6 +106,7 @@ Expr * CFGPass::visitExpr(Expr * in) {
     case Expr::UpCast:
     case Expr::TryCast:
     case Expr::DynamicCast:
+    case Expr::QualCast:
     case Expr::UnboxCast:
     case Expr::Truncate:
     case Expr::SignExtend:
@@ -260,10 +258,6 @@ Expr * CFGPass::visitLValue(LValueExpr * in) {
 
 Expr * CFGPass::visitBoundMethod(BoundMethodExpr * in) {
   in->setSelfArg(visitExpr(in->selfArg()));
-  return in;
-}
-
-Expr * CFGPass::visitScopeName(ScopeNameExpr * in) {
   return in;
 }
 

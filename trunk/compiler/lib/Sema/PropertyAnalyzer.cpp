@@ -175,11 +175,15 @@ bool PropertyAnalyzer::resolveAccessorType() {
     TypeAnalyzer ta(module(), activeScope());
     const ASTPropertyDecl * ast = cast_or_null<ASTPropertyDecl>(target->ast());
 
+    if (target->getter() == NULL && target->setter() == NULL) {
+      diag.error(target) << "Property definition must contain a getter or setter.";
+    }
+
     if (target->getter() != NULL) {
       FunctionDefn * getter = target->getter();
       if (ast != NULL) {
         DASSERT_OBJ(getter->functionType() == NULL, getter);
-        FunctionType * getterType = ta.typeFromFunctionAST(getter->functionDecl());
+        FunctionType * getterType = ta.functionTypeFromAST(getter->functionDecl());
         DASSERT_OBJ(getterType->returnType().isNull(), getter);
         getterType->setReturnType(type);
 
@@ -202,7 +206,7 @@ bool PropertyAnalyzer::resolveAccessorType() {
       DASSERT_OBJ(setter->functionType() == NULL, setter);
       if (ast != NULL) {
         TypeAnalyzer ta(module(), activeScope());
-        FunctionType * setterType = ta.typeFromFunctionAST(setter->functionDecl());
+        FunctionType * setterType = ta.functionTypeFromAST(setter->functionDecl());
 
         // See if the setter already has a 'value' parameter defined. If it does, we need
         // to temporarily remove it from the param list so that we can insert the property

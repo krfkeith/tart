@@ -13,7 +13,6 @@ namespace tart {
 
 //class ClosureEnvExpr;
 class LValueExpr;
-//class ScopeNameExpr;
 class AssignmentExpr;
 //class MultiAssignExpr;
 //class CallExpr;
@@ -58,12 +57,10 @@ private:
 
   bool visitLValue(LValueExpr * from, LValueExpr * to);
 //  bool visitBoundMethod(BoundMethodExpr * from, BoundMethodExpr * to);
-//  bool visitScopeName(ScopeNameExpr * from, ScopeNameExpr * to);
   bool visitElementRef(BinaryExpr * from, BinaryExpr * to);
 
   bool visitAssign(AssignmentExpr * from, AssignmentExpr * to);
 //  bool visitMultiAssign(MultiAssignExpr * from, MultiAssignExpr * to);
-//  bool visitCall(CallExpr * from, CallExpr * to);
   bool visitFnCall(FnCallExpr * from, FnCallExpr * to);
 //  bool visitIndirectCall(IndirectCallExpr * from, IndirectCallExpr * to);
   bool visitNew(NewExpr * from, NewExpr * to);
@@ -98,6 +95,7 @@ private:
 
   bool visitFunctionRef(FunctionDefn * from, FunctionDefn * to);
 
+  bool areTypesCompatible(QualifiedType from, QualifiedType to);
   bool areTypesCompatible(const Type * from, const Type * to);
 
   void reportDifference(const char * msg, Formattable * from, Formattable * to);

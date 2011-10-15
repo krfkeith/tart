@@ -266,7 +266,7 @@ void ExplicitImportDefn::format(FormatStream & out) const {
 
 void ExplicitImportDefn::trace() const {
   Defn::trace();
-  markList(importValues_.begin(), importValues_.end());
+  markList(importDefs_.begin(), importDefs_.end());
 }
 
 // -------------------------------------------------------------------

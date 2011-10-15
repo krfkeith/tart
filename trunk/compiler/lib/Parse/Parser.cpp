@@ -1164,6 +1164,22 @@ ASTNode * Parser::typeExprPrimary() {
       if (declType == NULL) {
         expected("type expression after '>:'");
       }
+    } else if (match(Token_LParen)) {
+      constraint = ASTTypeVariable::IS_QUALIFIER;
+      if (!match(Token_QMark)) {
+        expected("?");
+      }
+      if (!match(Token_RParen)) {
+        expectedCloseParen();
+      }
+    } else if (match(Token_LBracket)) {
+      constraint = ASTTypeVariable::IS_TYPE_CTOR;
+      if (!match(Token_QMark)) {
+        expected("?");
+      }
+      if (!match(Token_RBracket)) {
+        expected("]");
+      }
     }
 
     bool isVariadic = match(Token_Ellipsis);
@@ -1282,6 +1298,23 @@ ASTNode * Parser::typeSuffix(ASTNode * result) {
       } else {
         result = new ASTSpecialize(tokenLoc | result->location(), result, templateArgs);
       }
+    } else if (match(Token_LParen)) {
+      SourceLocation loc = lexer.tokenLocation();
+      ASTNode * arg = typeExpression();
+      if (arg == NULL) {
+        diag.error(loc) << "Template argument expected";
+        skipToRParen();
+        return NULL;
+      }
+
+      if (!match(Token_RParen)) {
+        expectedCloseParen();
+        return NULL;
+      }
+
+      ASTOper * qop = new ASTOper(ASTNode::Qualify, result->location() | arg->location(), result);
+      qop->append(arg);
+      result = qop;
     } else if (match(Token_Caret)) {
       ASTNodeList templateArgs;
       templateArgs.push_back(result);

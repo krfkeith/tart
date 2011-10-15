@@ -452,7 +452,7 @@ llvm::Function * CodeGenerator::getUnionTraceMethod(const UnionType * utype) {
         args.push_back(actionPtr);
         args.push_back(builder_.CreatePointerCast(unionValuePtr,
             Builtins::typeObject->irEmbeddedType()->getPointerTo()));
-        genCallInstr(fnValue, args.begin(), args.end(), "trace");
+        genCallInstr(fnValue, args, "trace");
         builder_.CreateBr(blkExit);
       } else {
         si->addCase(ConstantInt::get(discType, typeIndex, true), blkPtrTrace);
@@ -467,7 +467,7 @@ llvm::Function * CodeGenerator::getUnionTraceMethod(const UnionType * utype) {
       args.push_back(actionPtr);
       args.push_back(builder_.CreatePointerCast(unionValuePtr, builder_.getInt8PtrTy()));
       args.push_back(builder_.CreateConstInBoundsGEP2_32(traceTable, 0, 0));
-      genCallInstr(fnValue, args.begin(), args.end(), "trace");
+      genCallInstr(fnValue, args, "trace");
       builder_.CreateBr(blkExit);
     }
   }

@@ -1,7 +1,7 @@
 import Memory.Address;
 
 /** Trace descriptor for a trace method. */
-struct TraceMethodDescriptor {
+immutable struct TraceMethodDescriptor {
   /** If non-zero, it means that this is the last descriptor in the list. */
   let endList:uint16;
 

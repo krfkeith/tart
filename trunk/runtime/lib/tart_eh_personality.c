@@ -333,7 +333,6 @@ bool findAction(
       *actionResult = actionResultIndex;
       return true;
     } else if (actionFilter > 0 && tib != NULL) {
-
       const struct TypeInfoBlock * type;
       actionFilter *= encodedValueSize(lpInfo->typeTableEncoding);
       readEncodedValue(
@@ -342,7 +341,7 @@ bool findAction(
           lpInfo->typeTable - actionFilter, // position
           (_Unwind_Ptr *) &type);
 
-      if (hasBase(tib, type)) {
+      if (type == NULL || hasBase(tib, type)) {
         *actionResult = actionResultIndex;
         return true;
       }

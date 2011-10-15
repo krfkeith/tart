@@ -96,7 +96,7 @@ Expr * ExprAnalyzer::reduceIfStmt(const IfStmt * st, QualifiedType expected) {
   Expr * testExpr = reduceTestExpr(st->testExpr(), implicitScope);
   CHECK_EXPR(testExpr);
 
-  DASSERT(testExpr->type() != NULL);
+  DASSERT(testExpr->type());
   bool hasElse = (st->elseSt() != NULL);
 
   // Statements used in expression context must return a value on all paths.
@@ -253,17 +253,19 @@ Expr * ExprAnalyzer::reduceForEachStmt(const ForEachStmt * st, QualifiedType exp
     return &Expr::ErrorVal;
   }
 
-  if (!isa<CompositeType>(iteratorExpr->type())) {
+  if (!iteratorExpr->type().isa<CompositeType>()) {
     diag.error(iteratorExpr) << "Invalid iterator type: " << iteratorExpr->type();
     return &Expr::ErrorVal;
   }
 
-  const CompositeType * iterType = static_cast<const CompositeType *>(iteratorExpr->type());
-  AnalyzerBase::analyzeType(iterType, Task_PrepMemberLookup);
-  FunctionDefn * nextFn = findInterfaceMethod(iterType, Builtins::typeIterator, "next");
+  Qualified<CompositeType> iterType = iteratorExpr->type().as<CompositeType>();
+  AnalyzerBase::analyzeType(iterType.unqualified(), Task_PrepMemberLookup);
+  FunctionDefn * nextFn = findInterfaceMethod(
+      iterType.unqualified(), Builtins::typeIterator, "next");
   if (nextFn == NULL) {
     // If it's not an Iterator, see if it's an Iterable.
-    FunctionDefn * iterate = findInterfaceMethod(iterType, Builtins::typeIterable, "iterate");
+    FunctionDefn * iterate = findInterfaceMethod(
+        iterType.unqualified(), Builtins::typeIterable, "iterate");
     if (iterate == NULL) {
       diag.error(iteratorExpr) << "Invalid iterator type: " << iteratorExpr->type();
       return &Expr::ErrorVal;
@@ -275,14 +277,14 @@ Expr * ExprAnalyzer::reduceForEachStmt(const ForEachStmt * st, QualifiedType exp
       return &Expr::ErrorVal;
     }
 
-    if (!isa<CompositeType>(iteratorExpr->type())) {
+    if (!iteratorExpr->type().isa<CompositeType>()) {
       diag.error(iteratorExpr) << "Invalid iterator type: " << iteratorExpr->type();
       return &Expr::ErrorVal;
     }
 
-    iterType = static_cast<const CompositeType *>(iteratorExpr->type());
-    AnalyzerBase::analyzeType(iterType, Task_PrepMemberLookup);
-    nextFn = findInterfaceMethod(iterType, Builtins::typeIterator, "next");
+    iterType = iteratorExpr->type().as<CompositeType>();
+    AnalyzerBase::analyzeType(iterType.unqualified(), Task_PrepMemberLookup);
+    nextFn = findInterfaceMethod(iterType.unqualified(), Builtins::typeIterator, "next");
     if (nextFn == NULL) {
       diag.error(iteratorExpr) << "Invalid iterator type: " << iteratorExpr->type();
       return &Expr::ErrorVal;
@@ -306,7 +308,7 @@ Expr * ExprAnalyzer::reduceForEachStmt(const ForEachStmt * st, QualifiedType exp
   Expr * nextValueExpr = SharedValueExpr::get(nextCall);
   foreach->setNext(nextValueExpr);
 
-  const UnionType * utype = dyn_cast<UnionType>(nextCall->type());
+  const UnionType * utype = dyn_cast<UnionType>(nextCall->type().unqualified());
   DASSERT(utype != NULL);
   DASSERT(utype->members().size() == 2);
   const Type * iterVarType;
@@ -393,13 +395,13 @@ Expr * ExprAnalyzer::reduceSwitchStmt(const SwitchStmt * st, QualifiedType expec
   Expr * testExpr = reduceTestExpr(st->testExpr(), implicitScope, false);
   DASSERT(implicitScope == NULL);
   CHECK_EXPR(testExpr);
-  DASSERT(testExpr->type() != NULL);
+  DASSERT(testExpr->type());
 
   // The switch statement
   SwitchExpr * swe = new SwitchExpr(st->location(), testExpr);
 
-  const Type * testType = testExpr->type();
-  if (const EnumType * etype = dyn_cast<EnumType>(testType)) {
+  QualifiedType testType = testExpr->type();
+  if (const EnumType * etype = dyn_cast<EnumType>(testType.unqualified())) {
     // If it's an enum, allow unqualified enum constants to be used.
     caseValScope = new DelegatingScope(
         const_cast<IterableScope *>(etype->memberScope()), activeScope());
@@ -433,7 +435,7 @@ Expr * ExprAnalyzer::reduceSwitchStmt(const SwitchStmt * st, QualifiedType expec
     swe->setEqualityTestFn(equalityTest);
   } else if (testType->isIntType()) {
     if (testType->isUnsizedIntType()) {
-      testType = static_cast<const UnsizedIntType *>(testType)->fixIntSize(false);
+      testType = testType.as<UnsizedIntType>()->fixIntSize(false);
     }
   } else {
     diag.error(st) << "Invalid expression type for switch statement: " << testType;
@@ -464,7 +466,7 @@ Expr * ExprAnalyzer::reduceSwitchStmt(const SwitchStmt * st, QualifiedType expec
       Expr * body = reduceExpr(cst->body(), expected);
       if (!isErrorResult(body) && !caseVals.empty()) {
         CaseExpr * ce = new CaseExpr(st->location(), caseVals, body);
-        if (phiType != NULL && ce->type() != NULL) {
+        if (phiType != NULL && ce->type()) {
           phiType->add(ce->type());
         }
         swe->appendArg(ce);
@@ -475,7 +477,7 @@ Expr * ExprAnalyzer::reduceSwitchStmt(const SwitchStmt * st, QualifiedType expec
       } else {
         Expr * defaultCase = reduceExpr(*it, expected);
         CHECK_EXPR(defaultCase);
-        if (phiType != NULL && defaultCase->type() != NULL) {
+        if (phiType != NULL && defaultCase->type()) {
           phiType->add(defaultCase->type());
         }
         swe->setElseCase(defaultCase);
@@ -508,10 +510,11 @@ Expr * ExprAnalyzer::reduceSwitchStmt(const SwitchStmt * st, QualifiedType expec
   return swe;
 }
 
-ConstantExpr * ExprAnalyzer::reduceCaseValue(const ASTNode * ast, const Type * testType) {
+ConstantExpr * ExprAnalyzer::reduceCaseValue(const ASTNode * ast, QualifiedType testType) {
   Expr * caseVal = reduceExpr(ast, testType);
   Expr * result = NULL;
-  ConversionRank rank = TypeConversion::convert(caseVal, testType, &result);
+  ConversionRank rank;
+  llvm::tie(rank, result) = TypeConversion::convert(caseVal, testType);
   if (rank == Incompatible) {
     diag.error(ast) << "Case value type '" << caseVal->type()
         << " is incompatible with switch expression type '" << testType << "'";
@@ -540,13 +543,13 @@ Expr * ExprAnalyzer::reduceMatchStmt(const MatchStmt * st, QualifiedType expecte
   }
 
   // TODO: There are lots of optimizations that could be done here.
-  const Type * fromType = testExpr->type();
+  QualifiedType fromType = testExpr->type();
   Expr::ExprType castType = Expr::BitCast;
   if (fromType->isReferenceType()) {
     // For reference types, create a shared value so we don't re-evaluate the
     // test expression for each case.
     testExpr = new SharedValueExpr(testExpr);
-  } else if (isa<UnionType>(fromType)) {
+  } else if (fromType.isa<UnionType>()) {
     // Because of the way union type tests work, we need a temporary variable to hold
     // the union value, so that we can take its address.
     if (implicitScope == NULL) {
@@ -574,7 +577,7 @@ Expr * ExprAnalyzer::reduceMatchStmt(const MatchStmt * st, QualifiedType expecte
       Expr * asExpr = reduceMatchAsStmt(
           static_cast<const MatchAsStmt *>(s), testExpr, castType, expected);
       if (!isErrorResult(asExpr)) {
-        if (phiType != NULL && asExpr->type() != NULL) {
+        if (phiType != NULL && asExpr->type()) {
           phiType->add(asExpr->type());
         }
         me->appendArg(asExpr);
@@ -585,7 +588,7 @@ Expr * ExprAnalyzer::reduceMatchStmt(const MatchStmt * st, QualifiedType expecte
       } else {
         Expr * defaultCase = reduceExpr(s, expected);
         CHECK_EXPR(defaultCase);
-        if (phiType != NULL && defaultCase->type() != NULL) {
+        if (phiType != NULL && defaultCase->type()) {
           phiType->add(defaultCase->type());
         }
         me->setElseCase(defaultCase);
@@ -598,7 +601,7 @@ Expr * ExprAnalyzer::reduceMatchStmt(const MatchStmt * st, QualifiedType expecte
   llvm::SmallSet<const Type *, 16> typesSeen;
   for (MatchExpr::const_iterator it = me->begin(); it != me->end(); ++it) {
     MatchAsExpr * mae = cast<MatchAsExpr>(*it);
-    const Type * type = mae->init()->type();
+    const Type * type = mae->init()->type().unqualified();
     if (typesSeen.count(type)) {
       diag.error(mae) << "Duplicate type test '" << type << "'.";
     }
@@ -770,7 +773,7 @@ Expr * ExprAnalyzer::reduceReturnStmt(const ReturnStmt * st, QualifiedType expec
 
     // If the return value type is an unsized int, and there's no explicit return
     // type declared, then choose an integer type.
-    const Type * exprType = resultVal->type();
+    QualifiedType exprType = resultVal->type();
     if (exprType->isUnsizedIntType() && !returnType_) {
       DFAIL("Obsolete?");
       if (TypeConversion::check(resultVal, &Int32Type::instance) >= ExactConversion) {
@@ -846,7 +849,7 @@ bool ExprAnalyzer::reduceDeclStmt(const DeclStmt * st, QualifiedType expected, E
       VariableDefn * var = static_cast<VariableDefn *>(*it);
       const ASTVarDecl * varDecl = static_cast<const ASTVarDecl *>(var->ast());
       DASSERT(varDecl->value() == NULL);
-      if (varDecl->type() != NULL) {
+      if (varDecl->type()) {
         VarAnalyzer va(var, activeScope(), module(), currentFunction_, currentFunction_);
         if (!va.analyze(Task_PrepTypeComparison)) {
           return false;
@@ -868,7 +871,7 @@ bool ExprAnalyzer::reduceDeclStmt(const DeclStmt * st, QualifiedType expected, E
       DASSERT_OBJ(initExpr->canonicalType()->typeClass() == Type::Tuple, initExpr);
       initExpr = new SharedValueExpr(initExpr);
 
-      if (const TupleType * ttActual = dyn_cast_or_null<TupleType>(initExpr->type())) {
+      if (const TupleType * ttActual = dyn_cast_or_null<TupleType>(initExpr->type().type())) {
         tt = ttActual;
       }
 
@@ -880,7 +883,7 @@ bool ExprAnalyzer::reduceDeclStmt(const DeclStmt * st, QualifiedType expected, E
             tt->member(memberIndex), initExpr, ConstantInteger::getUInt32(memberIndex));
         exprs.push_back(new InitVarExpr(st->location(), var, initVal));
         if (!var->type()) {
-          DASSERT(initVal->canonicalType() != &AnyType::instance);
+          DASSERT(initVal->canonicalType().unqualified() != &AnyType::instance);
           var->setType(initVal->canonicalType());
         }
       }
@@ -898,9 +901,6 @@ bool ExprAnalyzer::reduceDeclStmt(const DeclStmt * st, QualifiedType expected, E
 
   DASSERT_OBJ(var->isSingular(), var);
   if (var->initValue() != NULL) {
-//    Expr * initVal = MacroExpansionPass::run(*this, var->initValue());
-//    if (!isErrorResult(initVal)) {
-//    }
     Expr * initVal = var->initValue();
     var->setInitValue(NULL);
     exprs.push_back(new InitVarExpr(st->location(), var, initVal));
@@ -958,9 +958,6 @@ Expr * ExprAnalyzer::reduceTestExpr(const ASTNode * test, LocalScope *& implicit
     }
 
     testExpr = FinalizeTypesPass::run(currentFunction_, testExpr, env);
-#if 0
-    testExpr = MacroExpansionPass::run(*this, testExpr);
-#endif
     DASSERT_OBJ(testExpr->isSingular(), testExpr);
   }
 
@@ -981,10 +978,10 @@ Expr * ExprAnalyzer::reduceTestExpr(const ASTNode * test, LocalScope *& implicit
   if (testExpr->type()->isReferenceType()) {
     return new CompareExpr(test->location(), llvm::CmpInst::ICMP_NE, testExpr, ConstantNull::get(
         test->location(), testExpr->type()));
-  } else if (isa<AddressType>(testExpr->type())) {
+  } else if (testExpr->type().isa<AddressType>()) {
     return new CompareExpr(test->location(), llvm::CmpInst::ICMP_NE, testExpr, ConstantNull::get(
         test->location(), testExpr->type()));
-  } else if (const UnionType * ut = dyn_cast<UnionType>(testExpr->type())) {
+  } else if (const UnionType * ut = dyn_cast<UnionType>(testExpr->type().unqualified())) {
     if (ut->isSingleNullableType()) {
       return new CompareExpr(test->location(), llvm::CmpInst::ICMP_NE, testExpr, ConstantNull::get(
           test->location(), testExpr->type()));
@@ -1041,7 +1038,7 @@ Expr * ExprAnalyzer::createTempVar(Defn::DefnType kind, const char * name, Expr 
 }
 
 VariableDefn * ExprAnalyzer::createTempVar(
-    const SourceLocation & loc, Defn::DefnType kind, const Type * type, const char * name) {
+    const SourceLocation & loc, Defn::DefnType kind, QualifiedType type, const char * name) {
   VariableDefn * var = new VariableDefn(kind, module(), name);
   var->addTrait(Defn::Singular);
   var->setLocation(loc);

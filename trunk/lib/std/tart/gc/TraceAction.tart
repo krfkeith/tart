@@ -7,13 +7,15 @@ import GC;
 /** Handles the logic of a tracing pass. */
 abstract class TraceAction {
   /** Trace a single pointer. Override this in the subclass to implement the trace algorithm. */
-  protected abstract def tracePointer(ptrAddr:Address[Object]);
+  protected abstract def tracePointer(ptrAddr:Address[readonly(Object)]);
 
   /** Trace a list of pointers as specified by offsets from a base address. TraceAction subclasses
       should probably re-implement this for effiency and inline the call to 'tracePointer()'.
    */
   protected def tracePointers(baseAddr:Address[ubyte], fieldOffsets:Address[uint], fieldCount:uint32) {
     for i:uint32 = 0; i < fieldCount; ++i {
+      //Debug.writeIntLn("fieldCount=", int(fieldCount));
+      //Debug.writeIntLn("fieldOffset=", int(fieldOffsets[i]));
       tracePointer(reinterpretPtr(addressOf(baseAddr[fieldOffsets[i]])));
     }
   }
@@ -24,8 +26,8 @@ abstract class TraceAction {
       baseAddr:Address[ubyte], descriptorList:Address[TraceDescriptor]) {
     //Debug.writeLn("**traceDescriptors");
     if descriptorList is not null {
-      var methodDescriptorList:Address[TraceMethodDescriptor] =
-          reinterpretPtr(addressOf(descriptorList));
+      var methodDescriptorList:readonly(Address[TraceMethodDescriptor]) =
+          reinterpretPtr(descriptorList);
       var i = 0;
       repeat {
         var fieldAddr = addressOf(baseAddr[descriptorList[i].offset]);
@@ -64,13 +66,13 @@ abstract class TraceAction {
   macro trace(v:double) {}
 
   /** Tracer for object fields - updates the object reference. */
-  macro trace(v:Object) {
+  macro trace(v:readonly(Object)) {
     self.tracePointer(addressOf(v));
   }
 
   /** Tracer for object fields - updates the object reference. */
   macro trace[%T <: Object](v:T) {
-    self.tracePointer(reinterpretPtr[T, Object](addressOf(v)));
+    self.tracePointer(reinterpretPtr[T, readonly(Object)](addressOf(v)));
   }
 
   /** Trace an arbitrary value type. */

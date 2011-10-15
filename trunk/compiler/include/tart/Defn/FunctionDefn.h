@@ -60,7 +60,7 @@ public:
 
   /** The 'internal' type is the type of the parameter as it appears within the function body,
       which may not be the same as it appears externally. */
-  const Type * internalType() const { return internalType_.type(); }
+  QualifiedType internalType() const { return internalType_; }
   void setInternalType(QualifiedType type) { internalType_ = type; }
 
   /** Whether this parameter is covariant, contravariant, or invariant. */
@@ -159,7 +159,7 @@ public:
   ParameterList & params() { return type_->params(); }
 
   /** Return type. */
-  QualifiedType returnType() const;
+  const QualifiedType returnType() const;
 
   /** Scope containing the parameters. */
   const IterableScope & parameterScope() const { return parameterScope_; }
@@ -250,7 +250,7 @@ public:
   // Overrides
 
   StringRef linkageName() const;
-  QualifiedType type() const;
+  const QualifiedType type() const;
   void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const FunctionDefn *) { return true; }

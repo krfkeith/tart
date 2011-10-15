@@ -183,7 +183,7 @@ bool FunctionAnalyzer::runPasses(FunctionDefn::PassSet passesToRun) {
 bool FunctionAnalyzer::resolveParameterTypes() {
   bool success = true;
   if (target->passes().begin(FunctionDefn::ParameterTypePass)) {
-     bool trace = isTraceEnabled(target);
+    bool trace = isTraceEnabled(target);
     if (trace) {
       diag.debug(target) << Format_Type << "Analyzing parameter types for " << target;
     }
@@ -221,7 +221,7 @@ bool FunctionAnalyzer::resolveParameterTypes() {
       DASSERT(target->ast() != NULL);
       TypeAnalyzer ta(target->sourceModule(), activeScope());
       ta.setTypeLookupOptions(isFromTemplate ? LOOKUP_NO_RESOLVE : LOOKUP_DEFAULT);
-      ftype = ta.typeFromFunctionAST(target->functionDecl());
+      ftype = ta.functionTypeFromAST(target->functionDecl());
       if (ftype == NULL) {
         success = false;
       } else {
@@ -262,6 +262,12 @@ bool FunctionAnalyzer::resolveParameterTypes() {
         if (param->definingScope() == NULL && !param->name().empty()) {
           target->parameterScope().addMember(param);
         }
+
+        if (trace) {
+          diag.indent();
+          diag.debug(target) << Format_Type << "Parameter " << param;
+          diag.unindent();
+        }
       }
     }
 
@@ -276,12 +282,17 @@ bool FunctionAnalyzer::resolveParameterTypes() {
 
     if (target->storageClass() == Storage_Instance && ftype->selfParam() == NULL) {
       ParameterDefn * selfParam = new ParameterDefn(module(), "self");
-      TypeDefn * selfType = target->enclosingClassDefn();
-      DASSERT_OBJ(selfType != NULL, target);
-      analyzeType(selfType->typePtr(), Task_PrepMemberLookup);
+      QualifiedType selfType = target->enclosingClassDefn()->value();
+      DASSERT_OBJ(selfType, target);
+      if (target->isReadOnly()) {
+        selfType.addQualifiers(QualifiedType::READONLY);
+      } else {
+        selfType.removeQualifiers(QualifiedType::MUTABILITY_MASK);
+      }
+      analyzeType(selfType.unqualified(), Task_PrepMemberLookup);
       selfParam->setLocation(target->location());
-      selfParam->setType(selfType->typePtr());
-      selfParam->setInternalType(selfType->typePtr());
+      selfParam->setType(selfType);
+      selfParam->setInternalType(selfType);
       selfParam->addTrait(Defn::Singular);
       selfParam->addTrait(Defn::Synthetic);
       selfParam->setFlag(ParameterDefn::Reference);
@@ -455,7 +466,10 @@ bool FunctionAnalyzer::createCFG() {
 
   if (target->passes().begin(FunctionDefn::ControlFlowPass)) {
     if (target->isUndefined()) {
-      module()->addSymbol(Builtins::funcUndefinedMethod);
+      // May be null when running automated tests.
+      if (Builtins::funcUndefinedMethod) {
+        module()->addSymbol(Builtins::funcUndefinedMethod);
+      }
     } else if (target->body() == NULL) {
       const Stmt * astBody = NULL;
       if (target->functionDecl() != NULL) {
@@ -678,7 +692,8 @@ bool FunctionAnalyzer::resolveReturnType() {
 bool FunctionAnalyzer::merge() {
   bool success = true;
 
-  if (target->hasUnboundTypeParams() || target->isTemplateMember() || !target->isSingular()) {
+  if (target->hasUnboundTypeParams() || target->isTemplateMember() || !target->isSingular() ||
+      diag.getErrorCount() > 0) {
     target->passes().finish(FunctionDefn::MergePass);
     return true;
   }

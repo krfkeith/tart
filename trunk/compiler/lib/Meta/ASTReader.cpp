@@ -401,6 +401,14 @@ ASTNode * ASTReader::read() {
           pos_++;
           constraint = ASTTypeVariable::IS_SUPERTYPE;
           constraintValue = read();
+        } else if (tag == meta::AST::IS_QUALIFIER) {
+          pos_++;
+          constraint = ASTTypeVariable::IS_QUALIFIER;
+          constraintValue = read();
+        } else if (tag == meta::AST::IS_TYPE_CTOR) {
+          pos_++;
+          constraint = ASTTypeVariable::IS_TYPE_CTOR;
+          constraintValue = read();
         } else {
           diag.fatal(loc_) << "Invalid tag for type variable: " << tag;
           return &ASTNode::INVALID;
@@ -414,7 +422,32 @@ ASTNode * ASTReader::read() {
     case meta::AST::TYPELITERAL:
       break;
 
+    case meta::AST::MOD_READONLY: {
+      ASTNode * base = read();
+      ENSURE_VALID(base);
+      return new ASTOper(ASTNode::TypeModReadOnly, base);
+    }
+
+    case meta::AST::MOD_MUTABLE: {
+      ASTNode * base = read();
+      ENSURE_VALID(base);
+      return new ASTOper(ASTNode::TypeModMutable, base);
+    }
+
+    case meta::AST::MOD_IMMUTABLE: {
+      ASTNode * base = read();
+      ENSURE_VALID(base);
+      return new ASTOper(ASTNode::TypeModImmutable, base);
+    }
+
+    case meta::AST::MOD_ADOPTED: {
+      ASTNode * base = read();
+      ENSURE_VALID(base);
+      return new ASTOper(ASTNode::TypeModAdopted, base);
+    }
+
     // Declarations
+
     case meta::AST::CLASS:
     case meta::AST::STRUCT:
     case meta::AST::INTERFACE:
@@ -1049,7 +1082,7 @@ bool ASTReader::readDecl(DeclContent & dc) {
       }
 
       default:
-        diag.fatal() << "Unexpected tag in declaration: " << tag;
+        diag.fatal() << "Unexpected tag in declaration: " << tag << " (" << int(tag) << ")";
         return false;
     }
   }
@@ -1188,7 +1221,7 @@ StringRef  ASTReader::readIdRef() {
 
 StringRef ASTReader::readString() {
   uint64_t size = readVarInt();
-  StringRef ident(pos_, size);
+  StringRef ident(reinterpret_cast<const char *>(pos_), size);
   pos_ += size;
   if (size == 0) {
     return "";

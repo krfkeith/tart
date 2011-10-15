@@ -6,14 +6,15 @@
 
 #include "tart/Expr/Exprs.h"
 
+#include "tart/Type/AmbiguousType.h"
+#include "tart/Type/CompositeType.h"
 #include "tart/Type/NativeType.h"
 #include "tart/Type/PrimitiveType.h"
-#include "tart/Type/CompositeType.h"
-#include "tart/Type/UnionType.h"
 #include "tart/Type/TupleType.h"
+#include "tart/Type/TypeFunction.h"
 #include "tart/Type/TypeLiteral.h"
-#include "tart/Type/AmbiguousType.h"
 #include "tart/Type/TypeRelation.h"
+#include "tart/Type/UnionType.h"
 
 #include "tart/Sema/BindingEnv.h"
 #include "tart/Sema/AnalyzerBase.h"
@@ -36,7 +37,6 @@ DebugUnify("debug-unify", llvm::cl::desc("Debug unification"), llvm::cl::init(fa
 
 namespace tart {
 
-typedef llvm::DenseSet<const Type *, Type::KeyInfo> TypeSet;
 typedef llvm::SmallSetVector<TypeAssignment *, 16> TypeAssignmentSet;
 
 namespace {
@@ -97,7 +97,12 @@ bool BindingEnv::unify(SourceContext * source, QualifiedType left, QualifiedType
     if (diag.getIndentLevel() == 0) {
       diag.debug(source->location()) << "## Begin unification of: " << left << " with: " << right;
       if (stateCount_ > 0) {
-        diag.debug() << "   Current bindings: " << Format_Verbose << *this;
+        diag.indent();
+        diag.debug() << "Current bindings:";
+        diag.indent();
+        dump();
+        diag.unindent();
+        diag.unindent();
       }
     } else {
       diag.debug() << "unify " << left << " with " << right;
@@ -105,7 +110,7 @@ bool BindingEnv::unify(SourceContext * source, QualifiedType left, QualifiedType
     diag.indent();
   }
 
-  bool result = unifyImpl(source, left.type(), right.type(), kind, provisions);
+  bool result = unifyImpl(source, left, right, kind, provisions);
 
   if (DebugUnify || unifyVerbose) {
     if (!result) {
@@ -125,7 +130,7 @@ bool BindingEnv::unify(SourceContext * source, QualifiedType left, QualifiedType
   return result;
 }
 
-bool BindingEnv::unifyImpl(SourceContext * source, const Type * left, const Type * right,
+bool BindingEnv::unifyImpl(SourceContext * source, QualifiedType left, QualifiedType right,
     Constraint::Kind kind, const ProvisionSet & provisions) {
   if (left == right) {
     return true;
@@ -160,33 +165,46 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * left, const Type
   }
 
   // Type variable on left side
-  if (const TypeAssignment * ta = dyn_cast<TypeAssignment>(left)) {
+  if (Qualified<TypeAssignment> ta = left.dyn_cast<TypeAssignment>()) {
     return unifyWithTypeVar(source, ta, right, kind, provisions);
   }
 
   // Type variable on right side
-  if (const TypeAssignment * ta = dyn_cast<TypeAssignment>(right)) {
+  if (Qualified<TypeAssignment> ta = right.dyn_cast<TypeAssignment>()) {
     return unifyWithTypeVar(source, ta, left, Constraint::reverse(kind), provisions);
   }
 
+  // Type function on left side
+  if (Qualified<TypeFunctionCall> tfc = left.dyn_cast<TypeFunctionCall>()) {
+    return unifyWithTypeFunctionCall(source, tfc, right, kind, provisions);
+  }
+
+  // Type function on right side
+  if (Qualified<TypeFunctionCall> tfc = right.dyn_cast<TypeFunctionCall>()) {
+    return unifyWithTypeFunctionCall(source, tfc, left, Constraint::reverse(kind), provisions);
+  }
+
+  const Type * lty = left.unqualified();
+  const Type * rty = right.unqualified();
+
   // Address type
-  if (const AddressType * npp = dyn_cast<AddressType>(left)) {
-    return unifyAddressType(source, npp, right);
+  if (const AddressType * npp = dyn_cast<AddressType>(lty)) {
+    return unifyAddressType(source, npp, rty);
   }
 
   // Native array type
-  if (const NativeArrayType * nap = dyn_cast<NativeArrayType>(left)) {
-    return unifyNativeArrayType(source, nap, right);
+  if (const NativeArrayType * nap = dyn_cast<NativeArrayType>(lty)) {
+    return unifyNativeArrayType(source, nap, rty);
   }
 
   // Flexible array type
-  if (const FlexibleArrayType * nap = dyn_cast<FlexibleArrayType>(left)) {
-    return unifyFlexibleArrayType(source, nap, right);
+  if (const FlexibleArrayType * nap = dyn_cast<FlexibleArrayType>(lty)) {
+    return unifyFlexibleArrayType(source, nap, rty);
   }
 
   // Tuple type
-  if (const TupleType * tPattern = dyn_cast<TupleType>(left)) {
-    if (const TupleType * tValue = dyn_cast<TupleType>(right)) {
+  if (const TupleType * tPattern = dyn_cast<TupleType>(lty)) {
+    if (const TupleType * tValue = dyn_cast<TupleType>(rty)) {
       return unifyTupleType(source, tPattern, tValue);
     }
 
@@ -194,14 +212,14 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * left, const Type
   }
 
   // Type literal type
-  if (const TypeLiteralType * npp = dyn_cast<TypeLiteralType>(left)) {
-    return unifyTypeLiteralType(source, npp, right);
+  if (const TypeLiteralType * npp = dyn_cast<TypeLiteralType>(lty)) {
+    return unifyTypeLiteralType(source, npp, rty);
   }
 
-  if (const CompositeType * ctPattern = dyn_cast<CompositeType>(left)) {
-    if (const CompositeType * ctValue = dyn_cast<CompositeType>(right)) {
+  if (const CompositeType * ctPattern = dyn_cast<CompositeType>(lty)) {
+    if (const CompositeType * ctValue = dyn_cast<CompositeType>(rty)) {
       return unifyCompositeType(source, ctPattern, ctValue);
-    } else if (const NativeArrayType * natValue = dyn_cast<NativeArrayType>(right)) {
+    } else if (const NativeArrayType * natValue = dyn_cast<NativeArrayType>(rty)) {
       // Special case for assigning Array to NativeArray in initializers
       if (ctPattern->typeDefn()->ast() == Builtins::typeArray->typeDefn()->ast()) {
         return unify(source, ctPattern->typeParam(0), natValue->typeParam(0), Constraint::EXACT);
@@ -212,7 +230,7 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * left, const Type
 //      }
     }
 
-    if (const UnionType * rut = dyn_cast<UnionType>(right)) {
+    if (const UnionType * rut = dyn_cast<UnionType>(rty)) {
       return unifyUnionMemberType(source, rut, ctPattern);
     }
 
@@ -225,21 +243,21 @@ bool BindingEnv::unifyImpl(SourceContext * source, const Type * left, const Type
     return false;
   }
 
-  if (const UnionType * lut = dyn_cast<UnionType>(left)) {
-    if (const UnionType * rut = dyn_cast<UnionType>(right)) {
+  if (const UnionType * lut = dyn_cast<UnionType>(lty)) {
+    if (const UnionType * rut = dyn_cast<UnionType>(rty)) {
       return unifyUnionType(source, lut, rut);
     } else if (unifyUnionMemberType(source, lut, right)) {
       return true;
     }
 
     return false;
-  } else if (const UnionType * rut = dyn_cast<UnionType>(right)) {
+  } else if (const UnionType * rut = dyn_cast<UnionType>(rty)) {
     if (unifyUnionMemberType(source, rut, left)) {
       return true;
     }
   }
 
-  if (isa<PrimitiveType>(left)) {
+  if (isa<PrimitiveType>(lty)) {
     // Go ahead and unify - type inference will see if it can convert.
     return true;
   } else {
@@ -451,7 +469,7 @@ bool BindingEnv::unifyUnionType(
 }
 
 bool BindingEnv::unifyUnionMemberType(
-    SourceContext * source, const UnionType * left, const Type * right) {
+  SourceContext * source, const UnionType * left, QualifiedType right) {
   // If we're assigning to a union type, try each of the union members.
   unsigned savedState = stateCount_;
   for (TupleType::const_iterator it = left->members().begin(); it != left->members().end();
@@ -495,14 +513,14 @@ bool BindingEnv::unifyTupleType(
 }
 
 bool BindingEnv::unifyWithTypeVar(
-    SourceContext * source, const TypeAssignment * ta, QualifiedType value,
+    SourceContext * source, Qualified<TypeAssignment> ta, QualifiedType value,
     Constraint::Kind kind, const ProvisionSet & provisions) {
 
   // Dereference the value as well.
   value = TypeAssignment::deref(value);
 
   // Don't bind a type assignment to itself.
-  if (ta == value.unqualified()) {
+  if (ta.unqualified() == value.unqualified()) {
     return true;
   }
 
@@ -510,6 +528,11 @@ bool BindingEnv::unifyWithTypeVar(
   if (!ta->target()->canBindTo(value)) {
     return false;
   }
+
+  // Figure out which qualifiers are different, remove ones which are common to both sides.
+//  unsigned commonQualifiers = ta.qualifiers() & value.qualifiers();
+//  ta.removeQualifiers(commonQualifiers);
+//  value.removeQualifiers(commonQualifiers);
 
   // Calculate the set of all provisions
   ProvisionSet combinedProvisions(provisions);
@@ -527,13 +550,12 @@ bool BindingEnv::unifyWithTypeVar(
       return true;
     }
 
-    DASSERT((*si)->value() != ta) << "Pattern " << ta << " bound to itself";
+    DASSERT(cst->value() != ta.as<Type>()) << "Pattern " << ta << " bound to itself";
   }
 
   // Add a new constraint onto the type assignment.
   if (combinedProvisions.isConsistent()) {
-    TypeAssignment * taMutable = const_cast<TypeAssignment *>(ta);
-    taMutable->constraints().insert(
+    ta->mutableConstraints().insert(
         source->location(), value, nextState(), kind, combinedProvisions);
     if (DebugUnify || unifyVerbose) {
       diag.debug() << "bind " << ta << " " << kind << " " << value;
@@ -543,7 +565,8 @@ bool BindingEnv::unifyWithTypeVar(
     // If the other side is also a type variable, add a reverse constraint to it.
     if (value.isa<TypeAssignment>()) {
       value.as<TypeAssignment>().unqualified()->mutableConstraints().insert(
-          source->location(), ta, nextState(), Constraint::reverse(kind), combinedProvisions);
+          source->location(), ta.as<Type>(), nextState(), Constraint::reverse(kind),
+          combinedProvisions);
       if (DebugUnify || unifyVerbose) {
         diag.debug() << "bind " << value << " " << kind << " " << ta;
         dumpProvisions(combinedProvisions);
@@ -555,8 +578,45 @@ bool BindingEnv::unifyWithTypeVar(
   return true;
 }
 
-bool BindingEnv::unifyWithAmbiguousType(SourceContext * source, const Type * amb,
-    const Type * value, Constraint::Kind kind, const ProvisionSet & provisions) {
+bool BindingEnv::unifyWithTypeFunctionCall(
+    SourceContext * source, Qualified<TypeFunctionCall> tfc, QualifiedType value,
+    Constraint::Kind kind, const ProvisionSet & provisions) {
+
+  value = TypeAssignment::deref(value);
+  const TupleType * args = tfc->args();
+
+  if (Qualified<TypeFunctionCall> vfc = value.dyn_cast<TypeFunctionCall>()) {
+    DFAIL("Implement");
+  }
+
+  // Unify with a type qualifier
+  if (const TypeAssignment * ta = dyn_cast<TypeAssignment>(tfc->fnVal())) {
+    if (ta->target()->target() == TypeVariable::TYPE_QUALIFIER && args->size() == 1) {
+      QualifiedType arg = args->member(0);
+      if (unify(source, arg.unqualified(), value.unqualified(), kind, provisions)) {
+        // Bind the type variable for the callable to a qualifying function.
+        TypeFunction * fnVal = new QualifyingTypeFunction(value.qualifiers());
+        ta->mutableConstraints().insert(source->location(), fnVal, nextState(),
+            kind, provisions);
+        return true;
+      }
+      return false;
+    } else {
+      // The variable isn't a qualifier.
+      diag.debug() << "NumArgs: " << args->size();
+      diag.debug() << "Target type: " << ta->target()->target();
+      DFAIL("Implement");
+    }
+  } else {
+    // The function value isn't a type variable.
+    DFAIL("Implement");
+  }
+
+  return false;
+}
+
+bool BindingEnv::unifyWithAmbiguousType(SourceContext * source, QualifiedType amb,
+    QualifiedType value, Constraint::Kind kind, const ProvisionSet & provisions) {
   ProspectList prospects;
   AmbiguousType::listProspects(prospects, amb, provisions);
   bool success = false;
@@ -705,8 +765,8 @@ void BindingEnv::toTypeVarMap(QualifiedTypeVarMap & map, GC * context) {
   }
 }
 
-bool BindingEnv::isAssigned(const Type * ty) const {
-  if (const TypeVariable * tv = dyn_cast<TypeVariable>(ty)) {
+bool BindingEnv::isAssigned(QualifiedType ty) const {
+  if (const TypeVariable * tv = dyn_cast<TypeVariable>(ty.unqualified())) {
     for (TypeAssignment * ta = assignments_; ta != NULL; ta = ta->next()) {
       if (ta->target() == tv) {
         return true;

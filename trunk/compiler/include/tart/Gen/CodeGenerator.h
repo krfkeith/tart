@@ -324,8 +324,8 @@ public:
 
   /** Generate a function call instruction - either a call or invoke, depending
       on whether there's an enclosing try block. */
-  llvm::Value * genCallInstr(llvm::Value * fn,
-      ValueList::iterator firstArg, ValueList::iterator lastArg, const llvm::Twine & name);
+  llvm::Value * genCallInstr(llvm::Value * fn, llvm::ArrayRef<llvm::Value *> args,
+      const llvm::Twine & name);
 
   /** Get the address of a value. */
   llvm::Value * genBoundMethod(const BoundMethodExpr * in);
@@ -338,8 +338,7 @@ public:
       bool valIsLval);
 
   /** Generate an 'isa' test for composite types. */
-  llvm::Value * genCompositeTypeTest(llvm::Value * val, const CompositeType * fromType,
-      const CompositeType * toType);
+  llvm::Value * genCompositeTypeTest(llvm::Value * val, const CompositeType * toType);
 
   /** Generate an 'isa' test for union types. */
   llvm::Value * genUnionTypeTest(llvm::Value * val, const UnionType * fromType,
@@ -571,8 +570,12 @@ private:
   llvm::GlobalVariable * genAppendingArray(
       llvm::ArrayRef<llvm::Constant*> elements, StringRef name);
 
+  /** Generate code to throw a more informative typecast exception at the current point. */
+  void genClassCastCheck(llvm::Value * inObj, const CompositeType * to);
+
   /** Generate code to throw a typecast exception at the current point. */
   void throwCondTypecastError(llvm::Value * typeTestResult);
+  void throwTypecastErrorExt(llvm::Value * obj, llvm::Value * tibPtr);
   void throwTypecastError();
 
   uint64_t getSizeOfInBits(llvm::Type * ty);
@@ -582,8 +585,7 @@ private:
 
   bool hasAddress(const Expr * expr);
   void ensureLValue(const Expr * expr, llvm::Type * irType);
-  void checkCallingArgs(const llvm::Value * fn,
-      ValueList::const_iterator first, ValueList::const_iterator last);
+  void checkCallingArgs(const llvm::Value * fn, llvm::ArrayRef<llvm::Value *> args);
   llvm::Value * loadValue(llvm::Value * value, const Expr * expr, StringRef name = "");
   llvm::Value * genArgExpr(const Expr * arg, bool saveIntermediateStackRoots);
 

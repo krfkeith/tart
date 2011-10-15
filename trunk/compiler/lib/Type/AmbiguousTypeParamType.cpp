@@ -66,7 +66,7 @@ QualifiedType AmbiguousTypeParamType::forType(QualifiedType base, const Type * m
     case Type::AmbiguousPhi:
     case Type::Assignment: {
       QualifiedTypeSet expansion;
-      base->expand(expansion);
+      base.expand(expansion);
       if (expansion.size() == 1) {
         return forType(*expansion.begin(), match, paramIndex);
       }
@@ -91,13 +91,13 @@ void AmbiguousTypeParamType::listProspects(ProspectList & out, const ProvisionSe
   }
 }
 
-void AmbiguousTypeParamType::expand(QualifiedTypeSet & out) const {
+void AmbiguousTypeParamType::expandImpl(QualifiedTypeSet & out, unsigned qualifiers) const {
   QualifiedTypeSet baseExpansion;
-  base_->expand(baseExpansion);
+  base_.expand(baseExpansion);
   for (QualifiedTypeSet::iterator it = baseExpansion.begin(); it != baseExpansion.end(); ++it) {
     QualifiedType ty = forType(*it, match_, paramIndex_);
     if (ty) {
-      out.insert(ty);
+      ty.expand(out, qualifiers);
     } else {
       out.insert(&BadType::instance);
     }
@@ -112,7 +112,7 @@ void AmbiguousTypeParamType::trace() const {
 
 void AmbiguousTypeParamType::format(FormatStream & out) const {
   QualifiedTypeSet expansion;
-  expand(expansion);
+  expandImpl(expansion, 0);
   if (expansion.empty()) {
     out << "{" << base_ << "[%" << paramIndex_ << "]}";
   } else {

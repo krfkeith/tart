@@ -65,6 +65,16 @@ private:
 
 uint32_t RecursionGuard::_recursionLevel = 0;
 
+void LookupResult::format(FormatStream & out) const {
+  if (defn_) {
+    defn_->format(out);
+  } else if (expr_) {
+    expr_->format(out);
+  } else {
+    out << "<Bad Lookup Result>";
+  }
+}
+
 AnalyzerBase::AnalyzerBase(Module * mod, Scope * activeScope, Defn * subject,
     FunctionDefn * currentFunction)
   : module_(mod)
@@ -79,7 +89,8 @@ bool AnalyzerBase::isTraceEnabled(Defn * de) {
   return de != NULL && traceDef_.getValue() == de->name();
 }
 
-bool AnalyzerBase::lookupName(ExprList & out, const ASTNode * ast, LookupOptions lookupOptions) {
+bool AnalyzerBase::lookupName(
+    LookupResults & out, const ASTNode * ast, LookupOptions lookupOptions) {
   llvm::SmallString<0> path;
   lookupNameRecurse(out, ast, path, lookupOptions);
   return !out.empty();
@@ -91,9 +102,8 @@ bool AnalyzerBase::lookupName(ExprList & out, const ASTNode * ast, LookupOptions
 //    but there's a chance it might be a package reference.
 // If we return false and path is empty, then it means that we found nothing,
 //    and there's no hope of finding anything.
-bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
+bool AnalyzerBase::lookupNameRecurse(LookupResults & out, const ASTNode * ast,
     llvm::SmallString<0> & path, LookupOptions lookupOptions) {
-
   SLC & loc = ast->location();
   bool isAbsPath = (lookupOptions & LOOKUP_ABS_PATH) != 0;
   bool isRequired = (lookupOptions & LOOKUP_REQUIRED) != 0;
@@ -123,7 +133,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
   } else if (ast->nodeType() == ASTNode::Member) {
     const ASTMemberRef * mref = static_cast<const ASTMemberRef *>(ast);
     const ASTNode * qual = mref->qualifier();
-    ExprList lvals;
+    LookupResults lvals;
     if (lookupNameRecurse(lvals, qual, path, LookupOptions(lookupOptions & ~LOOKUP_REQUIRED))) {
       if (lvals.size() > 1) {
         diag.error(ast) << "Multiply defined symbol " << qual;
@@ -136,8 +146,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
         return false;
       }
 
-      Expr * context = lvals.front();
-      if (findMemberOf(out, context, mref->memberName(), loc)) {
+      if (findMemberOf(out, lvals.front(), mref->memberName(), loc)) {
         return true;
       }
 
@@ -176,7 +185,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
     return false;
   } else if (ast->nodeType() == ASTNode::Specialize) {
     const ASTSpecialize * spec = static_cast<const ASTSpecialize *>(ast);
-    ExprList lvals;
+    LookupResults lvals;
     if (!lookupNameRecurse(lvals, spec->templateExpr(), path,
         LookupOptions(lookupOptions | LOOKUP_REQUIRED))) {
       return false;
@@ -190,7 +199,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
       return false;
     }
 
-    out.push_back(expr);
+    out.push_back(LookupResult(NULL, expr));
     return true;
   } else if (ast->nodeType() == ASTNode::QName) {
     // A fully qualified, absolute path.
@@ -209,6 +218,10 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
 
     diag.error(ast) << "Undefined symbol '" << ast << "'";
     return false;
+  } else if (ast->nodeType() == ASTNode::BuiltIn) {
+    path.clear();
+    out.push_back(static_cast<const ASTBuiltIn *>(ast)->value());
+    return true;
   } else {
     // It's not a name or anything like that.
     path.clear();
@@ -217,7 +230,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
     ExprAnalyzer ea(this, currentFunction_);
     Expr * result = ea.reduceExpr(ast, NULL);
     if (!isErrorResult(result)) {
-      out.push_back(result);
+      out.push_back(LookupResult(NULL, result));
       return true;
     }
 
@@ -225,7 +238,7 @@ bool AnalyzerBase::lookupNameRecurse(ExprList & out, const ASTNode * ast,
   }
 }
 
-bool AnalyzerBase::lookupIdent(ExprList & out, StringRef name, SLC & loc) {
+bool AnalyzerBase::lookupIdent(LookupResults & out, StringRef name, SLC & loc) {
   // Search the current active scopes.
   for (Scope * sc = activeScope_; sc != NULL; sc = sc->parentScope()) {
     if (findInScope(out, name, sc, sc->baseExpr(), loc, NO_PREFERENCE)) {
@@ -236,7 +249,7 @@ bool AnalyzerBase::lookupIdent(ExprList & out, StringRef name, SLC & loc) {
   return false;
 }
 
-bool AnalyzerBase::lookupQName(ExprList & out, StringRef name, SLC & loc) {
+bool AnalyzerBase::lookupQName(LookupResults & out, StringRef name, SLC & loc) {
   if (importName(out, name, true, loc)) {
     return true;
   }
@@ -247,7 +260,7 @@ bool AnalyzerBase::lookupQName(ExprList & out, StringRef name, SLC & loc) {
     return findInScope(out, name, &Builtins::module, NULL, loc, NO_PREFERENCE);
   }
 
-  ExprList lvals;
+  LookupResults lvals;
   StringRef qual = name.substr(0, dot);
   if (lookupQName(lvals, qual, loc)) {
     if (lvals.size() > 1) {
@@ -255,8 +268,7 @@ bool AnalyzerBase::lookupQName(ExprList & out, StringRef name, SLC & loc) {
       return false;
     }
 
-    Expr * context = lvals.front();
-    if (findMemberOf(out, context, name.substr(dot + 1, name.npos), loc)) {
+    if (findMemberOf(out, lvals.front(), name.substr(dot + 1, name.npos), loc)) {
       return true;
     }
   }
@@ -264,7 +276,7 @@ bool AnalyzerBase::lookupQName(ExprList & out, StringRef name, SLC & loc) {
   return false;
 }
 
-bool AnalyzerBase::lookupNameInModule(ExprList & out, StringRef modName,
+bool AnalyzerBase::lookupNameInModule(LookupResults & out, StringRef modName,
     StringRef name, SLC & loc) {
   DefnList primaries;
   if (module_->import(modName, primaries, true)) {
@@ -282,92 +294,112 @@ bool AnalyzerBase::lookupNameInModule(ExprList & out, StringRef modName,
   return false;
 }
 
-bool AnalyzerBase::findMemberOf(ExprList & out, Expr * context, StringRef name, SLC & loc) {
-  if (ScopeNameExpr * scopeName = dyn_cast<ScopeNameExpr>(context)) {
-    if (Module * m = dyn_cast<Module>(scopeName->value())) {
+bool AnalyzerBase::findMemberOf(
+    LookupResults & out, LookupResult context, StringRef name, SLC & loc) {
+  if (context.defn() != NULL) {
+    if (Module * m = dyn_cast<Module>(context.defn())) {
       if (findInScope(out, name, m, NULL, loc, NO_PREFERENCE)) {
         return true;
       }
-    } else if (NamespaceDefn * ns = dyn_cast<NamespaceDefn>(scopeName->value())) {
+    } else if (NamespaceDefn * ns = dyn_cast<NamespaceDefn>(context.defn())) {
       analyzeNamespace(ns, Task_PrepMemberLookup);
       if (findInScope(out, name, &ns->memberScope(), NULL, loc, NO_PREFERENCE)) {
         return true;
       }
-    }
-  }
-
-  if (TypeLiteralExpr * typeNameExpr = dyn_cast<TypeLiteralExpr>(context)) {
-    // Look for static members.
-    const Type * type = dealias(typeNameExpr->value());
-    TypeDefn * typeDef = type->typeDefn();
-    if (typeDef != NULL && type->memberScope() != NULL) {
-      if (typeDef->isTemplate()) {
-        return findStaticTemplateMember(out, typeDef, name, loc);
-      }
-
-      DASSERT_OBJ(typeNameExpr->isSingular(), typeDef);
-      AnalyzerBase::analyzeTypeDefn(typeDef, Task_PrepMemberLookup);
-      if (findInScope(out, name, type->memberScope(), context, loc, PREFER_STATIC)) {
-        return true;
-      }
-    }
-  } else if (context->type() != NULL) {
-    if (!context->isSingular()) {
-      // Member lookup requires types be singular.
+    } else if (TypeDefn * tdef = dyn_cast<TypeDefn>(context.defn())) {
+      // Look for static members.
+      return findStaticTypeMember(out, tdef->typePtr(), context.expr(), name, loc);
+    } else if (ValueDefn * value = dyn_cast<ValueDefn>(context.defn())) {
       ExprAnalyzer ea(this, currentFunction_);
-      Expr * singularContext = ea.inferTypes(subject_, context, NULL, false);
-      if (singularContext == NULL) {
-        diag.error(loc) << "Base expression '" << context << "' is ambiguous.";
-        return false;
-      }
-
-      context = singularContext;
+      Expr * base = ea.getLValue(loc, value, context.expr(), false);
+      return findInstanceMember(out, base, name, loc);
     }
-
-    const Type * contextType = context->canonicalType();
-    if (LValueExpr * lvalue = dyn_cast<LValueExpr>(context)) {
-      const Type * type = inferType(lvalue->value());
-      if (type == NULL) {
-        return false;
-      }
-
-      contextType = dealias(type);
-    }
-
-    // If it's a native pointer, then do an implicit dereference.
-    if (const AddressType * nptype = dyn_cast<AddressType>(contextType)) {
-      contextType = nptype->typeParam(0).type();
-    } else if (const UnionType * utype = dyn_cast<UnionType>(contextType)) {
-      // See if an implicit conversion makes sense here.
-      if (utype->isSingleOptionalType()) {
-        const Type * toType = utype->getFirstNonVoidType();
-        Expr * newContext = NULL;
-        if (TypeConversion::convert(context, toType, &newContext) > Incompatible) {
-          context = newContext;
-          contextType = context->canonicalType();
-        }
-      }
-    }
-
-    TypeDefn * typeDef = contextType->typeDefn();
-    if (typeDef != NULL && contextType->memberScope() != NULL) {
-      if (contextType->isUnsizedIntType()) {
-        diag.error(loc) << "Attempt to access member of integer of unknown size";
-        return false;
-      }
-
-      DASSERT_OBJ(typeDef->isSingular(), typeDef);
-      AnalyzerBase::analyzeTypeDefn(typeDef, Task_PrepMemberLookup);
-      if (findInScope(out, name, contextType->memberScope(), context, loc, PREFER_INSTANCE)) {
-        return true;
-      }
+  } else if (context.expr() != NULL) {
+    if (TypeLiteralExpr * tl = dyn_cast<TypeLiteralExpr>(context.expr())) {
+      return findStaticTypeMember(out, tl->value().unqualified(), context.expr(), name, loc);
+    } else {
+      return findInstanceMember(out, context.expr(), name, loc);
     }
   }
 
   return false;
 }
 
-bool AnalyzerBase::findInScope(ExprList & out, StringRef name, const Scope * scope,
+bool AnalyzerBase::findStaticTypeMember(
+    LookupResults & out, const Type * type, Expr * base, StringRef name, SLC & loc) {
+  // Look for static members.
+  type = dealias(type);
+  TypeDefn * typeDef = type->typeDefn();
+  if (typeDef != NULL && type->memberScope() != NULL) {
+    if (typeDef->isTemplate()) {
+      return findStaticTemplateMember(out, typeDef, name, loc);
+    }
+
+    DASSERT_OBJ(typeDef->isSingular(), typeDef);
+    AnalyzerBase::analyzeTypeDefn(typeDef, Task_PrepMemberLookup);
+    if (findInScope(out, name, type->memberScope(), base, loc, PREFER_STATIC)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool AnalyzerBase::findInstanceMember(LookupResults & out, Expr * base, StringRef name, SLC & loc) {
+  if (base->type()) {
+    if (!base->isSingular()) {
+      // Member lookup requires types be singular.
+      ExprAnalyzer ea(this, currentFunction_);
+      Expr * singularContext = ea.inferTypes(subject_, base, NULL, false);
+      if (singularContext == NULL) {
+        diag.error(loc) << "Base expression '" << base << "' is ambiguous.";
+        return false;
+      }
+
+      base = singularContext;
+    }
+
+    QualifiedType baseType = base->canonicalType();
+    if (LValueExpr * lvalue = dyn_cast<LValueExpr>(base)) {
+      QualifiedType type = inferType(lvalue->value());
+      if (!type) {
+        return false;
+      }
+
+      baseType = dealias(type);
+    }
+
+    // If it's a native pointer, then do an implicit dereference.
+    if (const AddressType * nptype = dyn_cast<AddressType>(baseType.unqualified())) {
+      baseType = nptype->typeParam(0).type();
+    } else if (const UnionType * utype = dyn_cast<UnionType>(baseType.unqualified())) {
+      // See if an implicit conversion makes sense here.
+      if (utype->isSingleOptionalType()) {
+        const Type * toType = utype->getFirstNonVoidType();
+        Expr * newContext = NULL;
+        if (TypeConversion::convert(base, toType, &newContext) > Incompatible) {
+          base = newContext;
+          baseType = base->canonicalType();
+        }
+      }
+    }
+
+    TypeDefn * typeDef = baseType->typeDefn();
+    if (typeDef != NULL && baseType->memberScope() != NULL) {
+      if (baseType->isUnsizedIntType()) {
+        diag.error(loc) << "Attempt to access member of integer of unknown size";
+        return false;
+      }
+
+      DASSERT_OBJ(typeDef->isSingular(), typeDef);
+      AnalyzerBase::analyzeTypeDefn(typeDef, Task_PrepMemberLookup);
+      return findInScope(out, name, baseType->memberScope(), base, loc, PREFER_INSTANCE);
+    }
+  }
+
+  return false;
+}
+
+bool AnalyzerBase::findInScope(LookupResults & out, StringRef name, const Scope * scope,
     Expr * context, SLC & loc, MemberPreference pref) {
   DefnList defns;
   if (scope->lookupMember(name, defns, true)) {
@@ -401,13 +433,13 @@ bool AnalyzerBase::findInScope(ExprList & out, StringRef name, const Scope * sco
       }
     }
 
-    return getDefnListAsExprList(loc, defns, context, out);
+    return defnListToLookupResults(defns, context, out);
   }
 
   return false;
 }
 
-bool AnalyzerBase::findStaticTemplateMember(ExprList & out, TypeDefn * typeDef,
+bool AnalyzerBase::findStaticTemplateMember(LookupResults & out, TypeDefn * typeDef,
     StringRef name, SLC & loc) {
   DefnList defns;
   if (lookupTemplateMember(defns, typeDef, name, loc)) {
@@ -416,7 +448,7 @@ bool AnalyzerBase::findStaticTemplateMember(ExprList & out, TypeDefn * typeDef,
       Defn * de = *it;
       if (de->storageClass() == Storage_Static) {
         ++numStaticDefns;
-        out.push_back(getDefnAsExpr(de, NULL, loc));
+        out.push_back(de);
       }
     }
 
@@ -448,18 +480,24 @@ bool AnalyzerBase::lookupTemplateMember(DefnList & out, TypeDefn * typeDef, Stri
   return false;
 }
 
-Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNodeList & args,
+Expr * AnalyzerBase::specialize(SLC & loc, const LookupResults & exprs, const ASTNodeList & args,
     bool inferArgTypes) {
   QualifiedTypeList argList; // Template args, not function args.
-  bool isSingularArgList = true;  // True if all args are fully resolved.
+  if (!AnalyzerBase::reduceSpecArgs(argList, args, inferArgTypes)) {
+    return &Expr::ErrorVal;
+  }
+  return specialize(loc, exprs, TupleType::get(argList));
+}
 
+bool AnalyzerBase::reduceSpecArgs(
+    QualifiedTypeList & argList, const ASTNodeList & args, bool inferArgTypes) {
   // Resolve all the arguments. Note that we don't support type inference on template args,
   // so the resolution is relatively straightforward.
   ExprAnalyzer ea(this, currentFunction_);
   for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
     Expr * cb = ea.reduceTemplateArgExpr(*it, inferArgTypes);
     if (isErrorResult(cb)) {
-      return &Expr::ErrorVal;
+      return false;
     }
 
     // This next section deals with converting normal expressions into type expressions.
@@ -478,7 +516,7 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
     if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(cb)) {
       typeArg = dealias(ctype->value());
       if (TypeDefn * tdef = typeArg->typeDefn()) {
-        typeArg = tdef->value();
+        typeArg = tdef->value() | typeArg.qualifiers();
       }
     }
 
@@ -490,50 +528,46 @@ Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, const ASTNode
       typeArg = UnitType::get(cast<ConstantExpr>(cb));
     }
 
-    if (!cb->isSingular()) {
-      isSingularArgList = false;
-    }
-
     argList.push_back(typeArg);
   }
-
-  return specialize(loc, exprs, TupleType::get(argList));
+  return true;
 }
 
-Expr * AnalyzerBase::specialize(SLC & loc, const ExprList & exprs, TupleType * typeArgs) {
+Expr * AnalyzerBase::specialize(SLC & loc, const LookupResults & results, TupleType * typeArgs) {
   // Go through the list of matching expressions and see which ones
   // can accept 'typeArgs' as type arguments. Add those to the set of
   // specialization candidates.
   SpCandidateSet candidates;
-  for (ExprList::const_iterator it = exprs.begin(); it != exprs.end(); ++it) {
-    if (TypeLiteralExpr * tref = dyn_cast<TypeLiteralExpr>(*it)) {
-      const Type * type = dealias(tref->value());
-      TypeDefn * typeDefn = type->typeDefn();
+  for (LookupResults::const_iterator it = results.begin(); it != results.end(); ++it) {
+    if (it->isErrorResult()) {
+      return NULL;
+    } else if (TypeDefn * typeDefn = dyn_cast_or_null<TypeDefn>(it->defn())) {
+      QualifiedType type = dealias(typeDefn->value());
+      typeDefn = type->typeDefn();
       if (typeDefn != NULL) {
         if (typeDefn->isTemplate() || typeDefn->isTemplateInstance()) {
           addSpecCandidate(loc, candidates, NULL, typeDefn, typeArgs);
         }
-      } else if (isa<AddressType>(type)) {
+      } else if (type.isa<AddressType>()) {
         addSpecCandidate(loc, candidates, NULL, &AddressType::typedefn, typeArgs);
-      } else if (isa<NativeArrayType>(type)) {
+      } else if (type.isa<NativeArrayType>()) {
         addSpecCandidate(loc, candidates, NULL, &NativeArrayType::typedefn, typeArgs);
-      } else if (isa<FlexibleArrayType>(type)) {
+      } else if (type.isa<FlexibleArrayType>()) {
         addSpecCandidate(loc, candidates, NULL, &FlexibleArrayType::typedefn, typeArgs);
-      } else if (isa<TypeLiteralType>(type)) {
+      } else if (type.isa<TypeLiteralType>()) {
         addSpecCandidate(loc, candidates, NULL, &TypeLiteralType::typedefn, typeArgs);
       }
-    } else if (LValueExpr * lv = dyn_cast<LValueExpr>(*it)) {
-      ValueDefn * val = lv->value();
+    } else if (ValueDefn * val = dyn_cast<ValueDefn>(it->defn())) {
       if (val->isTemplate() || val->isTemplateInstance()) {
-        addSpecCandidate(loc, candidates, lv->base(), val, typeArgs);
+        addSpecCandidate(loc, candidates, it->expr(), val, typeArgs);
       }
     }
   }
 
   if (candidates.empty()) {
     diag.error(loc) << "No templates found which match template arguments [" << typeArgs << "]";
-    for (ExprList::const_iterator it = exprs.begin(); it != exprs.end(); ++it) {
-      diag.info(*it) << Format_Type << "candidate: " << *it;
+    for (LookupResults::const_iterator it = results.begin(); it != results.end(); ++it) {
+      diag.info(it->location()) << Format_Type << "candidate: " << *it;
     }
 
     //ea.dumpScopeHierarchy();
@@ -582,11 +616,11 @@ void AnalyzerBase::addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * bas
   }
 }
 
-bool AnalyzerBase::importName(ExprList & out, StringRef path, bool absPath, SLC & loc) {
+bool AnalyzerBase::importName(LookupResults & out, StringRef path, bool absPath, SLC & loc) {
   DefnList defns;
   if (module_ != NULL) {
     if (module_->import(path, defns, absPath)) {
-      return getDefnListAsExprList(loc, defns, NULL, out);
+      return defnListToLookupResults(defns, NULL, out);
     }
   }
 
@@ -594,7 +628,7 @@ bool AnalyzerBase::importName(ExprList & out, StringRef path, bool absPath, SLC 
     Module * source = currentFunction_->sourceModule();
     if (source != NULL && source != module_) {
       if (source->import(path, defns, absPath)) {
-        return getDefnListAsExprList(loc, defns, NULL, out);
+        return defnListToLookupResults(defns, NULL, out);
       }
     }
   }
@@ -602,62 +636,44 @@ bool AnalyzerBase::importName(ExprList & out, StringRef path, bool absPath, SLC 
   return false;
 }
 
-bool AnalyzerBase::getDefnListAsExprList(SLC & loc, DefnList & defs, Expr * context,
-    ExprList & out) {
+bool AnalyzerBase::defnListToLookupResults(DefnList & defs, Expr * context, LookupResults & out) {
   for (DefnList::iterator it = defs.begin(); it != defs.end(); ++it) {
     if (ExplicitImportDefn * imp = dyn_cast<ExplicitImportDefn>(*it)) {
       // TODO: Should we allow mixing of import defns with non-imports of
       // the same name?
-      ExprList & importedDefns = imp->importValues();
+      DefnList & importedDefns = imp->importDefs();
+      DASSERT(!importedDefns.empty()) << "Import statement " << imp << " has no definitions.";
       out.append(importedDefns.begin(), importedDefns.end());
     } else {
-      out.push_back(getDefnAsExpr(*it, context, loc));
+      out.push_back(LookupResult(*it, context));
     }
   }
 
   return !out.empty();
 }
 
-Expr * AnalyzerBase::getDefnAsExpr(Defn * de, Expr * context, SLC & loc) {
-  if (TypeDefn * tdef = dyn_cast<TypeDefn>(de)) {
-    if (tdef->value()->typeClass() == Type::Alias) {
-      analyzeTypeDefn(tdef, Task_PrepTypeComparison);
-    }
-    return tdef->asExpr();
-  } else if (ValueDefn * vdef = dyn_cast<ValueDefn>(de)) {
-    if (vdef->storageClass() == Storage_Instance && context == NULL) {
-      diag.error(loc) << "Cannot access non-static member '" <<
-          vdef->name() << "' from static method.";
-      return &Expr::ErrorVal;
-    }
-
-    analyzeDefn(vdef, Task_PrepTypeComparison);
-    LValueExpr * result = LValueExpr::get(loc, context, vdef);
-
-    // If it's a variadic parameter, then the actual type is an array of the declared type.
-    if (ParameterDefn * param = dyn_cast<ParameterDefn>(vdef)) {
-      DASSERT_OBJ(param->internalType() != NULL, param);
-      result->setType(param->internalType());
-    }
-
-    return result;
-  } else if (NamespaceDefn * ns = dyn_cast<NamespaceDefn>(de)) {
-    return new ScopeNameExpr(loc, ns);
-  } else if (Module * m = dyn_cast<Module>(de)) {
-    return new ScopeNameExpr(loc, m);
-  } else {
-    diag.fatal(de) << Format_Verbose << de;
-    DFAIL("IllegalState");
-  }
-}
-
-bool AnalyzerBase::getTypesFromExprs(SLC & loc, ExprList & in, TypeList & out) {
+bool AnalyzerBase::getLookupResultTypes(SLC & loc, LookupResults & in, QualifiedTypeList & out,
+    unsigned defaultQualifiers) {
   int numNonTypes = 0;
   BindingEnv env;
-  for (ExprList::iterator it = in.begin(); it != in.end(); ++it) {
-    if (TypeLiteralExpr * tle = dyn_cast<TypeLiteralExpr>(*it)) {
-      out.push_back(const_cast<Type *>(tle->value()));
-    } else if (SpecializeExpr * spe = dyn_cast<SpecializeExpr>(*it)) {
+  for (LookupResults::iterator it = in.begin(); it != in.end(); ++it) {
+    if (it->isErrorResult()) {
+      out.push_back(&BadType::instance);
+    } else if (TypeDefn * tdef = dyn_cast_or_null<TypeDefn>(it->defn())) {
+      QualifiedType value = tdef->value();
+      if (isQualifiableType(value.unqualified())) {
+        if (tdef->modifiers().flags & Mutable) {
+          value.addQualifiers(QualifiedType::MUTABLE);
+        } else if (tdef->modifiers().flags & ReadOnly) {
+          value.addQualifiers(QualifiedType::READONLY);
+        } else if (tdef->modifiers().flags & Immutable) {
+          //value.addQualifiers(QualifiedType::IMMUTABLE);
+        } else if (defaultQualifiers) {
+          //value.addQualifiers(defaultQualifiers);
+        }
+      }
+      out.push_back(value);
+    } else if (SpecializeExpr * spe = dyn_cast_or_null<SpecializeExpr>(it->expr())) {
       SourceContext specSite(loc, NULL, spe);
       const SpCandidateList & candidates = spe->candidates();
       for (SpCandidateList::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
@@ -672,8 +688,6 @@ bool AnalyzerBase::getTypesFromExprs(SLC & loc, ExprList & in, TypeList & out) {
           numNonTypes++;
         }
       }
-    } else if (isErrorResult(*it)) {
-      out.push_back(&BadType::instance);
     } else {
       numNonTypes++;
     }
@@ -685,8 +699,8 @@ bool AnalyzerBase::getTypesFromExprs(SLC & loc, ExprList & in, TypeList & out) {
 
   if (numNonTypes > 0) {
     diag.fatal(loc) << "Incompatible definitions for '" << out.front() << "'";
-    for (ExprList::iterator it = in.begin(); it != in.end(); ++it) {
-      diag.info(*it) << *it;
+    for (LookupResults::const_iterator it = in.begin(); it != in.end(); ++it) {
+      diag.info(it->location()) << Format_Type << *it;
     }
   }
 
@@ -713,7 +727,7 @@ const Type * AnalyzerBase::getTupleTypesFromTupleExpr(Expr * in) {
   return NULL;
 }
 
-const Type * AnalyzerBase::inferType(ValueDefn * valueDef) {
+const QualifiedType AnalyzerBase::inferType(ValueDefn * valueDef) {
   if (!valueDef->type()) {
     if (!analyzeDefn(valueDef, Task_PrepTypeComparison)) {
       return NULL;
@@ -937,7 +951,7 @@ Expr * AnalyzerBase::getEmptyArrayOfElementType(const Type * elementType) {
   return new ConstantEmptyArray(SourceLocation(), arrayType);
 }
 
-ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(SLC & loc, const Type * elementType) {
+ArrayLiteralExpr * AnalyzerBase::createArrayLiteral(SLC & loc, QualifiedType elementType) {
   const CompositeType * arrayType = getArrayTypeForElement(elementType);
   ArrayLiteralExpr * array = new ArrayLiteralExpr(loc);
   array->setType(arrayType);
@@ -1062,18 +1076,13 @@ void AnalyzerBase::dumpScopeHierarchy() {
   diag.recovered();
 }
 
-void AnalyzerBase::dumpScopeList(const ExprList & lvals) {
+void AnalyzerBase::dumpScopeList(const LookupResults & lvals) {
   diag.indent();
-  for (ExprList::const_iterator it = lvals.begin(); it != lvals.end(); ++it) {
-    const Expr * ex = *it;
-    if (const ScopeNameExpr * scopeName = dyn_cast<ScopeNameExpr>(ex)) {
-      diag.info(ex) << scopeName;
-    } else if (const TypeLiteralExpr * typeNameExpr = dyn_cast<TypeLiteralExpr>(ex)) {
-      diag.info(ex) << typeNameExpr;
-    } else if (ex->type() != NULL) {
-      diag.info(ex) << ex->type();
-    } else {
-      diag.info(ex) << ex;
+  for (LookupResults::const_iterator it = lvals.begin(); it != lvals.end(); ++it) {
+    if (it->defn() != NULL) {
+      diag.info(it->defn()) << it->defn()->name();
+    } else if (it->expr() != NULL) {
+      diag.info(it->expr()) << it->expr();
     }
   }
 

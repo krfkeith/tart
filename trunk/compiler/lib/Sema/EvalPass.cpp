@@ -66,9 +66,6 @@ Expr * EvalPass::evalExpr(Expr * in) {
     case Expr::BoundMethod:
       return evalBoundMethod(static_cast<BoundMethodExpr *>(in));
 
-    case Expr::ScopeName:
-      return evalScopeName(static_cast<ScopeNameExpr *>(in));
-
     case Expr::ElementRef:
       return evalElementRef(static_cast<BinaryExpr *>(in));
 #endif
@@ -114,6 +111,7 @@ Expr * EvalPass::evalExpr(Expr * in) {
       return evalCast(static_cast<CastExpr *>(in));
 #endif
     case Expr::UpCast:
+    case Expr::QualCast:
       return evalExpr(static_cast<CastExpr *>(in)->arg());
 
     case Expr::UnionCtorCast:
@@ -380,7 +378,7 @@ Expr * EvalPass::evalLValue(LValueExpr * in) {
 }
 
 Expr * EvalPass::evalNew(NewExpr * in) {
-  const CompositeType * type = cast<CompositeType>(in->type());
+  const CompositeType * type = cast<CompositeType>(in->type().type());
   if (!AnalyzerBase::analyzeTypeDefn(type->typeDefn(), Task_PrepEvaluation)) {
     return NULL;
   }
@@ -497,7 +495,7 @@ Expr * EvalPass::evalComplement(UnaryExpr * in) {
 
   value = llvm::ConstantExpr::getNot(value);
   if (llvm::ConstantInt * cint = dyn_cast<llvm::ConstantInt>(value)) {
-    return ConstantInteger::get(in->location(), in->type(), cint);
+    return ConstantInteger::get(in->location(), in->type().unqualified(), cint);
   }
 
   diag.debug(in) << in;
@@ -505,7 +503,7 @@ Expr * EvalPass::evalComplement(UnaryExpr * in) {
 }
 
 Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
-  const Type * arrayType = in->type();
+  QualifiedType arrayType = in->type();
   if (!AnalyzerBase::analyzeType(arrayType, Task_PrepEvaluation)) {
     return NULL;
   }
@@ -534,7 +532,7 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
   }
 
   // If it's empty, then prepare the empty list singleton.
-  const CompositeType * arrayClass = cast<CompositeType>(arrayType);
+  const CompositeType * arrayClass = cast<CompositeType>(arrayType.type());
   if (arrayData->elements().empty()) {
     return new ConstantEmptyArray(in->location(), arrayClass);
   }
@@ -548,8 +546,8 @@ Expr * EvalPass::evalArrayLiteral(ArrayLiteralExpr * in) {
 }
 
 Expr * EvalPass::evalUnionCtorCast(CastExpr *in) {
-  const Type * fromType = in->arg()->type();
-  const Type * toType = in->type();
+  const Type * fromType = in->arg()->type().unqualified();
+  const Type * toType = in->type().unqualified();
   Expr * value = NULL;
 
   if (!fromType->isVoidType()) {
@@ -601,7 +599,7 @@ Expr * EvalPass::evalBinaryOpcode(BinaryOpcodeExpr *in) {
 
   llvm::Constant * cresult = llvm::ConstantExpr::get(in->opCode(), c0, c1);
   if (llvm::ConstantInt * cint = dyn_cast<llvm::ConstantInt>(cresult)) {
-    return ConstantInteger::get(in->location(), in->type(), cint);
+    return ConstantInteger::get(in->location(), in->type().unqualified(), cint);
   }
 
   switch (in->opCode()) {

@@ -46,7 +46,7 @@ void TypeLiteralType::initBuiltin() {
 
   // Create type parameters
   QualifiedTypeList typeParams;
-  typeParams.push_back(new TypeVariable(SourceLocation(), "T"));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "T", TypeVariable::TYPE_EXPRESSION));
   Template * tm = Template::get(&typedefn, &Builtins::module);
   tm->setTypeParams(TupleType::get(typeParams));
 

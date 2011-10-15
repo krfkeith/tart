@@ -33,25 +33,39 @@ unsigned combineQualifiers(unsigned left, unsigned right) {
   return left | right;
 }
 
-bool canAssignQualifiers(unsigned from, unsigned to) {
-  assertQualifiersValid(from);
-  assertQualifiersValid(to);
-  from &= QualifiedType::MUTABILITY_MASK;
-  to &= QualifiedType::MUTABILITY_MASK;
-  switch (to) {
+bool areQualifiersEquivalent(unsigned lq, unsigned rq) {
+  assertQualifiersValid(lq);
+  assertQualifiersValid(rq);
+  lq &= (QualifiedType::READONLY | QualifiedType::IMMUTABLE);
+  rq &= (QualifiedType::READONLY | QualifiedType::IMMUTABLE);
+  return lq == rq;
+}
+
+bool canAssignQualifiers(unsigned src, unsigned dst) {
+  assertQualifiersValid(src);
+  assertQualifiersValid(dst);
+  src &= QualifiedType::MUTABILITY_MASK;
+  dst &= QualifiedType::MUTABILITY_MASK;
+  switch (dst) {
     case QualifiedType::READONLY:
       return true;
 
     case QualifiedType::MUTABLE:
     default:
-      return (from & (QualifiedType::READONLY|QualifiedType::IMMUTABLE)) == 0;
+      return (src & (QualifiedType::READONLY|QualifiedType::IMMUTABLE)) == 0;
 
     case QualifiedType::IMMUTABLE:
-      return (from & (QualifiedType::READONLY|QualifiedType::MUTABLE)) == 0;
+      return (src & QualifiedType::IMMUTABLE) != 0;
   }
 }
 
 void formatQualifiedType(FormatStream & out, const Type * ty, unsigned qualifiers) {
+  formatQualifiedTypePrefix(out, qualifiers);
+  out << ty;
+  formatQualifiedTypeSuffix(out, qualifiers);
+}
+
+void formatQualifiedTypePrefix(FormatStream & out, unsigned qualifiers) {
   if (qualifiers & QualifiedType::MUTABLE) {
     out << "mutable(";
   }
@@ -71,9 +85,9 @@ void formatQualifiedType(FormatStream & out, const Type * ty, unsigned qualifier
   if (qualifiers & QualifiedType::VOLATILE) {
     out << "volatile(";
   }
+}
 
-  out << ty;
-
+void formatQualifiedTypeSuffix(FormatStream & out, unsigned qualifiers) {
   if (qualifiers & QualifiedType::VARIADIC) {
     out << " ... ";
   }
@@ -97,6 +111,35 @@ void formatQualifiedType(FormatStream & out, const Type * ty, unsigned qualifier
   if (qualifiers & QualifiedType::VOLATILE) {
     out << ")";
   }
+}
+
+const char * typeTostr(const Type * ty, unsigned qual) {
+  static llvm::SmallString<256> temp;
+  StrFormatStream stream;
+  stream.setFormatOptions(Format_Verbose);
+  formatQualifiedTypePrefix(stream, qual);
+  if (ty) {
+    ty->format(stream);
+  } else {
+    stream << "<NULL>";
+  }
+  formatQualifiedTypeSuffix(stream, qual);
+  stream.flush();
+
+  temp.clear();
+  temp += stream.str();
+  return temp.c_str();
+}
+
+void dumpType(const Type * ty, unsigned qual) {
+  FormatStream fs(llvm::outs());
+  formatQualifiedTypePrefix(fs, qual);
+  if (ty) {
+    ty->format(fs);
+  } else {
+    fs << "<NULL>";
+  }
+  formatQualifiedTypeSuffix(fs, qual);
 }
 
 } // namespace tart

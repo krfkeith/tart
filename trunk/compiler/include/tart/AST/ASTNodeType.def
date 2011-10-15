@@ -89,6 +89,7 @@ NODE_TYPE(Call)         // Function call
 NODE_TYPE(Specialize)   // Explicit template specialization
 NODE_TYPE(Member)       // Reference to member (a.b)
 NODE_TYPE(GetElement)   // Reference to array element (a[b])
+NODE_TYPE(Qualify)      // Add a qualifier to a type
 
 // Argument keyword
 NODE_TYPE(Keyword)

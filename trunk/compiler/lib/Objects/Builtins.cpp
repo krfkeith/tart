@@ -93,6 +93,8 @@ TypeAlias Builtins::typeAliasString(NULL, NULL);
 
 FunctionDefn * Builtins::funcHasBase;
 FunctionDefn * Builtins::funcTypecastError;
+FunctionDefn * Builtins::funcTypecastErrorExt;
+FunctionDefn * Builtins::funcDispatchError;
 FunctionDefn * Builtins::funcUndefinedMethod;
 
 void Builtins::init() {
@@ -184,6 +186,8 @@ void Builtins::loadSystemClasses() {
   // Get the function that tests for a type
   funcHasBase = getMember<FunctionDefn>(typeTypeInfoBlock.get(), "hasBase");
   funcTypecastError = getMember<FunctionDefn>(typeTypeInfoBlock.get(), "typecastError");
+  funcTypecastErrorExt = getMember<FunctionDefn>(typeTypeInfoBlock.get(), "typecastErrorExt");
+  funcDispatchError = getMember<FunctionDefn>(typeTypeInfoBlock.get(), "dispatchError");
 
   // Get the function that throws an undefined method error
   funcUndefinedMethod = getMember<FunctionDefn>(typeObject.get(), "__undefinedMethod");

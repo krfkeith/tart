@@ -32,6 +32,8 @@
 namespace tart {
 
 class TypeVariable;
+class TypeFunction;
+class TypeFunctionCall;
 class TypeAssignment;
 class AmbiguousParameterType;
 class AmbiguousResultType;
@@ -120,12 +122,14 @@ private:
   TypeAssignment * assignments_;
   unsigned stateCount_;
 
-  bool unifyImpl(SourceContext * source, const Type * left, const Type * right,
+  bool unifyImpl(SourceContext * source, QualifiedType left, QualifiedType right,
       Constraint::Kind kind, const ProvisionSet & provisions);
-  bool unifyWithTypeVar(SourceContext * source, const TypeAssignment * ta, QualifiedType value,
+  bool unifyWithTypeVar(SourceContext * source, Qualified<TypeAssignment> ta, QualifiedType value,
       Constraint::Kind kind, const ProvisionSet & provisions);
-  bool unifyWithAmbiguousType(SourceContext * source, const Type * amb,
-      const Type * value, Constraint::Kind kind, const ProvisionSet & provisions);
+  bool unifyWithTypeFunctionCall(SourceContext * source, Qualified<TypeFunctionCall> ta,
+      QualifiedType value, Constraint::Kind kind, const ProvisionSet & provisions);
+  bool unifyWithAmbiguousType(SourceContext * source, QualifiedType amb,
+      QualifiedType value, Constraint::Kind kind, const ProvisionSet & provisions);
   bool unifyAddressType(SourceContext * source, const AddressType * left, const Type * right);
   bool unifyNativeArrayType(SourceContext * source, const NativeArrayType * left,
       const Type * right);
@@ -136,12 +140,12 @@ private:
   bool unifyCompositeType(SourceContext * source, const CompositeType * left,
       const CompositeType * right);
   bool unifyUnionType(SourceContext * source, const UnionType * left, const UnionType * right);
-  bool unifyUnionMemberType(SourceContext * source, const UnionType * left, const Type * right);
+  bool unifyUnionMemberType(SourceContext * source, const UnionType * left, QualifiedType right);
   bool unifyTupleType(SourceContext * source, const TupleType * left, const TupleType * right);
 
   /** Return true if 'ty' is a type variable, and this environment contains a type assignment
       for it. */
-  bool isAssigned(const Type * ty) const;
+  bool isAssigned(QualifiedType ty) const;
 
   void cycleCheck(const Type * var, const Type * value);
 };

@@ -9,11 +9,12 @@
 #include "tart/Expr/Exprs.h"
 #include "tart/Expr/Constant.h"
 
-#include "tart/Type/PrimitiveType.h"
-#include "tart/Type/FunctionType.h"
-#include "tart/Type/NativeType.h"
 #include "tart/Type/AmbiguousParameterType.h"
 #include "tart/Type/AmbiguousResultType.h"
+#include "tart/Type/FunctionType.h"
+#include "tart/Type/NativeType.h"
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/TypeFunction.h"
 
 #include "tart/Objects/Builtins.h"
 
@@ -66,7 +67,7 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
   bool isUnqualified = callable->nodeType() == ASTNode::Id;
   bool success = true;
 
-  ExprList results;
+  LookupResults results;
   lookupName(results, callable, (isOptional || isUnqualified) ? LOOKUP_DEFAULT : LOOKUP_REQUIRED);
 
   // If there were no results, and it was a qualified search, then
@@ -77,8 +78,8 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
   }
 
   // Try getting the lookup results as a type definition.
-  TypeList typeList;
-  if (!results.empty() && getTypesFromExprs(loc, results, typeList)) {
+  QualifiedTypeList typeList;
+  if (!results.empty() && getLookupResultTypes(loc, results, typeList, 0)) {
     // TODO: Handle ambiguous type resolution.
     if (typeList.size() > 1) {
       diag.error(loc) << "Multiple definitions for '" << callable << "'";
@@ -86,8 +87,11 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
     }
 
     // TODO: We could pass the whole list to callName, and add them as overloads.
-    Type * type = typeList.front();
-    if (type->typeDefn() == NULL) {
+    QualifiedType type = typeList.front();
+    if (!type->typeDefn()) {
+      if (type.isa<TypeVariable>() || type.isa<TypeFunction>()) {
+        return callTypeFunction(loc, type, args);
+      }
       diag.error(loc) << "Type '" << type << "' is not constructable";
       return &Expr::ErrorVal;
     }
@@ -97,40 +101,47 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
 
   CallExpr * call = new CallExpr(Expr::Call, loc, NULL);
   call->setExpectedReturnType(expected);
-  for (ExprList::iterator it = results.begin(); it != results.end(); ++it) {
-    Expr * callableExpr = *it;
-    const Type * callableType = callableExpr->type();
-    if (callableType == NULL) {
+  for (LookupResults::iterator it = results.begin(); it != results.end(); ++it) {
+    LookupResult & sym = *it;
+    if (sym.isErrorResult()) {
       return &Expr::ErrorVal;
     }
-    if (const CompositeType * ctype = dyn_cast<CompositeType>(callableType)) {
-      if (!addOverloads(call, callableExpr, ctype, args)) {
-        diag.error(loc) << callableExpr << " is not callable.";
-      }
-    } else if (LValueExpr * lv = dyn_cast<LValueExpr>(callableExpr)) {
-      if (FunctionDefn * func = dyn_cast<FunctionDefn>(lv->value())) {
-        success &= addOverload(call, lvalueBase(lv), func, args);
 
-        // If there's a base pointer, then it's not really unqualified.
-        //if (lv->base() != NULL) {
-        //  isUnqualified = false;
-        //}
-      } else if (VariableDefn * var = dyn_cast<VariableDefn>(lv->value())) {
+    if (sym.defn() != NULL) {
+      if (FunctionDefn * fn = dyn_cast<FunctionDefn>(sym.defn())) {
+        // Regular method
+        success &= addOverload(call, sym.expr(), fn, args);
+      } else if (VariableDefn * var = dyn_cast<VariableDefn>(sym.defn())) {
+        // Variable of callable type
         if (!analyzeVariable(var, Task_PrepTypeComparison)) {
           return &Expr::ErrorVal;
         }
 
-        const Type * varType = var->type().dealias().type();
+        const Type * varType = var->type().dealias().unqualified();
         if (const FunctionType * ft = dyn_cast<FunctionType>(varType)) {
-          success &= addOverload(call, lv, ft, args);
+          Expr * lval = getLValue(loc, var, sym.expr(), false);
+          success &= addOverload(call, lval, ft, args);
+        } else if (const CompositeType * cmpType = dyn_cast<CompositeType>(varType)) {
+          // Expression of composite type which may have a 'call' method.
+          Expr * lval = getLValue(loc, var, sym.expr(), false);
+          if (!addOverloads(call, lval, cmpType, args)) {
+            diag.error(loc) << sym.expr() << " is not callable.";
+          }
         } else {
-          diag.fatal(loc) << callableExpr << " is not callable.";
+          diag.fatal(loc) << sym.defn() << " is not callable.";
         }
-      } else if (const FunctionType * ftype = dyn_cast<FunctionType>((callableExpr)->type())) {
-        success &= addOverload(call, callableExpr, ftype, args);
       }
-    } else {
-      diag.fatal(loc) << callableExpr << " is not callable.";
+    } else if (sym.expr() != NULL) {
+      QualifiedType callableType = sym.expr()->type().dealias();
+      if (const FunctionType * fnType = dyn_cast<FunctionType>(callableType.unqualified())) {
+        // Expression of function type
+        success &= addOverload(call, sym.expr(), fnType, args);
+      } else if (const CompositeType * cmpType = dyn_cast<CompositeType>(callableType.unqualified())) {
+        // Expression of composite type which may have a 'call' method.
+        if (!addOverloads(call, sym.expr(), cmpType, args)) {
+          diag.error(loc) << sym.expr() << " is not callable.";
+        }
+      }
     }
   }
 
@@ -170,12 +181,8 @@ Expr * ExprAnalyzer::callName(SLC & loc, const ASTNode * callable, const ASTNode
     fs.flush();
 
     diag.error(loc) << "No matching method for call to " << fs.str() << ", candidates are:";
-    for (ExprList::iterator it = results.begin(); it != results.end(); ++it) {
-      if (LValueExpr * lval = dyn_cast<LValueExpr>(*it)) {
-        diag.info(lval->value()) << Format_Type << lval->value();
-      } else {
-        diag.info(*it) << *it;
-      }
+    for (LookupResults::const_iterator it = results.begin(); it != results.end(); ++it) {
+      diag.info(it->location()) << Format_Type << *it;
     }
 
     return &Expr::ErrorVal;
@@ -193,8 +200,8 @@ void ExprAnalyzer::lookupByArgType(CallExpr * call, StringRef name, const ASTNod
   const ExprList & callArgs = call->args();
   for (ExprList::const_iterator it = callArgs.begin(); it != callArgs.end(); ++it) {
     Expr * arg = *it;
-    if (arg->type() != NULL && arg->type()->isSingular()) {
-      const Type * argType = dealias(arg->type());
+    if (arg->type() && arg->type()->isSingular()) {
+      const Type * argType = dealias(arg->type().unqualified());
       if (argType != NULL && typesSearched.insert(argType)) {
         AnalyzerBase::analyzeType(argType, Task_PrepMemberLookup);
 
@@ -402,6 +409,17 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
 
   call->setType(reduceReturnType(call));
   return call;
+}
+
+Expr * ExprAnalyzer::callTypeFunction(
+    SLC & loc, QualifiedType callable, const ASTNodeList & args) {
+  TypeAnalyzer ta(this, activeScope_);
+  const TupleType * ttArgs = ta.tupleTypeFromASTNodeList(args);
+  if (ttArgs == NULL) {
+    return &Expr::ErrorVal;
+  }
+  return new TypeLiteralExpr(loc,
+      QualifiedType(new TypeFunctionCall(callable.unqualified(), ttArgs), callable.qualifiers()));
 }
 
 bool ExprAnalyzer::addOverloadedConstructors(SLC & loc, CallExpr * call, TypeDefn * tdef,

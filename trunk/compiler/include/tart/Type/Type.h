@@ -151,10 +151,15 @@ public:
   /** Return true if this type supports the specified protocol. */
   bool supports(const Type * protocol) const;
 
-  /** Return all the possible concrete types that this type could be - only meaningful
-      for type constraints. */
-  virtual void expand(QualifiedTypeSet & out) const {
-    out.insert(this);
+  /** Return all the possible concrete types that this type could be. For regular types,
+      this simply inserts the type into the output array unchanged. For type aliases
+      and type variables, this recursively dereferences the variable. For ambiguous types, this
+      inserts all of the possible types that the ambiguous type could be. The 'qualifiers'
+      argument represents additional qualifiers to be applied to the type, which is used
+      for calculating the expansion of qualified types.
+   */
+  virtual void expandImpl(QualifiedTypeSet & out, unsigned qualifiers) const {
+    out.insert(QualifiedType(this, qualifiers));
   }
 
   /** Return whether this type is passed by value or by reference. */
@@ -395,6 +400,9 @@ inline FormatStream & operator<<(FormatStream & out, Type::TypeClass tc) {
 }
 
 bool isLargeIRType(const Type * type);
+
+/** Returns true if 'ty' is a type which can meaningfully have qualifiers. */
+bool isQualifiableType(const Type * ty);
 
 } // namespace tart
 

@@ -179,7 +179,18 @@ ASTWriter & ASTWriter::write(const Type * ty) {
 
 ASTWriter & ASTWriter::write(QualifiedType ty) {
   if (ty.qualifiers() != 0) {
-    DFAIL("Implement");
+    if (ty.isReadOnly()) {
+      write(meta::AST::MOD_READONLY);
+    }
+    if (ty.isExplicitMutable()) {
+      write(meta::AST::MOD_MUTABLE);
+    }
+    if (ty.isImmutable()) {
+      write(meta::AST::MOD_IMMUTABLE);
+    }
+    if (ty.isAdopted()) {
+      write(meta::AST::MOD_ADOPTED);
+    }
   }
   return write(ty.type());
 }
@@ -480,6 +491,12 @@ ASTWriter & ASTWriter::write(const ASTNode * ast) {
             break;
           case ASTTypeVariable::IS_SUPERTYPE:
             write(meta::AST::IS_SUPERTYPE);
+            break;
+          case ASTTypeVariable::IS_QUALIFIER:
+            write(meta::AST::IS_QUALIFIER);
+            break;
+          case ASTTypeVariable::IS_TYPE_CTOR:
+            write(meta::AST::IS_TYPE_CTOR);
             break;
         }
         write(tv->type());
@@ -820,6 +837,31 @@ ASTWriter & ASTWriter::write(const ASTNode * ast) {
       write(ds->decl());
       break;
     }
+
+    case ASTNode::TypeModReadOnly:
+      write(meta::AST::MOD_READONLY);
+      write(static_cast<const ASTOper *>(ast)->arg(0));
+      break;
+
+    case ASTNode::TypeModMutable:
+      write(meta::AST::MOD_MUTABLE);
+      write(static_cast<const ASTOper *>(ast)->arg(0));
+      break;
+
+    case ASTNode::TypeModImmutable:
+      write(meta::AST::MOD_IMMUTABLE);
+      write(static_cast<const ASTOper *>(ast)->arg(0));
+      break;
+
+    case ASTNode::TypeModAdopted:
+      write(meta::AST::MOD_ADOPTED);
+      write(static_cast<const ASTOper *>(ast)->arg(0));
+      break;
+
+    case ASTNode::Qualify:
+      write(meta::AST::MOD_ADOPTED);
+      write(static_cast<const ASTOper *>(ast)->arg(0));
+      break;
 
     default:
       diag.fatal(ast) << "Implement serialize ASTNode: '" << nodeTypeName(ast->nodeType()) << "'";

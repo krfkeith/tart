@@ -54,7 +54,7 @@ void AddressType::initBuiltin() {
   static TypeMapRoot<TypeMap> root(uniqueTypes_);
 
   QualifiedTypeList typeParams;
-  typeParams.push_back(new TypeVariable(SourceLocation(), "Target"));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "Target", TypeVariable::TYPE_EXPRESSION));
 
   // Create type parameters
   Template * tm = Template::get(&typedefn, &Builtins::module);
@@ -133,8 +133,8 @@ void NativeArrayType::initBuiltin() {
   static TypeMapRoot<TypeMap> root(uniqueTypes_);
 
   QualifiedTypeList typeParams;
-  typeParams.push_back(new TypeVariable(SourceLocation(), "ElementType"));
-  typeParams.push_back(new TypeVariable(SourceLocation(), "Length", &Int32Type::instance));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "ElementType", TypeVariable::TYPE_EXPRESSION));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "Length", TypeVariable::CONSTANT, &Int32Type::instance));
 
   // Create type parameters
   Template * tm = Template::get(&typedefn, &Builtins::module);
@@ -211,7 +211,8 @@ void FlexibleArrayType::initBuiltin() {
   static TypeMapRoot<TypeMap> root(uniqueTypes_);
 
   QualifiedTypeList typeParams;
-  typeParams.push_back(new TypeVariable(SourceLocation(), "ElementType"));
+  typeParams.push_back(new TypeVariable(SourceLocation(), "ElementType",
+      TypeVariable::TYPE_EXPRESSION));
 
   // Create type parameters
   Template * tm = Template::get(&typedefn, &Builtins::module);

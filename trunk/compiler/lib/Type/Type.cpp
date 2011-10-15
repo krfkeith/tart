@@ -45,7 +45,7 @@ const char * compatibilityError(ConversionRank rank) {
       return "Type mismatch";
 
     case QualifierLoss:
-      return "loss of type qualifiers";
+      return "Loss of type qualifiers";
 
     case Truncation:
       return "Truncation of value";
@@ -79,7 +79,8 @@ void compatibilityWarning(const SourceLocation & loc,
   DASSERT(!isErrorResult(from));
   if (isConversionWarning(rank)) {
     diag.error(loc) << Format_QualifiedName << compatibilityError(rank) <<
-        " converting " << from << " from '" << Format_Type << from->type() << "' to '" << to << "'";
+        " converting '" << from << "' from '" << Format_Type << from->type() <<
+        "' to '" << to << "'";
   }
 }
 
@@ -265,14 +266,14 @@ void typeLinkageName(llvm::raw_ostream & out, QualifiedType ty) {
 // Represents a type conversion operation.
 
 Conversion::Conversion(Expr * from, int opts)
-  : fromType(from->type())
+  : fromType(from->type().type())
   , fromValue(from)
   , resultValue(NULL)
   , options(opts)
 {}
 
 Conversion::Conversion(Expr * from, Expr ** to, int opts)
-  : fromType(from->type())
+  : fromType(from->type().type())
   , fromValue(from)
   , resultValue(to)
   , options(opts)
@@ -535,6 +536,8 @@ const Type * findCommonType(const Type * t0, const Type * t1) {
     return t1;
   } else if (tc0 > tc1) {
     return t0;
+  } else if (tc1 >= ExactConversion) {
+    return t1;
   } else {
     return NULL;
   }
@@ -576,58 +579,63 @@ QualifiedType dealias(QualifiedType t) {
   return dealiasImpl(t);
 }
 
-#if 0
-void estimateTypeSize(llvm::Type * type, size_t & numPointers, size_t & numBits) {
-  switch (type->getTypeID()) {
-    case llvm::Type::VoidTyID:
-    case llvm::Type::FloatTyID:
-    case llvm::Type::DoubleTyID:
-    case llvm::Type::X86_FP80TyID:
-    case llvm::Type::FP128TyID:
-    case llvm::Type::PPC_FP128TyID:
-    case llvm::Type::IntegerTyID:
-      numBits += type->getPrimitiveSizeInBits();
-      break;
+bool isQualifiableType(const Type * ty) {
+  if (ty == NULL) {
+    return false;
+  }
+  switch (ty->typeClass()) {
+    case Type::Primitive:
+    case Type::Enum:
+    case Type::Tuple:
+      // Primitive & enum types are not qualifiable, since they have no mutable parts.
+      // Tuples are always immutable.
+      return false;
 
-    case llvm::Type::PointerTyID:
-      numPointers += 1;
-      break;
-
-    case llvm::Type::StructTyID:
-      for (llvm::Type::subtype_iterator it = type->subtype_begin(); it != type->subtype_end();
-          ++it) {
-        estimateTypeSize(*it, numPointers, numBits);
+    case Type::Class:
+    case Type::Interface:
+    case Type::Struct:
+    case Type::Protocol: {
+      // Check to see if it's declared immutable - in which case, qualifiers have no effect.
+      DASSERT(ty->typeDefn() != NULL);
+      if (ty->typeDefn()->isImmutable()) {
+        return false;
       }
-
-      break;
-
-    case llvm::Type::ArrayTyID: {
-      const llvm::ArrayType * atype = cast<llvm::ArrayType>(type);
-      size_t elemPointers = 0;
-      size_t elemBits = 0;
-      estimateTypeSize(atype->getElementType(), numPointers, numBits);
-      numPointers += elemPointers * atype->getNumElements();
-      numBits += elemBits * atype->getNumElements();
-      break;
+      return true;
     }
 
-    case llvm::Type::VectorTyID: {
-      const llvm::VectorType * atype = cast<llvm::VectorType>(type);
-      size_t elemPointers = 0;
-      size_t elemBits = 0;
-      estimateTypeSize(atype->getElementType(), numPointers, numBits);
-      numPointers += elemPointers * atype->getNumElements();
-      numBits += elemBits * atype->getNumElements();
-      break;
+    case Type::NAddress:
+    case Type::NArray:
+    case Type::FlexibleArray:
+      return true;
+
+    case Type::Alias: {
+      const TypeAlias * ta = static_cast<const TypeAlias *>(ty);
+      return isQualifiableType(ta->value().unqualified());
     }
 
-    case llvm::Type::LabelTyID:
-    case llvm::Type::MetadataTyID:
-    case llvm::Type::FunctionTyID:
+    case Type::Assignment: {
+      const TypeAssignment * ta = static_cast<const TypeAssignment *>(ty);
+      if (ta->value()) {
+        return isQualifiableType(ta->value().unqualified());
+      }
+      // Assume true until we know what kind of type it is.
+      return true;
+    }
+
+    case Type::TypeVar:
+      // In this case, it's false but it may be true for specializations.
+      return false;
+
+    case Type::AmbiguousResult:
+    case Type::AmbiguousParameter:
+    case Type::AmbiguousPhi:
+    case Type::AmbiguousTypeParam:
+      // Assume true until we know what kind of type it is.
+      return true;
+
     default:
-      break;
+      return false;
   }
 }
-#endif
 
 } // namespace tart

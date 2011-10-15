@@ -113,7 +113,7 @@ void ConstructorAnalyzer::run(FunctionDefn * ctor) {
         } else if (param->isVariadic()) {
           // Pass a null array - possibly a static singleton.
           ArrayLiteralExpr * arrayParam =
-              AnalyzerBase::createArrayLiteral(param->location(), param->type().type());
+              AnalyzerBase::createArrayLiteral(param->location(), param->type());
           AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
           superCall->appendArg(arrayParam);
         } else {

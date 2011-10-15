@@ -24,6 +24,7 @@ execute_process(
 
 include_directories(${TART_SOURCE_DIR}/third-party/gmock-1.6.0/include)
 include_directories(${TART_SOURCE_DIR}/third-party/gmock-1.6.0/gtest/include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # Unit test executable. We specify the sources explicitly because we want
 # the tests to run in that order.
@@ -48,8 +49,6 @@ add_executable(unittest
   ASTSerializationTest.cpp
   ConstraintTest.cpp
   BindingEnvTest.cpp
-  InheritanceTest.cpp
-  TypeModifierTest.cpp
   )
 target_link_libraries(unittest
     gtest gmock compiler

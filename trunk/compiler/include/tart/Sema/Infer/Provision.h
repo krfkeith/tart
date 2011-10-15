@@ -23,6 +23,8 @@
 
 namespace tart {
 
+class TypeVariable;
+
 /// -------------------------------------------------------------------
 /// Interface defining a precondition for a constraint. All provisions
 /// must be met, otherwise the constraint is ignored.

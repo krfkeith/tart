@@ -57,15 +57,15 @@ bool TypeAssignment::isReferenceType() const {
   return false;
 }
 
-void TypeAssignment::expand(QualifiedTypeSet & out) const {
+void TypeAssignment::expandImpl(QualifiedTypeSet & out, unsigned qualifiers) const {
   if (value_) {
-    value_->expand(out);
+    value_.expand(out, qualifiers);
   } else {
     for (ConstraintSet::const_iterator si = begin(), sEnd = end(); si != sEnd; ++si) {
       Constraint * s = *si;
       if (!s->visited() && s->checkProvisions()) {
         s->setVisited(true);
-        s->value()->expand(out);
+        s->value().expand(out, qualifiers);
         s->setVisited(false);
       }
     }
@@ -179,18 +179,73 @@ void TypeAssignment::trace() const {
 }
 
 void TypeAssignment::format(FormatStream & out) const {
-  out << target_ << "." << sequenceNum_;
-  if (out.isVerbose()) {
+  if (out.getDealias()) {
     if (value_) {
-      out << "==";
       value_->format(out);
-    } else if (!constraints_.empty()) {
+    } else {
+      QualifiedTypeSet equalTypes;
+      QualifiedTypeSet upperBoundTypes;
+      QualifiedTypeSet lowerBoundTypes;
       for (ConstraintSet::const_iterator si = begin(), sEnd = end(); si != sEnd; ++si) {
-        Constraint * s = *si;
-        if (!s->visited() && s->checkProvisions()) {
-          s->setVisited(true);
-          out << "==" << s->value();
-          s->setVisited(false);
+        Constraint * cst = *si;
+        if (!cst->visited() && cst->checkProvisions()) {
+          cst->setVisited(true);
+          if (cst->kind() == Constraint::EXACT) {
+            cst->value().expand(equalTypes);
+          } else if (cst->kind() == Constraint::LOWER_BOUND) {
+            cst->value().expand(lowerBoundTypes);
+          } else {
+            cst->value().expand(upperBoundTypes);
+          }
+          cst->setVisited(false);
+        }
+      }
+      size_t numUniqueTypes = equalTypes.size() + lowerBoundTypes.size() + upperBoundTypes.size();
+      bool first = true;
+      if (numUniqueTypes != 1) {
+        out << "{";
+      }
+      for (QualifiedTypeSet::iterator qi = equalTypes.begin(); qi != equalTypes.end(); ++qi) {
+        if (!first) {
+          out << " + ";
+        }
+        first = false;
+        out << *qi;
+      }
+      for (QualifiedTypeSet::iterator qi = upperBoundTypes.begin(); qi != upperBoundTypes.end();
+          ++qi) {
+        if (!first) {
+          out << " + ";
+        }
+        first = false;
+        out << target_ << " <: " << *qi;
+      }
+      for (QualifiedTypeSet::iterator qi = lowerBoundTypes.begin(); qi != lowerBoundTypes.end();
+          ++qi) {
+        if (!first) {
+          out << " + ";
+        }
+        first = false;
+        out << target_ << " :> " << *qi;
+      }
+      if (numUniqueTypes != 1) {
+        out << "}";
+      }
+    }
+  } else {
+    out << target_ << "." << sequenceNum_;
+    if (out.isVerbose()) {
+      if (value_) {
+        out << "==";
+        value_->format(out);
+      } else if (!constraints_.empty()) {
+        for (ConstraintSet::const_iterator si = begin(), sEnd = end(); si != sEnd; ++si) {
+          Constraint * s = *si;
+          if (!s->visited() && s->checkProvisions()) {
+            s->setVisited(true);
+            out << "==" << s->value();
+            s->setVisited(false);
+          }
         }
       }
     }
@@ -204,7 +259,7 @@ llvm::Type * TypeAssignment::irType() const {
 QualifiedType TypeAssignment::deref(QualifiedType in) {
   while (Qualified<TypeAssignment> ta = in.dyn_cast<TypeAssignment>()) {
     if (ta->value()) {
-      in = ta->value();
+      in = ta->value() | in.qualifiers();
     } else {
       break;
     }

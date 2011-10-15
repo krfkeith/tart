@@ -33,7 +33,7 @@ public:
   // Overrides
 
   void listProspects(ProspectList & out, const ProvisionSet & add) const;
-  void expand(QualifiedTypeSet & out) const;
+  void expandImpl(QualifiedTypeSet & out, unsigned qualifiers) const;
   void trace() const;
   void format(FormatStream & out) const;
 

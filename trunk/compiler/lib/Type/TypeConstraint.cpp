@@ -29,7 +29,7 @@ llvm::Type * TypeConstraint::irType() const {
 
 QualifiedType TypeSetConstraint::singularValue() const {
   QualifiedTypeSet expansion;
-  expand(expansion);
+  expandImpl(expansion, 0);
   if (expansion.size() == 1) {
     return *expansion.begin();
   }
@@ -44,7 +44,7 @@ bool TypeSetConstraint::isSingular() const {
 
 bool TypeSetConstraint::isReferenceType() const {
   QualifiedTypeSet expansion;
-  expand(expansion);
+  expandImpl(expansion, 0);
   for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
     QualifiedType ty = *it;
     if (!ty->isReferenceType()) {
@@ -61,7 +61,7 @@ void TypeSetConstraint::format(FormatStream & out) const {
   DASSERT(recursionCheck < 50);
 
   QualifiedTypeSet expansion;
-  expand(expansion);
+  expandImpl(expansion, 0);
   out << "{";
   for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
     if (it != expansion.begin()) {
