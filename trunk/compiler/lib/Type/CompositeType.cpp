@@ -108,7 +108,7 @@ FunctionDefn * CompositeType::defaultConstructor() const {
   // Look for a constructor that has zero required parameters.
   for (DefnList::const_iterator it = ctors->begin(); it != ctors->end(); ++it) {
     FunctionDefn * ctor = dyn_cast<FunctionDefn> (*it);
-    if (ctor != NULL) {
+    if (ctor != NULL && ctor->functionType() != NULL) {
       ParameterList & params = ctor->params();
       int requiredArgCount = 0;
       for (ParameterList::iterator p = params.begin(); p != params.end(); ++p) {
@@ -384,7 +384,7 @@ bool CompositeType::isSupportedBy(const Type * type) const {
   return true;
 }
 
-bool CompositeType::isMutable() const {
+bool CompositeType::isExplicitMutable() const {
   if (this == Builtins::typeObject.get()) {
     return false;
   }
@@ -399,7 +399,7 @@ bool CompositeType::isMutable() const {
   }
 
   if (super_) {
-    return super_->isMutable();
+    return super_->isExplicitMutable();
   }
 
   return false;

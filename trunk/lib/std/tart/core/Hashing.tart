@@ -94,8 +94,8 @@ namespace Hashing {
       let R:uint64 = 47;
       var len:int64 = Memory.ptrDiff(first, last);
       var h:uint64 = seed ^ (uint64(len) * M64);
-      var data:Address[uint64] = reinterpretPtr(first);
-      var end:Address[uint64] = addressOf(data[len / 8]);
+      var data:readonly(Address[uint64]) = reinterpretPtr(first);
+      var end:readonly(Address[uint64]) = addressOf(data[len / 8]);
 
       while data is not end {
         var k:uint64 = Memory.deref(data);
@@ -110,21 +110,21 @@ namespace Hashing {
       }
 
       if (len & 7) != 0 {
-	      var data2:Address[ubyte] = reinterpretPtr(data);
+	      var data2:readonly(Address[ubyte]) = reinterpretPtr(data);
 	      if (len & 4) != 0 {
-	        let d:Address[uint32] = reinterpretPtr(data2);
+	        let d:readonly(Address[uint32]) = reinterpretPtr(data2);
 	        data2 += 4;
 	        h ^= uint64(Memory.deref(d)) << 32;
 	      }
 
 	      if (len & 2) != 0 {
-	        let d:Address[uint16] = reinterpretPtr(data2);
+	        let d:readonly(Address[uint16]) = reinterpretPtr(data2);
 	        data2 += 2;
 	        h ^= uint64(Memory.deref(d)) << 16;
 	      }
 
 	      if (len & 1) != 0 {
-	        let d:Address[uint8] = reinterpretPtr(data2);
+	        let d:readonly(Address[uint8]) = reinterpretPtr(data2);
 	        data2 += 1;
 	        h ^= uint64(Memory.deref(d)) << 8;
 	      }

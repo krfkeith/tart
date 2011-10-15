@@ -30,7 +30,7 @@ inline bool areBothConstFloats(const Expr * a0, const Expr * a1) {
       a1->exprType() == Expr::ConstFloat;
 }
 
-const Type * typeForConstInt(llvm::ConstantInt * cint, const Type * prevType) {
+QualifiedType typeForConstInt(llvm::ConstantInt * cint, QualifiedType prevType) {
   if (prevType->isUnsizedIntType()) {
     return UnsizedIntType::get(cint);
   } else {
@@ -552,10 +552,18 @@ static SourceString infixLogicalSrc(
     );
 
 static SourceString infixAddSrc(
-    " @tart.annex.Intrinsic def infixAdd[%T](:__Address[T],  :int32) -> __Address[T];"
-    " @tart.annex.Intrinsic def infixAdd[%T](:__Address[T],  :int64) -> __Address[T];"
-    " @tart.annex.Intrinsic def infixAdd[%T](:__Address[T], :uint32) -> __Address[T];"
-    " @tart.annex.Intrinsic def infixAdd[%T](:__Address[T], :uint64) -> __Address[T];"
+    " @tart.annex.Intrinsic def infixAdd[%T](:  mutable(__Address[T]),  :int32) ->   mutable(__Address[T]);"
+    " @tart.annex.Intrinsic def infixAdd[%T](:immutable(__Address[T]),  :int32) -> immutable(__Address[T]);"
+    " @tart.annex.Intrinsic def infixAdd[%T](: readonly(__Address[T]),  :int32) ->  readonly(__Address[T]);"
+    " @tart.annex.Intrinsic def infixAdd[%T](:  mutable(__Address[T]),  :int64) ->   mutable(__Address[T]);"
+    " @tart.annex.Intrinsic def infixAdd[%T](:immutable(__Address[T]),  :int64) -> immutable(__Address[T]);"
+    " @tart.annex.Intrinsic def infixAdd[%T](: readonly(__Address[T]),  :int64) ->  readonly(__Address[T]);"
+    " @tart.annex.Intrinsic def infixAdd[%T](:  mutable(__Address[T]), :uint32) ->   mutable(__Address[T]);"
+    " @tart.annex.Intrinsic def infixAdd[%T](:immutable(__Address[T]), :uint32) -> immutable(__Address[T]);"
+    " @tart.annex.Intrinsic def infixAdd[%T](: readonly(__Address[T]), :uint32) ->  readonly(__Address[T]);"
+    " @tart.annex.Intrinsic def infixAdd[%T](:  mutable(__Address[T]), :uint64) ->   mutable(__Address[T]);"
+    " @tart.annex.Intrinsic def infixAdd[%T](:immutable(__Address[T]), :uint64) -> immutable(__Address[T]);"
+    " @tart.annex.Intrinsic def infixAdd[%T](: readonly(__Address[T]), :uint64) ->  readonly(__Address[T]);"
     );
 
 } // namespace

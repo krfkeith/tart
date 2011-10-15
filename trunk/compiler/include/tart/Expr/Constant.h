@@ -31,7 +31,7 @@ class VariableDefn;
 /// Base class for constant expressions.
 class ConstantExpr : public Expr {
 public:
-  ConstantExpr(ExprType k, SourceLocation l, const Type * t)
+  ConstantExpr(ExprType k, SourceLocation l, QualifiedType t)
     : Expr(k, l, t)
   {}
 
@@ -62,7 +62,7 @@ private:
   llvm::ConstantInt * value_;
 
 public:
-  ConstantInteger(SourceLocation l, const Type * t, llvm::ConstantInt * val)
+  ConstantInteger(SourceLocation l, QualifiedType t, llvm::ConstantInt * val)
     : ConstantExpr(ConstInt, l, t)
     , value_(val)
   {}
@@ -103,7 +103,7 @@ private:
   llvm::ConstantFP * value_;
 
 public:
-  ConstantFloat(SourceLocation l, const Type * t, llvm::ConstantFP * val)
+  ConstantFloat(SourceLocation l, QualifiedType t, llvm::ConstantFP * val)
     : ConstantExpr(ConstFloat, l, t)
     , value_(val)
   {}
@@ -146,9 +146,9 @@ private:
 class ConstantNull : public ConstantExpr {
 public:
   ConstantNull(SourceLocation l);
-  ConstantNull(SourceLocation l, const Type * t);
+  ConstantNull(SourceLocation l, QualifiedType t);
 
-  static ConstantNull * get(const SourceLocation & l, const Type * t) {
+  static ConstantNull * get(const SourceLocation & l, QualifiedType t) {
     return new ConstantNull(l, t);
   }
 
@@ -167,12 +167,12 @@ public:
 /// arguments and reflection.
 class TypeLiteralExpr : public ConstantExpr {
 private:
-  const Type * value_;
+  QualifiedType value_;
 
 public:
-  TypeLiteralExpr(SourceLocation l, const Type * val);
+  TypeLiteralExpr(SourceLocation l, QualifiedType val);
 
-  const Type * value() const { return value_; }
+  const QualifiedType value() const { return value_; }
 
   // Overrides
 

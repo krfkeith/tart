@@ -97,15 +97,8 @@ Constraint * Constraint::intersect(Constraint * cl, Constraint * cr) {
   bool isSubtypeL = false;
   bool isSubtypeR = false;
 
-  if (tl.isa<CompositeType>()) {
-    if (tr.isa<CompositeType>()) {
-      isSubtypeL = TypeRelation::isSubclass(tl, tr);
-      isSubtypeR = TypeRelation::isSubclass(tr, tl);
-    }
-  } else if (tl->isIntType() && tr->isIntType()) {
-    isSubtypeL = TypeRelation::isSubtype(tl, tr);
-    isSubtypeR = TypeRelation::isSubtype(tr, tl);
-  } else if (tl->isFPType() && tr->isFPType()) {
+  // Don't compare type assignments, it's worse than O(N^2) and we don't need it.
+  if (tl->typeClass() != Type::Assignment && tr->typeClass() != Type::Assignment) {
     isSubtypeL = TypeRelation::isSubtype(tl, tr);
     isSubtypeR = TypeRelation::isSubtype(tr, tl);
   }

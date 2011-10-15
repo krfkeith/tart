@@ -9,69 +9,13 @@
 #include "tart/Defn/TypeDefn.h"
 #endif
 
+#ifndef TART_TYPE_TYPEVARIABLE_H
+#include "tart/Type/TypeVariable.h"
+#endif
+
 namespace tart {
 
-class TemplateCondition;
-
 typedef llvm::SmallVector<TemplateCondition *, 2> TemplateConditionList;
-
-/// -------------------------------------------------------------------
-/// Used to represent a pattern variable used within a type expressions.
-class TypeVariable : public TypeImpl, public Locatable {
-public:
-
-  /** Construct a type pattern variable. */
-  TypeVariable(const SourceLocation & loc, StringRef name, QualifiedType value = QualifiedType());
-
-  /** Location where this variable was defined. */
-  const SourceLocation & location() const { return location_; }
-
-  /** The variable name. */
-  StringRef name() const { return name_; }
-
-  /** The type of this variable, which will usually be 'Type' */
-  QualifiedType value() const { return value_; }
-
-  /** Set the type of values which can be bound to this variable. */
-  void setValueType(QualifiedType type) { value_ = type; }
-
-  /** The upper bound of this type var - if non-null, any type bound to this type
-      must be equal to upperBound or a subtype of it. */
-  QualifiedType upperBound() const { return upperBound_; }
-  void setUpperBound(QualifiedType ty) { upperBound_ = ty; }
-
-  /** Whether this is a variadic template parameter. */
-  bool isVariadic() const { return isVariadic_; }
-  void setIsVariadic(bool isVariadic) { isVariadic_ = isVariadic; }
-
-  /** Return true if the specified type value can be bound to this type. */
-  bool canBindTo(QualifiedType value) const;
-
-  // Overrides
-
-  llvm::Type * createIRType() const;
-  void trace() const;
-  bool isReferenceType() const;
-  bool isSingular() const;
-  TypeShape typeShape() const { return value_ ? value_->typeShape() : Shape_None; }
-  void format(FormatStream & out) const;
-
-  static inline bool classof(const TypeVariable *) { return true; }
-  static inline bool classof(const Type * type) {
-    return type->typeClass() == TypeVar;
-  }
-
-private:
-  const SourceLocation location_;
-  QualifiedType value_;
-  QualifiedType upperBound_;
-  StringRef name_;
-  bool isVariadic_;
-};
-
-typedef llvm::SmallVector<TypeVariable *, 4> TypeVariableList;
-typedef llvm::DenseMap<const TypeVariable *, const Type *> TypeVarMap;
-typedef llvm::DenseMap<const TypeVariable *, QualifiedType> QualifiedTypeVarMap;
 
 /// -------------------------------------------------------------------
 /// Defines the parameters of a template. Also used as a record of
@@ -108,8 +52,8 @@ public:
   bool isVariadicParam(int index) const;
 
   /** Return the default values for the type parameters. */
-  const TypeList & typeParamDefaults() const { return typeParamDefaults_; }
-  TypeList & typeParamDefaults() { return typeParamDefaults_; }
+  const QualifiedTypeList & typeParamDefaults() const { return typeParamDefaults_; }
+  QualifiedTypeList & typeParamDefaults() { return typeParamDefaults_; }
 
   /** Return the Nth type param. */
   QualifiedType typeParam(int index) const;
@@ -164,7 +108,7 @@ private:
   Defn * value_;
   const ASTTemplate * ast_;
   const TupleType * typeParams_;
-  TypeList typeParamDefaults_;
+  QualifiedTypeList typeParamDefaults_;
   TemplateConditionList conditions_;
   TypeVariableList vars_;
 

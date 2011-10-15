@@ -132,7 +132,7 @@ void CallCandidate::relabelTypeVars(BindingEnv & env) {
       typeParams_ = ts->typeParams();
     }
     if (typeParams_ != NULL) {
-      typeParams_ = cast<TupleType>(relabel(typeParams_));
+      typeParams_ = cast<TupleType>(relabel(typeParams_).unqualified());
     }
 
     if (spCandidate_ != NULL) {
@@ -196,7 +196,7 @@ bool CallCandidate::unify(CallExpr * callExpr, BindingEnv & env, FormatStream * 
   //bool hasUnsizedArgs = false;
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
-    const Type * argType = argExpr->type();
+    QualifiedType argType = argExpr->type();
     QualifiedType paramType = this->paramType(argIndex);
 
     // Skip unsized type integers for now, we'll bind them on the second pass.
@@ -290,6 +290,51 @@ ConversionRank CallCandidate::updateConversionRank() {
 #endif
 
   return conversionRank_;
+}
+
+void CallCandidate::reportConversionErrors() {
+  diag.info(method_) << Format_Type << method_ << " [" << conversionRank_ << "]";
+
+  for (TemplateConditionList::const_iterator it = conditions_.begin();
+      it != conditions_.end(); ++it) {
+    if (!(*it)->eval()) {
+      diag.info() << "Template condition could not be satisfied: ";
+      return;
+    }
+  }
+
+  size_t argCount = callExpr_->argCount();
+  for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
+    Expr * argExpr = callExpr_->arg(argIndex);
+    QualifiedType paramType = this->paramType(argIndex);
+    ConversionRank rank = TypeConversion::check(argExpr, paramType, TypeConversion::COERCE);
+    if (isConversionWarning(rank)) {
+      diag.indent();
+      diag.info(method_) << compatibilityError(rank) << Format_Dealias << " converting argument " <<
+          argIndex << " from '" << argExpr->type() << "' to '" << paramType << "'.";
+      diag.unindent();
+    }
+  }
+
+  QualifiedType expectedReturnType = callExpr_->expectedReturnType();
+  if (!expectedReturnType.isNull() && callExpr_->exprType() != Expr::Construct) {
+    AnalyzerBase::analyzeType(resultType_, Task_PrepTypeComparison);
+    ConversionRank rank = TypeConversion::check(
+        resultType_, expectedReturnType, TypeConversion::COERCE);
+    if (isConversionWarning(rank)) {
+      diag.indent();
+      diag.info(method_) << compatibilityError(rank) << Format_Dealias <<
+          " converting return value from '" << resultType_ << "' to '" <<
+          expectedReturnType << "'.";
+      diag.unindent();
+    }
+  }
+
+  // If there are explicit specializations, then check those too.
+  // Note that these must be an exact match.
+  if (spCandidate_ != NULL) {
+    spCandidate_->reportConversionErrors();
+  }
 }
 
 bool CallCandidate::hasErrors() const {

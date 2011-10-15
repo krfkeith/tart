@@ -99,7 +99,6 @@ final class NameTable {
 	/** Return the local part of the name associated with a given name id. */
   def getLocalName(i:int) -> String {
     var index = i >> 1;
-    Debug.writeLnFmt("Index: {0}", i);
     if (i & COMPOUND_NAME_FLAG) != 0 {
 	    var names = getCompoundNameTable();
       return getQualifiedName(names[index].second);

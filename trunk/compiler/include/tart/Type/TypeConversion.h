@@ -97,6 +97,7 @@ namespace TypeConversion {
     DYNAMIC_NULL = (1<<1),  // Allow dynamic casts (null if fail)
     CHECKED = (1<<2),       // Allow dynamic casts (exception if fail)
     EXPLICIT = (1<<3),      // Explicit conversion - allow int to float for example
+    UNQUAL = (1<<4),        // Ignore qualifiers (for comparison operations)
   };
 
   /** Do a type conversion, and return both the conversion rank and the converted type. */
@@ -134,11 +135,6 @@ namespace TypeConversion {
   /** Check if a conversion is possible, and return a conversion ranking. */
   inline ConversionRank check(QualifiedType srcType, QualifiedType dstType, int options = 0) {
     return convert(srcType, NULL, dstType, NULL, options);
-  }
-
-  /** Check if a conversion is possible, and return a conversion ranking. */
-  inline ConversionRank check(Expr * srcExpr, const Type * dstType, int options = 0) {
-    return convert(srcExpr->type(), srcExpr, dstType, NULL, options);
   }
 
   /** Check if a conversion is possible, and return a conversion ranking. */

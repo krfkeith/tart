@@ -164,6 +164,11 @@ public:
 
   StringRef str() { flush(); return str_.str(); }
 
+  void clear() {
+    strm_.flush();
+    str_.clear();
+  }
+
 private:
   llvm::SmallString<128> str_;
   llvm::raw_svector_ostream strm_;

@@ -60,6 +60,7 @@ public:
 
   /** Set the type of this variable. */
   void setType(QualifiedType ty) { type_= ty; }
+  void setTypeQualifiers(unsigned qual) { type_.setQualifiers(qual); }
 
   /** Variable flags. */
   uint32_t flags() const { return flags_; }
@@ -114,7 +115,7 @@ public:
 
   // Overrides
 
-  QualifiedType type() const { return type_; }
+  const QualifiedType type() const { return type_; }
   void trace() const;
   void format(FormatStream & out) const;
   static inline bool classof(const VariableDefn *) { return true; }

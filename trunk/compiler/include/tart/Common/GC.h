@@ -89,13 +89,6 @@ public:
   }
 
   template <class T>
-  static void markArray(llvm::ArrayRef<T> array) {
-    for (typename llvm::ArrayRef<T>::const_iterator it = array.begin(); it != array.end(); ++it) {
-      (*it)->mark();
-    }
-  }
-
-  template <class T>
   static void safeMarkList(T * const * first, T * const * last) {
     while (first < last) {
       if (*first) {
@@ -103,6 +96,13 @@ public:
       }
 
       first++;
+    }
+  }
+
+  template <class T>
+  static void markArray(llvm::ArrayRef<T> array) {
+    for (typename llvm::ArrayRef<T>::const_iterator it = array.begin(); it != array.end(); ++it) {
+      (*it)->mark();
     }
   }
 

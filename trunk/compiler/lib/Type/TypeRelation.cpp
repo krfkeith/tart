@@ -5,20 +5,21 @@
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/Template.h"
 
-#include "tart/Type/Type.h"
-#include "tart/Type/TypeRelation.h"
-#include "tart/Type/TypeAlias.h"
-#include "tart/Type/PrimitiveType.h"
-#include "tart/Type/CompositeType.h"
-#include "tart/Type/EnumType.h"
-#include "tart/Type/NativeType.h"
-#include "tart/Type/UnionType.h"
-#include "tart/Type/UnitType.h"
-#include "tart/Type/TupleType.h"
-#include "tart/Type/TypeLiteral.h"
 #include "tart/Type/AmbiguousParameterType.h"
 #include "tart/Type/AmbiguousResultType.h"
 #include "tart/Type/AmbiguousTypeParamType.h"
+#include "tart/Type/CompositeType.h"
+#include "tart/Type/EnumType.h"
+#include "tart/Type/NativeType.h"
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/TupleType.h"
+#include "tart/Type/Type.h"
+#include "tart/Type/TypeAlias.h"
+#include "tart/Type/TypeFunction.h"
+#include "tart/Type/TypeLiteral.h"
+#include "tart/Type/TypeRelation.h"
+#include "tart/Type/UnionType.h"
+#include "tart/Type/UnitType.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -159,7 +160,7 @@ bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
     case Type::AmbiguousResult:
     case Type::AmbiguousTypeParam: {
       QualifiedTypeSet expansion;
-      rt->expand(expansion);
+      rt.expand(expansion);
       if (expansion.empty()) {
         return false;
       }
@@ -179,6 +180,18 @@ bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
       return false;
     }
 
+    case Type::TypeFnCall: {
+      Qualified<TypeFunctionCall> rcall = rt.as<TypeFunctionCall>();
+      if (const TypeFunction * tfn = dyn_cast<TypeFunction>(dealias(rcall->fnVal()))) {
+        return isEqual(lt, tfn->apply(rcall->args()) | rt.qualifiers());
+      }
+      if (Qualified<TypeFunctionCall> tfcall = lt.dyn_cast<TypeFunctionCall>()) {
+        return isEqual(tfcall->fnVal(), rcall->fnVal()) && isEqual(tfcall->args(), rcall->args());
+      }
+      // Left side might be an alias to a TypeFunction, so keep going.
+      break;
+    }
+
     default:
       break;
   }
@@ -195,13 +208,13 @@ bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
         Qualified<UnsizedIntType> rint = rt.as<UnsizedIntType>();
         return lint->intVal() == rint->intVal();
       }
-      // Primitive types are unique by reference, except for unsized.
-      return false;
+      // Qualifiers are meaningless for primitive types.
+      return (lt.unqualified() == rt.unqualified());
 
     case Type::Enum:
     case Type::TypeVar:
-      // These types are unique by reference
-      return false;
+      // Qualifiers are meaningless for these types.
+      return (lt.unqualified() == rt.unqualified());
 
     case Type::Class:
     case Type::Struct:
@@ -280,7 +293,7 @@ bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
     case Type::AmbiguousResult:
     case Type::AmbiguousTypeParam: {
       QualifiedTypeSet expansion;
-      lt->expand(expansion);
+      lt.expand(expansion);
       if (expansion.empty()) {
         return false;
       }
@@ -296,6 +309,22 @@ bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
       Qualified<TypeAssignment> ta = lt.as<TypeAssignment>();
       if (ta->value()) {
         return isEqual(ta->value(), rt);
+      }
+      return false;
+    }
+
+    case Type::TypeFnCall: {
+      Qualified<TypeFunctionCall> tfcall = lt.as<TypeFunctionCall>();
+      if (const TypeFunction * tfn = dyn_cast<TypeFunction>(dealias(tfcall->fnVal()))) {
+        return isEqual(tfn->apply(tfcall->args()) | lt.qualifiers(), rt);
+      }
+      return false;
+    }
+
+    case Type::TypeFnQual: {
+      Qualified<QualifyingTypeFunction> lqt = lt.as<QualifyingTypeFunction>();
+      if (Qualified<QualifyingTypeFunction> rqt = rt.dyn_cast<QualifyingTypeFunction>()) {
+        return lqt.qualifiers() == rqt.qualifiers();
       }
       return false;
     }
@@ -332,7 +361,7 @@ bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
     case Type::AmbiguousResult:
     case Type::AmbiguousTypeParam: {
       QualifiedTypeSet expansion;
-      base->expand(expansion);
+      base.expand(expansion);
       if (expansion.empty()) {
         return false;
       }
@@ -371,6 +400,14 @@ bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
         }
         return any;
       }
+    }
+
+    case Type::TypeFnCall: {
+      Qualified<TypeFunctionCall> tfcall = base.as<TypeFunctionCall>();
+      if (const TypeFunction * tfn = dyn_cast<TypeFunction>(dealias(tfcall->fnVal()))) {
+        return isSubtype(ty, tfn->apply(tfcall->args()) | ty.qualifiers());
+      }
+      return false;
     }
 
     default:
@@ -444,7 +481,7 @@ bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
     case Type::AmbiguousResult:
     case Type::AmbiguousTypeParam: {
       QualifiedTypeSet expansion;
-      ty->expand(expansion);
+      ty.expand(expansion);
       if (expansion.empty()) {
         return false;
       }
@@ -486,8 +523,24 @@ bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
       return false;
     }
 
+    case Type::TypeFnQual: {
+      Qualified<QualifyingTypeFunction> qty = ty.as<QualifyingTypeFunction>();
+      if (Qualified<QualifyingTypeFunction> qbase = ty.dyn_cast<QualifyingTypeFunction>()) {
+        return canAssignQualifiers(qty.qualifiers(), qbase.qualifiers());
+      }
+      return false;
+    }
+
+    case Type::TypeFnCall: {
+      Qualified<TypeFunctionCall> tfcall = ty.as<TypeFunctionCall>();
+      if (const TypeFunction * tfn = dyn_cast<TypeFunction>(dealias(tfcall->fnVal()))) {
+        return isSubtype(tfn->apply(tfcall->args()) | ty.qualifiers(), base);
+      }
+      return false;
+    }
+
     case Type::KindCount:
-      DFAIL("Type class not supported by isSubtype()");
+      DASSERT(false) << "Type class " << ty->typeClass() << " not supported by isSubtype()";
       break;
   }
 
@@ -511,7 +564,7 @@ bool TypeRelation::isSubclass(QualifiedType ty, QualifiedType base) {
     case Type::AmbiguousResult:
     case Type::AmbiguousTypeParam: {
       QualifiedTypeSet expansion;
-      base->expand(expansion);
+      base.expand(expansion);
       if (expansion.empty()) {
         return false;
       }
@@ -550,6 +603,14 @@ bool TypeRelation::isSubclass(QualifiedType ty, QualifiedType base) {
         }
         return any;
       }
+    }
+
+    case Type::TypeFnCall: {
+      Qualified<TypeFunctionCall> tfcall = base.as<TypeFunctionCall>();
+      if (const TypeFunction * tfn = dyn_cast<TypeFunction>(dealias(tfcall->fnVal()))) {
+        return isSubclass(ty, tfn->apply(tfcall->args()) | ty.qualifiers());
+      }
+      return false;
     }
 
     default:
@@ -596,7 +657,7 @@ bool TypeRelation::isSubclass(QualifiedType ty, QualifiedType base) {
     case Type::AmbiguousResult:
     case Type::AmbiguousTypeParam: {
       QualifiedTypeSet expansion;
-      ty->expand(expansion);
+      ty.expand(expansion);
       if (expansion.empty()) {
         return false;
       }
@@ -634,6 +695,14 @@ bool TypeRelation::isSubclass(QualifiedType ty, QualifiedType base) {
           }
         }
         return any;
+      }
+      return false;
+    }
+
+    case Type::TypeFnCall: {
+      Qualified<TypeFunctionCall> tfcall = ty.as<TypeFunctionCall>();
+      if (const TypeFunction * tfn = dyn_cast<TypeFunction>(dealias(tfcall->fnVal()))) {
+        return isSubclass(tfn->apply(tfcall->args()) | ty.qualifiers(), base);
       }
       return false;
     }

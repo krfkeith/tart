@@ -183,7 +183,7 @@ import tart.gc.TraceAction;
 
   @Coalesce private final class ArrayIterator : Iterator[ElementType], HasLength {
     private {
-      var _array:Array;
+      var _array:readonly(Array);
       var _index:int;
       var _end:int;
     }
@@ -215,12 +215,12 @@ import tart.gc.TraceAction;
   /** Class used to represent a subrange of an array. */
   @Coalesce private final class ArraySlice : Collection[ElementType], Copyable[ElementType] {
     private {
-      var _array:Array;
+      var _array:adopted(Array);
       var _offset:int;
       var _size:int;
     }
 
-    def construct(array:Array, offset:int, size:int) {
+    def construct(array:adopted(Array), offset:int, size:int) {
       self._array = array;
       self._offset = offset;
       self._size = size;

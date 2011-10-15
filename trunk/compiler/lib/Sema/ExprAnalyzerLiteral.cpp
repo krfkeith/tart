@@ -31,7 +31,6 @@
 #include "tart/Sema/TypeInference.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/CallCandidate.h"
-#include "tart/Sema/FinalizeTypesPass.h"
 
 #include "llvm/DerivedTypes.h"
 #include "llvm/ADT/StringExtras.h"
@@ -81,14 +80,12 @@ Expr * ExprAnalyzer::reduceBuiltInDefn(const ASTBuiltIn * ast) {
     return tdef->asExpr();
   } else {
     DFAIL("Implement");
-    //diag.fatal(ast) << "'" << def->name() << "' is not a type";
-    //return &BadType::instance;
   }
 }
 
 Expr * ExprAnalyzer::reduceAnonFn(const ASTFunctionDecl * ast, QualifiedType expected) {
   TypeAnalyzer ta(module(), activeScope());
-  FunctionType * ftype = ta.typeFromFunctionAST(ast);
+  FunctionType * ftype = ta.functionTypeFromAST(ast);
   size_t paramCount = ftype->params().size();
 
   if (ftype != NULL) {
@@ -276,7 +273,7 @@ Expr * ExprAnalyzer::reduceArrayLiteral(const ASTOper * ast, QualifiedType expec
 Expr * ExprAnalyzer::reduceTuple(const ASTOper * ast, QualifiedType expected) {
   DASSERT(ast->count() >= 2);
 
-  if (expected && expected.isMutable()) {
+  if (expected && expected.isExplicitMutable()) {
     diag.error(ast) << "Tuples cannot be made mutable";
   }
 

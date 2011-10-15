@@ -26,8 +26,15 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
     }
   }
 
+  TypeVariable::Target target = TypeVariable::TYPE_EXPRESSION;
+  if (ast->constraint() == ASTTypeVariable::IS_QUALIFIER) {
+    target = TypeVariable::TYPE_QUALIFIER;
+  } else if (ast->constraint() == ASTTypeVariable::IS_TYPE_CTOR) {
+    target = TypeVariable::TYPE_CONSTRUCTOR;
+  }
+
   if (tvar == NULL) {
-    tvar = new TypeVariable(ast->location(), ast->name(), NULL);
+    tvar = new TypeVariable(ast->location(), ast->name(), target);
     tvar->setIsVariadic(ast->isVariadic());
     TypeDefn * tdef = new TypeDefn(module_, ast->name(), tvar);
     tsig_->paramScope().addMember(tdef);
@@ -35,10 +42,14 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
 
   // See if the type variable has constraints
   if (ast->type() != NULL) {
-    Type * type = typeFromAST(ast->type());
-    if (type != NULL) {
+    QualifiedType type = typeFromAST(ast->type());
+    if (type) {
       if (ast->constraint() == ASTTypeVariable::IS_SUBTYPE) {
         // Add a subclass test
+        if (type.qualifiers() == 0) {
+          // Readonly by default.
+          type.setQualifiers(QualifiedType::READONLY);
+        }
         tvar->setUpperBound(type);
         TemplateCondition * condition = new IsSubtypeCondition(tvar, type);
         tsig_->conditions().push_back(condition);
@@ -47,11 +58,19 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
         TemplateCondition * condition = new IsSubtypeCondition(type, tvar);
         tsig_->conditions().push_back(condition);
       } else if (ast->constraint() == ASTTypeVariable::IS_INSTANCE) {
-        if (!tvar->value()) {
-          tvar->setValueType(type);
-        } else if (!TypeRelation::isEqual(tvar->value(), type)) {
+        if (!tvar->metaType()) {
+          tvar->setMetaType(type);
+        } else if (!TypeRelation::isEqual(tvar->metaType(), type)) {
           diag.error(ast) << "Conflicting type declaration for pattern variable '" <<
               ast->name() << "'";
+        }
+      } else if (ast->constraint() == ASTTypeVariable::IS_QUALIFIER) {
+        if (tvar->target() != TypeVariable::TYPE_QUALIFIER) {
+          diag.error() << "Conflicting usage of type variable " << tvar;
+        }
+      } else if (ast->constraint() == ASTTypeVariable::IS_TYPE_CTOR) {
+        if (tvar->target() != TypeVariable::TYPE_CONSTRUCTOR) {
+          diag.error() << "Conflicting usage of type variable " << tvar;
         }
       } else {
         DFAIL("Invalid constraint");

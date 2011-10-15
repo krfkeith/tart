@@ -227,7 +227,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
       ParameterDefn * param = ftype->params()[param_index];
       DASSERT_OBJ(param != NULL, fdef);
       DASSERT_OBJ(param->storageClass() == Storage_Local, param);
-      const Type * paramType = param->internalType();
+      QualifiedType paramType = param->internalType();
       it->setName(param->name());
       Value * paramValue = it;
 
@@ -260,7 +260,7 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
 
         builder_.CreateStore(paramValue, paramAlloca);
         if (paramIsRoot) {
-          genGCRoot(paramAlloca, paramType, param->name());
+          genGCRoot(paramAlloca, paramType.unqualified(), param->name());
         }
       } else {
         param->setIRValue(paramValue);

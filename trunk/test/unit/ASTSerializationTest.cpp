@@ -154,6 +154,22 @@ TEST_F(ASTSerializationTest, Types) {
   ast = testType("fn (xx:int32, y:int32) -> int32");
   ASSERT_EQ(ASTNode::AnonFn, ast->nodeType());
   EXPECT_AST_EQ("fn (xx:int32, y:int32) -> int32", ast);
+
+  ast = testType("readonly(X)");
+  ASSERT_EQ(ASTNode::TypeModReadOnly, ast->nodeType());
+  EXPECT_AST_EQ("TypeModReadOnly(X)", ast);
+
+  ast = testType("mutable(X)");
+  ASSERT_EQ(ASTNode::TypeModMutable, ast->nodeType());
+  EXPECT_AST_EQ("TypeModMutable(X)", ast);
+
+  ast = testType("immutable(X)");
+  ASSERT_EQ(ASTNode::TypeModImmutable, ast->nodeType());
+  EXPECT_AST_EQ("TypeModImmutable(X)", ast);
+
+  ast = testType("adopted(X)");
+  ASSERT_EQ(ASTNode::TypeModAdopted, ast->nodeType());
+  EXPECT_AST_EQ("TypeModAdopted(X)", ast);
 }
 
 TEST_F(ASTSerializationTest, Terminals) {

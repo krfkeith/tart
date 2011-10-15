@@ -51,11 +51,11 @@ Expr * FinalizeTypesPassImpl::visitConstantInteger(ConstantInteger * in) {
 }
 
 Expr * FinalizeTypesPassImpl::visitLValue(LValueExpr * in) {
-  if (in->type() == NULL) {
+  if (!in->type()) {
     in->setType(in->value()->type());
   }
 
-  DASSERT_OBJ(in->type() != NULL, in);
+  DASSERT_OBJ(in->type(), in);
   DASSERT_OBJ(in->type()->isSingular(), in);
   if (in->base() != NULL) {
     in->setBase(visitExpr(in->base()));
@@ -65,17 +65,13 @@ Expr * FinalizeTypesPassImpl::visitLValue(LValueExpr * in) {
 }
 
 Expr * FinalizeTypesPassImpl::visitBoundMethod(BoundMethodExpr * in) {
-  DASSERT_OBJ(in->type() != NULL, in);
+  DASSERT_OBJ(in->type(), in);
   DASSERT_OBJ(in->type()->isSingular(), in);
   if (in->selfArg() != NULL) {
     in->setSelfArg(visitExpr(in->selfArg()));
   }
 
   return in;
-}
-
-Expr * FinalizeTypesPassImpl::visitScopeName(ScopeNameExpr * in) {
-  DFAIL("Implement");
 }
 
 Expr * FinalizeTypesPassImpl::visitElementRef(BinaryExpr * in) {
@@ -86,7 +82,8 @@ Expr * FinalizeTypesPassImpl::visitElementRef(BinaryExpr * in) {
   Expr * second = visitExpr(in->second());
   if (!isErrorResult(first) && !isErrorResult(second)) {
     bool isAlreadyInt = false;
-    if (const PrimitiveType * ptype = dyn_cast_or_null<PrimitiveType>(second->type())) {
+    if (const PrimitiveType * ptype = dyn_cast_or_null<PrimitiveType>(
+        second->type().unqualified())) {
       isAlreadyInt = isIntegerTypeId(ptype->typeId());
     }
 
@@ -114,7 +111,7 @@ Expr * FinalizeTypesPassImpl::visitPostAssign(AssignmentExpr * in) {
 }
 
 Expr * FinalizeTypesPassImpl::visitAssignImpl(AssignmentExpr * in) {
-  DASSERT_OBJ(in->toExpr()->type() != NULL, in);
+  DASSERT_OBJ(in->toExpr()->type(), in);
   Expr * from = visitExpr(in->fromExpr());
   Expr * to = visitExpr(in->toExpr());
   if (!isErrorResult(from) && !isErrorResult(to)) {
@@ -317,8 +314,8 @@ Expr * FinalizeTypesPassImpl::visitCallExpr(CallExpr * in) {
     return &Expr::ErrorVal;
   }
 
-  const Type * type = dealias(fnValue->type());
-  if (const FunctionType * fnType = dyn_cast<FunctionType>(type)) {
+  QualifiedType type = dealias(fnValue->type());
+  if (const FunctionType * fnType = dyn_cast<FunctionType>(type.unqualified())) {
     if (!fnType->isStatic()) {
       diag.error(in) << "Attempt to call function expression '" << fnValue << "'" <<
           " with no object";
@@ -354,7 +351,7 @@ bool FinalizeTypesPassImpl::coerceArgs(
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     int paramIndex = cd->parameterIndex(argIndex);
     ParameterDefn * param = fnType->params()[paramIndex];
-    const Type * paramType = param->type().type();
+    QualifiedType paramType = param->type();
     DASSERT(paramType->isSingular());
     Expr * argVal = visitExpr(args[argIndex]);
     if (isErrorResult(argVal)) {
@@ -394,7 +391,7 @@ bool FinalizeTypesPassImpl::coerceArgs(
       if (param->isVariadic()) {
         // Pass a null array - possibly a static singleton.
         ArrayLiteralExpr * arrayParam = AnalyzerBase::createArrayLiteral(
-            cd->callExpr()->location(), param->type().type());
+            cd->callExpr()->location(), param->type());
         //diag.debug() << "Creating default array literal of type " << param->type() << " calling method " << cd->method();
         AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepMemberLookup);
         outArgs[paramIndex] = arrayParam;
@@ -521,7 +518,7 @@ Expr * FinalizeTypesPassImpl::visitCast(CastExpr * in) {
 
 Expr * FinalizeTypesPassImpl::visitInstanceOf(InstanceOfExpr * in) {
   Expr * value = visitExpr(in->value());
-  const Type * tyFrom = dealias(value->type());
+  const Type * tyFrom = dealias(value->type().unqualified());
   const Type * tyTo = dealias(in->toType());
 
   if (tyFrom == NULL || tyTo == NULL) {
@@ -675,8 +672,8 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
   in->setFirst(v1);
   in->setSecond(v2);
 
-  const Type * t1 = in->first()->type();
-  const Type * t2 = in->second()->type();
+  const Type * t1 = in->first()->type().unqualified();
+  const Type * t2 = in->second()->type().unqualified();
   DASSERT_OBJ(t1 != NULL, in->first());
   DASSERT_OBJ(t2 != NULL, in->second());
 
@@ -714,25 +711,52 @@ Expr * FinalizeTypesPassImpl::visitRefEq(BinaryExpr * in) {
       return in;
     }
 
-    const Type * tr = findCommonType(t1, t2);
-    if (tr == NULL) {
+    QualifiedType tr = findCommonType(t1, t2);
+    if (!tr) {
       diag.fatal(in) << "Can't compare incompatible types '" << t1 <<
       "' and '" << t2 << "'";
       return in;
     }
 
+    if (isQualifiableType(tr.unqualified())) {
+      tr.addQualifiers(QualifiedType::READONLY);
+    } else {
+      tr.removeQualifiers(QualifiedType::MUTABILITY_MASK);
+    }
     in->setFirst(addCastIfNeeded(in->first(), tr));
     in->setSecond(addCastIfNeeded(in->second(), tr));
+    DASSERT(TypeRelation::isEqual(in->first()->type(), in->second()->type())) <<
+        "Unequal types for reference equality test: '" << in->first()->type() << "' and '" <<
+        in->second()->type() << "' with common type '" << tr << "'.";
     return in;
   } else if (isa<AddressType>(t1)) {
-    QualifiedType e0 = t1->typeParam(0);
+    QualifiedType elementType1 = t1->typeParam(0);
     if (isa<AddressType>(t2)) {
-      if (TypeRelation::isEqual(e0, t2->typeParam(0))) {
-        in->setSecond(addCastIfNeeded(in->second(), t1));
+      // Since this is just a comparison, strip all qualifiers.
+      QualifiedType elementType2 = t2->typeParam(0);
+      elementType1.addQualifiers(QualifiedType::READONLY);
+      elementType2.addQualifiers(QualifiedType::READONLY);
+      if (TypeRelation::isEqual(elementType1, elementType2)) {
+        QualifiedType tr = findCommonType(t1, t2);
+        if (!tr) {
+          diag.fatal(in) << "Can't compare incompatible types '" << t1 <<
+          "' and '" << t2 << "'";
+          return in;
+        }
+        if (isQualifiableType(tr.unqualified())) {
+          tr.addQualifiers(QualifiedType::READONLY);
+        } else {
+          tr.removeQualifiers(QualifiedType::MUTABILITY_MASK);
+        }
+        in->setFirst(addCastIfNeeded(in->first(), tr));
+        in->setSecond(addCastIfNeeded(in->second(), tr));
+        DASSERT(TypeRelation::isEqual(in->first()->type(), in->second()->type())) <<
+            "Unequal types for reference equality test: '" << in->first()->type() << "' and '" <<
+            in->second()->type() << "' with common type '" << tr << "'.";
         return in;
       }
     } else if (t2->isReferenceType()) {
-      if (TypeRelation::isEqual(e0, t2)) {
+      if (TypeRelation::isEqual(elementType1, t2)) {
         in->setSecond(addCastIfNeeded(in->second(), t1));
         return in;
       } else if (t2->isNullType()) {
@@ -785,8 +809,8 @@ Expr * FinalizeTypesPassImpl::visitTupleCtor(TupleCtorExpr * in) {
 }
 
 Expr * FinalizeTypesPassImpl::visitTypeLiteral(TypeLiteralExpr * in) {
-  const Type * type = in->value();
-  if (const TypeAssignment * tb = dyn_cast<TypeAssignment>(type)) {
+  QualifiedType type = in->value();
+  if (const TypeAssignment * tb = dyn_cast<TypeAssignment>(type.type())) {
     if (tb->value()) {
       return new TypeLiteralExpr(in->location(), tb->value().unqualified());
     }
@@ -794,7 +818,7 @@ Expr * FinalizeTypesPassImpl::visitTypeLiteral(TypeLiteralExpr * in) {
     return in;
   }
 
-  if (isa<TypeVariable>(type)) {
+  if (type.isa<TypeVariable>()) {
     diag.fatal(in) << "Unbound type var " << in;
     return in;
   }
@@ -804,14 +828,14 @@ Expr * FinalizeTypesPassImpl::visitTypeLiteral(TypeLiteralExpr * in) {
 
 Expr * FinalizeTypesPassImpl::visitIf(IfExpr * in) {
   CFGPass::visitIf(in);
-  if (const AmbiguousPhiType * phi = dyn_cast_or_null<AmbiguousPhiType>(in->type())) {
+  if (const AmbiguousPhiType * phi = dyn_cast_or_null<AmbiguousPhiType>(in->type().unqualified())) {
     QualifiedType singularCommon = getCommonPhiType(phi);
     if (singularCommon) {
       in->setType(singularCommon);
     }
   }
 
-  if (in->type() != NULL && !in->type()->isVoidType()) {
+  if (in->type() && !in->type()->isVoidType()) {
     in->setThenVal(addCastIfNeeded(in->thenVal(), in->type()));
     if (in->elseVal() != NULL) {
       in->setElseVal(addCastIfNeeded(in->elseVal(), in->type()));
@@ -823,13 +847,13 @@ Expr * FinalizeTypesPassImpl::visitIf(IfExpr * in) {
 
 Expr * FinalizeTypesPassImpl::visitSwitch(SwitchExpr * in) {
   CFGPass::visitSwitch(in);
-  if (const AmbiguousPhiType * phi = dyn_cast_or_null<AmbiguousPhiType>(in->type())) {
+  if (const AmbiguousPhiType * phi = dyn_cast_or_null<AmbiguousPhiType>(in->type().unqualified())) {
     if (phi->common()) {
       in->setType(phi->common());
     }
   }
 
-  if (in->type() != NULL && !in->type()->isVoidType()) {
+  if (in->type() && !in->type()->isVoidType()) {
     for (SwitchExpr::iterator it = in->begin(); it != in->end(); ++it) {
       *it = addCastIfNeeded(*it, in->type());
     }
@@ -844,13 +868,13 @@ Expr * FinalizeTypesPassImpl::visitSwitch(SwitchExpr * in) {
 
 Expr * FinalizeTypesPassImpl::visitMatch(MatchExpr * in) {
   CFGPass::visitMatch(in);
-  if (const AmbiguousPhiType * phi = dyn_cast_or_null<AmbiguousPhiType>(in->type())) {
+  if (const AmbiguousPhiType * phi = dyn_cast_or_null<AmbiguousPhiType>(in->type().unqualified())) {
     if (phi->common()) {
       in->setType(phi->common());
     }
   }
 
-  if (in->type() != NULL && !in->type()->isVoidType()) {
+  if (in->type() && !in->type()->isVoidType()) {
     for (MatchExpr::iterator it = in->begin(); it != in->end(); ++it) {
       *it = addCastIfNeeded(*it, in->type());
     }
@@ -869,7 +893,7 @@ Expr * FinalizeTypesPassImpl::addCastIfNeeded(Expr * in, QualifiedType toType, u
 }
 
 Expr * FinalizeTypesPassImpl::handleUnboxCast(CastExpr * in) {
-  if (isa<PrimitiveType>(in->type())) {
+  if (isa<PrimitiveType>(in->type().unqualified())) {
     return ExprAnalyzer(subject_->module(), subject_->definingScope(), subject_, NULL)
         .doUnboxCast(in->arg(), in->type());
   }

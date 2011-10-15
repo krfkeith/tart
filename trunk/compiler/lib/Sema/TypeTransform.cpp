@@ -5,17 +5,18 @@
 #include "tart/Defn/Template.h"
 
 #include "tart/Type/AmbiguousTypeParamType.h"
-#include "tart/Type/PrimitiveType.h"
 #include "tart/Type/CompositeType.h"
-#include "tart/Type/FunctionType.h"
-#include "tart/Type/UnionType.h"
-#include "tart/Type/TupleType.h"
 #include "tart/Type/EnumType.h"
-#include "tart/Type/UnitType.h"
+#include "tart/Type/FunctionType.h"
 #include "tart/Type/NativeType.h"
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/TupleType.h"
 #include "tart/Type/TypeAlias.h"
 #include "tart/Type/TypeConstraint.h"
+#include "tart/Type/TypeFunction.h"
 #include "tart/Type/TypeLiteral.h"
+#include "tart/Type/UnionType.h"
+#include "tart/Type/UnitType.h"
 
 #include "tart/Sema/TypeTransform.h"
 #include "tart/Sema/AnalyzerBase.h"
@@ -110,6 +111,12 @@ QualifiedType TypeTransform::visit(QualifiedType in) {
     case Type::AmbiguousTypeParam:
       return visitTypeConstraint(static_cast<const TypeConstraint *>(unqual)) | qualifiers;
 
+    case Type::TypeFnCall:
+      return visitTypeFnCall(static_cast<const TypeFunctionCall *>(unqual)) | qualifiers;
+
+    case Type::TypeFnQual:
+      return in;
+
     default:
       diag.fatal() << "Type class not handled: " << in->typeClass();
       return NULL;
@@ -160,13 +167,12 @@ const TupleType * TypeTransform::visitTupleType(const TupleType * in) {
 }
 
 const Type * TypeTransform::visitAddressType(const AddressType * in) {
-  const AddressType * np = static_cast<const AddressType *>(in);
-  if (np->typeParam(0).isNull()) {
+  if (in->typeParam(0).isNull()) {
     return in;
   }
 
-  QualifiedType elemType = visit(np->typeParam(0));
-  if (elemType == np->typeParam(0)) {
+  QualifiedType elemType = visit(in->typeParam(0));
+  if (elemType == in->typeParam(0)) {
     return in;
   }
 
@@ -217,6 +223,22 @@ QualifiedType TypeTransform::visitTypeAssignment(const TypeAssignment * in) {
 }
 
 QualifiedType TypeTransform::visitTypeConstraint(const TypeConstraint * in) {
+  return in;
+}
+
+QualifiedType TypeTransform::visitTypeFnCall(const TypeFunctionCall * in) {
+  const Type * fnVal = visit(in->fnVal()).unqualified();
+  const TupleType * args = visitTupleType(in->args());
+
+  // If the type function is known, then apply it now.
+  if (const TypeFunction * tfn = dyn_cast<TypeFunction>(fnVal)) {
+    return tfn->apply(args);
+  }
+
+  if (fnVal != in->fnVal() || args != in->args()) {
+    return new TypeFunctionCall(fnVal, args);
+  }
+
   return in;
 }
 

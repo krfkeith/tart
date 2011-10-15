@@ -41,8 +41,19 @@ immutable struct TypeInfoBlock {
     return false;
   }
 
-  /** Throw an InvalidTypecastError. Convenience function used by the compiler. */
+  /** Throw an TypecastError. Convenience function used by the compiler. */
   static def typecastError() {
     throw TypecastError();
+  }
+
+  /** Throw a more informative TypecastError. Convenience function used by the compiler. */
+  static def typecastErrorExt(value:Object, toType:Address[TypeInfoBlock]) {
+    throw TypecastError(value, toType);
+  }
+
+  /** Throw a TypecastError for a failed dispatch. Convenience function used by the compiler. */
+  static def dispatchError(type:Address[TypeInfoBlock], iid:String) {
+    throw TypecastError("Object of type '{0}' does not implement interface '{1}'".format(
+        type.type.qualifiedName, iid));
   }
 }

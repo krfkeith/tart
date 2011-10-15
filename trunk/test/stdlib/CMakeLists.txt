@@ -101,8 +101,8 @@ foreach(SRC_FILE ${TART_SRC})
   string(REGEX REPLACE ".tart\$" "${CMAKE_EXECUTABLE_SUFFIX}" EXE_FILE "${SRC_FILE}")
 
   # Generate the deps variable name
-  string(REGEX REPLACE ".tart\$" "" DEPS_NAME "${SRC_FILE}")
-  string(TOUPPER "${DEPS_NAME}" DEPS_NAME)
+  string(REGEX REPLACE ".tart\$" "" TEST_NAME "${SRC_FILE}")
+  string(TOUPPER "${TEST_NAME}" DEPS_NAME)
   string(REGEX REPLACE "[^a-zA-Z0-9]" "_" DEPS_NAME "${DEPS_NAME}")
   
   # Compile tart source
@@ -171,6 +171,17 @@ foreach(SRC_FILE ${TART_SRC})
         DEPENDS gc
         COMMENT "Generating object file ${OBJ_FILE}")
 
+    # Optional target to generate assembly
+    add_custom_target("${ASM_FILE}"
+        COMMAND ${LLVM_LLC}
+            -load="${GC_PLUGIN}"
+            -disable-fp-elim
+            -filetype=asm
+            -o ${ASM_FILE}
+            ${OPT_BC_FILE}
+        DEPENDS "${OPT_BC_FILE}" gc
+        COMMENT "Generating assembly file ${ASM_FILE}")
+
     # Link executable
     add_executable(${EXE_FILE} EXCLUDE_FROM_ALL ${OBJ_FILE})
     # TODO: This is incorrect, should be deps of the above step but CMake doesn't allow that.
@@ -203,9 +214,9 @@ foreach(SRC_FILE ${TART_SRC})
 #        COMMENT "Generating debug symbols for ${EXE_FILE}")
   #endif ($DSYMUTIL)
 
-  add_custom_target("${EXE_FILE}.run" COMMAND ./${EXE_FILE} DEPENDS ${EXE_FILE})
-  add_dependencies("${EXE_FILE}.run" libstd libtesting libgc1)
-  add_dependencies(check "${EXE_FILE}.run")
+  add_custom_target("${TEST_NAME}.run" COMMAND ./${EXE_FILE} DEPENDS ${EXE_FILE})
+  add_dependencies("${TEST_NAME}.run" libstd libtesting libgc1)
+  add_dependencies(check "${TEST_NAME}.run")
 endforeach(SRC_FILE)
 
 # Generate dependency info

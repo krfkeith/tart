@@ -408,8 +408,8 @@ Value * CodeGenerator::genForEach(const ForEachExpr * in) {
 }
 
 Value * CodeGenerator::genSwitch(const SwitchExpr * in) {
-  const Type * testType = in->value()->type();
-  if (testType->isIntType() || isa<EnumType>(testType)) {
+  QualifiedType testType = in->value()->type();
+  if (testType->isIntType() || testType.isa<EnumType>()) {
     return genIntegerSwitch(in);
   } else if (testType == Builtins::typeString.get()) {
     return genEqSwitch(in);
@@ -552,7 +552,7 @@ Value * CodeGenerator::genEqSwitch(const SwitchExpr * in) {
       if (ConstantString * strVal = dyn_cast<ConstantString>(*vi)) {
         caseName.concat(strVal->value());
       }
-      Value * testResult = genCallInstr(eqTestFn, args.begin(), args.end(), caseName);
+      Value * testResult = genCallInstr(eqTestFn, args, caseName);
       builder_.CreateCondBr(testResult, blkCase, blkNext);
       builder_.SetInsertPoint(blkNext);
     }
@@ -626,10 +626,10 @@ Value * CodeGenerator::genMatch(const MatchExpr * in) {
   size_t savedRootCount = rootStackSize();
 
   // TODO: For union with a discriminator, we could use a switch instruction.
-  const Type * matchType = dealias(in->value()->type());
+  QualifiedType matchType = dealias(in->value()->type());
   //TypeShape matchTypeShape = matchType->typeShape();
   //bool matchIsLValue = matchTypeShape == Shape_Large_Value;
-  if (const UnionType * utype = dyn_cast<UnionType>(matchType)) {
+  if (const UnionType * utype = dyn_cast<UnionType>(matchType.unqualified())) {
     if (utype->hasRefTypesOnly()) {
     } else {
     }
@@ -809,12 +809,8 @@ Value * CodeGenerator::genTry(const TryExpr * in) {
     moveToEnd(blkLandingPad);
     builder_.SetInsertPoint(blkLandingPad);
 
-    // Call llvm.eh.exception to get the current exception
-    Function * ehException = llvm::Intrinsic::getDeclaration(
-        irModule_, llvm::Intrinsic::eh_exception);
-    Value * ehPtr = builder_.CreateCall(ehException, "eh_ptr");
     StructType * throwableType = cast<StructType>(Builtins::typeThrowable->irTypeComplete());
-    //llvm::Type * unwindExceptionType = throwableType->getContainedType(2);
+    llvm::Type * unwindExceptionType = throwableType->getContainedType(2);
 
     // Build the selector list, and detect if there is a 'catch-everything' block.
     // Note that a 'catch-everything' block may catch foreign exceptions, which
@@ -841,25 +837,35 @@ Value * CodeGenerator::genTry(const TryExpr * in) {
       }
     }
 
-    // Put in a cleanup selector at the end if there's no catch-all block.
-    if (!catchAllExpr) {
-      selectorVals.push_back(getInt32Val(0));
-    }
-
-    // Get the llvm.eh.selector intrinsic and the personality function.
-    Function * ehSelector = llvm::Intrinsic::getDeclaration(
-        irModule_, llvm::Intrinsic::eh_selector);
+    // Get the personality function.
     Function * personality = isBacktraceRequested ?
         getExceptionTracePersonality() : getExceptionPersonality();
 
-    // Args to llvm.eh.selector
-    ValueList args;
-    args.push_back(ehPtr);
-    args.push_back(builder_.CreateBitCast(personality, builder_.getInt8Ty()->getPointerTo()));
-    args.append(selectorVals.begin(), selectorVals.end());
+    // The type that is returned by the landing pad instruction
+    llvm::Type * actionTy = StructType::get(
+        unwindExceptionType->getPointerTo(), builder_.getInt32Ty(), NULL);
+    LandingPadInst * lpInst = builder_.CreateLandingPad(
+        actionTy,
+        builder_.CreateBitCast(personality, builder_.getInt8Ty()->getPointerTo()),
+        selectorVals.size());
 
-    // Call llvm.eh.selector to determine the action.
-    Value * ehAction = builder_.CreateCall(ehSelector, args, "eh_action");
+    for (ValueList::const_iterator it = selectorVals.begin(), itEnd = selectorVals.end();
+        it != itEnd; ++it) {
+      lpInst->addClause(*it);
+    }
+
+    if (blkFinally || catchAllExpr == NULL) {
+      lpInst->setCleanup(true);
+    }
+
+    if (catchAllExpr) {
+      lpInst->addClause(ConstantPointerNull::getNullValue(builder_.getInt8PtrTy()));
+    }
+
+    unsigned exceptionIndex[1] = { 0 };
+    unsigned actionIndex[1] = { 1 };
+    Value * ehPtr = builder_.CreateExtractValue(lpInst, exceptionIndex, "eh_ptr");
+    Value * ehAction = builder_.CreateExtractValue(lpInst, actionIndex, "eh_action");
 
     // The 'catch everything' block. If there's no actual 'catch everything'
     // statement in the try, then this will be used as the 'resume exception' block.
@@ -881,7 +887,7 @@ Value * CodeGenerator::genTry(const TryExpr * in) {
       // If there's only one selector, then it means that we already know which block
       // is going to handle the exception, and we also know that it's the 'catch everything'
       // block. Otherwise, we need to jump to the correct block.
-      if (selectorVals.size() > 1) {
+      if (selectorVals.size() > 0) {
         blkCatchAll = createBlock("try.catchall");
         SwitchInst * si = builder_.CreateSwitch(ehAction, blkCatchAll, selectorVals.size());
         int selectorIndex = 0;
@@ -1060,7 +1066,7 @@ Value * CodeGenerator::genReturn(const ReturnExpr * in) {
     }
 
     // Handle struct returns and other conventions.
-    const Type * returnType = returnVal->canonicalType();
+    QualifiedType returnType = returnVal->canonicalType();
     TypeShape returnShape = returnType->typeShape();
     DASSERT(value != NULL);
 
@@ -1204,13 +1210,14 @@ llvm::Value * CodeGenerator::genThrow(const ThrowExpr * in) {
   Value * ehPtr = NULL;
   bool isRethrow = (exceptVal == NULL);
   if (isRethrow) {
-    // Re-throw the current exception.
-    llvm::Type * throwableType = Builtins::typeThrowable->irType();
-    Function * ehException = llvm::Intrinsic::getDeclaration(
-        irModule_, llvm::Intrinsic::eh_exception);
-    ehPtr = builder_.CreateBitCast(
-        builder_.CreateCall(ehException, "eh_ptr"),
-        throwableType->getContainedType(2)->getPointerTo());
+    DFAIL("Implement");
+//    // Re-throw the current exception.
+//    llvm::Type * throwableType = Builtins::typeThrowable->irType();
+//    Function * ehException = llvm::Intrinsic::getDeclaration(
+//        irModule_, llvm::Intrinsic::eh_exception);
+//    ehPtr = builder_.CreateBitCast(
+//        builder_.CreateCall(ehException, "eh_ptr"),
+//        throwableType->getContainedType(2)->getPointerTo());
   } else {
     // Construct the exception object
     Value * exception = genExpr(exceptVal);

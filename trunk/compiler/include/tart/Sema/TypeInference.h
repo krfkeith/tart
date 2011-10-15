@@ -192,6 +192,9 @@ public:
   // Update conversion rankings
   virtual void update() = 0;
 
+  // Report errors
+  //virtual void reportErrors() const {}
+
   /** Conversion ranking for this constraint. */
   ConversionRank rank() const { return rank_; }
 
@@ -270,7 +273,7 @@ private:
 class TypeInferencePass {
 public:
   /** Run this pass on the specified expression. */
-  static Expr * run(Module * module, Expr * in, BindingEnv & env, const Type * expected,
+  static Expr * run(Module * module, Expr * in, BindingEnv & env, QualifiedType expected,
       bool strict = true);
 
 private:
@@ -283,7 +286,7 @@ private:
   Module * module_;
   Expr * rootExpr_;
   BindingEnv & env_;
-  const Type * expectedType_;
+  QualifiedType expectedType_;
   ChoicePointList choicePoints_;
   ConstraintSiteSet cstrSites_;
   ConversionRank lowestRank_;
@@ -295,7 +298,7 @@ private:
   bool overconstrained_;
   bool strict_;
 
-  TypeInferencePass(Module * module, Expr * root, BindingEnv & env, const Type * expected,
+  TypeInferencePass(Module * module, Expr * root, BindingEnv & env, QualifiedType expected,
       bool strict = true)
     : module_(module)
     , rootExpr_(root)

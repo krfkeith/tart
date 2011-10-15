@@ -87,11 +87,11 @@ FunctionDefn::FunctionDefn(Module * m, StringRef name, FunctionType * ty)
   , mergeTo_(NULL)
 {}
 
-QualifiedType FunctionDefn::type() const {
+const QualifiedType FunctionDefn::type() const {
   return type_;
 }
 
-QualifiedType FunctionDefn::returnType() const {
+const QualifiedType FunctionDefn::returnType() const {
   return type_->returnType();
 }
 

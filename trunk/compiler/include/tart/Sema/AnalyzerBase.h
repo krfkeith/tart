@@ -51,6 +51,50 @@ enum LookupOptions {
 };
 
 /// -------------------------------------------------------------------
+/// Result of a name lookup operation. Typically lookup results are
+/// definitions, however in many cases they also have an expression
+/// representing the context in which the definition is found - an
+/// example being an object member, where the member definition is
+/// paired with an object reference.
+class LookupResult {
+public:
+  LookupResult() : defn_(NULL), expr_(NULL) {}
+  LookupResult(Defn * defn, Expr * expr = NULL) : defn_(defn), expr_(expr) {}
+  LookupResult(const LookupResult & src) : defn_(src.defn_), expr_(src.expr_) {}
+
+  LookupResult & operator=(const LookupResult & src) {
+    defn_ = src.defn_;
+    expr_ = src.expr_;
+    return *this;
+  }
+
+  Defn * defn() const { return defn_; }
+  Expr * expr() const { return expr_; }
+
+  Expr * asExpr() const;
+
+  SourceLocation location() const {
+    return defn_ ? defn_->location() : (expr_ ? expr_->location() : SourceLocation());
+  }
+
+  bool isErrorResult() const { return defn_ == NULL && expr_ == NULL; }
+
+  void format(FormatStream & out) const;
+
+private:
+  Defn * defn_;
+  Expr * expr_;
+};
+
+/** Stream operator for Lookup results. */
+inline FormatStream & operator<<(FormatStream & out, const LookupResult & result) {
+  result.format(out);
+  return out;
+}
+
+typedef llvm::SmallVector<LookupResult, 8> LookupResults;
+
+/// -------------------------------------------------------------------
 /// Base class of analyzers. Contains the machinery needed to do
 /// qualified and unqualified name lookups.
 class AnalyzerBase {
@@ -99,19 +143,20 @@ public:
       However, if 'absPath' is true, then only the absolute package path
       method will be used.
   */
-  bool lookupName(ExprList & out, const ASTNode * ast, LookupOptions options = LOOKUP_DEFAULT);
+  bool lookupName(LookupResults & out, const ASTNode * ast, LookupOptions options = LOOKUP_DEFAULT);
 
-  /** Given a list of expression, ensures that they are either all types or
+  /** Given a list of lookup results, ensures that they are either all types or
       that none of them are (an error message is emitted otherwise.) If they
       are all types, then the type definitions are added to the output list. */
-  static bool getTypesFromExprs(SLC & loc, ExprList & in, TypeList & out);
+  static bool getLookupResultTypes(SLC & loc, LookupResults & in, QualifiedTypeList & out,
+      unsigned defaultQualifiers);
 
   /** Given a tuple expression which consists entirely of type literals, return a type literal
       of the tuple type. */
   static const Type * getTupleTypesFromTupleExpr(Expr * in);
 
   /** Given a value definition, infer its type. */
-  const Type * inferType(ValueDefn * valueDef);
+  const QualifiedType inferType(ValueDefn * valueDef);
 
   /** Do the requested analysis passes on the type. */
   static bool analyzeType(const Type * in, AnalysisTask pass);
@@ -148,7 +193,7 @@ public:
   /** Create an empty array literal, with elements of the specified type.
       Also add to the given module the external symbols needed to support
       construction of the array. */
-  static ArrayLiteralExpr * createArrayLiteral(SLC & loc, const Type * elementType);
+  static ArrayLiteralExpr * createArrayLiteral(SLC & loc, QualifiedType elementType);
 
   /** Given an element type, return an empty array of that element type. */
   static Expr * getEmptyArrayOfElementType(const Type * elementType);
@@ -168,7 +213,7 @@ public:
   void dumpScopeHierarchy();
 
   /** Dump a given set of search scopes. */
-  void dumpScopeList(const ExprList & lvals);
+  void dumpScopeList(const LookupResults & lvals);
 
   /** True if tracing is enabled for this def. */
   static bool isTraceEnabled(Defn * de);
@@ -195,28 +240,35 @@ protected:
   };
 
   // Recursive name-lookup helper function
-  bool lookupNameRecurse(ExprList & out, const ASTNode * ast, llvm::SmallString<0> & path,
+  bool lookupNameRecurse(LookupResults & out, const ASTNode * ast, llvm::SmallString<0> & path,
       LookupOptions lookupOptions);
 
   // Lookup an unqualified identifier in the current scope.
-  bool lookupIdent(ExprList & out, StringRef name, SLC & loc);
+  bool lookupIdent(LookupResults & out, StringRef name, SLC & loc);
 
   // Lookup a fully-qualified identifier in the global scope.
-  bool lookupQName(ExprList & out, StringRef name, SLC & loc);
+  bool lookupQName(LookupResults & out, StringRef name, SLC & loc);
 
   // Lookup a qualified identifier in the scope of a named module.
-  bool lookupNameInModule(ExprList & out, StringRef modName, StringRef name, SLC & loc);
+  bool lookupNameInModule(LookupResults & out, StringRef modName, StringRef name, SLC & loc);
 
   // Look up a name in an explicit scope.
-  bool findMemberOf(ExprList & out, Expr * context, StringRef name, SLC & loc);
+  bool findMemberOf(LookupResults & out, LookupResult context, StringRef name, SLC & loc);
+
+  // Look up a name in the scope of a type's static members.
+  bool findStaticTypeMember(
+      LookupResults & out, const Type * type, Expr * base, StringRef name, SLC & loc);
+
+  // Look up a name in the scope of the type of an expression.
+  bool findInstanceMember(LookupResults & out, Expr * base, StringRef name, SLC & loc);
 
   // Find a name in a scope and return a list of matching expressions.
-  bool findInScope(ExprList & out, StringRef name, const Scope * scope, Expr * context,
+  bool findInScope(LookupResults & out, StringRef name, const Scope * scope, Expr * context,
       SLC & loc, MemberPreference pref);
 
   // Special lookup function for static members of templated types. Since the template
   // is never analyzed (only instances are), we need to search the ast.
-  bool findStaticTemplateMember(ExprList & out, TypeDefn * type, StringRef name, SLC & loc);
+  bool findStaticTemplateMember(LookupResults & out, TypeDefn * type, StringRef name, SLC & loc);
 
   // Special lookup function for members of templated types. Since the template
   // is never analyzed (only instances are), we need to search the ast.
@@ -224,26 +276,31 @@ protected:
 
   // Given a list of expressions, find which ones are LValues that have template parameters,
   // and attempt to specialize those templates.
-  Expr * specialize(SLC & loc, const ExprList & exprs, const ASTNodeList & args,
+  Expr * specialize(SLC & loc, const LookupResults & exprs, const ASTNodeList & args,
       bool inferArgTypes);
 
   // Given a list of expressions, find which ones are LValues that have template parameters,
   // and attempt to specialize those templates.
-  Expr * specialize(SLC & loc, const ExprList & exprs, TupleType * tv);
+  Expr * specialize(SLC & loc, const LookupResults & exprs, TupleType * tv);
+
+  /** Reduce explicit specialization arguments. */
+  bool reduceSpecArgs(QualifiedTypeList & argList, const ASTNodeList & args, bool inferArgTypes);
 
   // Add a candidate to the list of specializations being considered.
   void addSpecCandidate(SLC & loc, SpCandidateSet & spcs, Expr * base, Defn * de, TupleType * args);
 
   // Lookup helper function that attempts to load a module from 'path'.
-  bool importName(ExprList & out, StringRef path, bool absPath, SLC & loc);
-
-  // Create a reference to a definition.
-  Expr * getDefnAsExpr(Defn * de, Expr * context, SLC & loc);
+  bool importName(LookupResults & out, StringRef path, bool absPath, SLC & loc);
 
   // Given a list of definitions produced by a symbol lookup, convert
   // each definition into an expression (or in the case of an imported
   // symbol, multiple expressions) representing a reference to the definition.
   bool getDefnListAsExprList(SLC & loc, DefnList & defs, Expr * context, ExprList & out);
+
+  // Given a list of definitions produced by a symbol lookup, convert
+  // each definition into a lookup result (or in the case of an imported
+  // symbol, multiple results) representing a reference to the definition.
+  bool defnListToLookupResults(DefnList & defs, Expr * context, LookupResults & out);
 
   static llvm::cl::opt<std::string> traceDef_;
 };

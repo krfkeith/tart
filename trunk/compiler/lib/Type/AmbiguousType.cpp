@@ -63,7 +63,7 @@ void AmbiguousType::formatImpl(FormatStream & out) const {
   DASSERT(recursionCheck < 50);
 
   QualifiedTypeSet expansion;
-  expand(expansion);
+  expandImpl(expansion, 0);
   out << "{";
   for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
     if (it != expansion.begin()) {

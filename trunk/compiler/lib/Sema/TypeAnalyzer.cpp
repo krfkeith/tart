@@ -21,6 +21,7 @@
 #include "tart/Type/NativeType.h"
 #include "tart/Type/PrimitiveType.h"
 #include "tart/Type/TupleType.h"
+#include "tart/Type/TypeFunction.h"
 #include "tart/Type/UnionType.h"
 
 #include "tart/Objects/Builtins.h"
@@ -28,6 +29,14 @@
 namespace tart {
 
 Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
+  QualifiedType qual = qualifiedTypeFromAST(ast);
+  if (qual.qualifiers() != 0) {
+    diag.error(ast) << "Type modifier not valid in this context " << qual;
+  }
+  return const_cast<Type *>(qual.unqualified());
+}
+
+QualifiedType TypeAnalyzer::qualifiedTypeFromAST(const ASTNode * ast, unsigned defaultQualifiers) {
   if (ast == NULL) {
     return NULL;
   }
@@ -40,19 +49,20 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     case ASTNode::Specialize: {
       // Most of the work is done by lookupName. The rest is just validating
       // the result and making sure it's a type.
-      ExprList typeExprs;
-      lookupName(typeExprs, ast, lookupOptions_);
+      LookupResults typeSyms;
+      lookupName(typeSyms, ast, lookupOptions_);
 
-      if (typeExprs.empty()) {
+      if (typeSyms.empty()) {
         diag.error(loc) << "Undefined type '" << ast << "'";
-        lookupName(typeExprs, ast, lookupOptions_);
+        lookupName(typeSyms, ast, lookupOptions_);
         return &BadType::instance;
       }
 
-      TypeList typeList;
-      if (getTypesFromExprs(loc, typeExprs, typeList)) {
+      QualifiedTypeList typeList;
+      if (getLookupResultTypes(loc, typeSyms, typeList, defaultQualifiers)) {
+        // TODO: Handle ambiguous type resolution.
         if (typeList.size() > 1) {
-          diag.fatal(loc) << "Multiple definitions for '" << ast << "'";
+          diag.error(loc) << "Multiple definitions for '" << ast << "'";
           return &BadType::instance;
         }
 
@@ -60,9 +70,8 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
       }
 
       diag.error(loc) << "'" << ast << "' is not a type expression";
-      for (ExprList::iterator it = typeExprs.begin(); it != typeExprs.end(); ++it) {
-        diag.info(*it) << Format_Verbose << *it << " (" << (*it)->exprType() << ")";
-        diag.debug() << "Expr type: " << (*it)->exprType();
+      for (LookupResults::iterator it = typeSyms.begin(); it != typeSyms.end(); ++it) {
+        diag.info(it->location()) << Format_Verbose << *it;
       }
 
       return &BadType::instance;
@@ -70,15 +79,15 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
 
     case ASTNode::Array: {
       const ASTOper * arrayOp = static_cast<const ASTOper *>(ast);
-      Type * elementType = typeFromAST(arrayOp->arg(0));
-      DASSERT(elementType != NULL);
+      QualifiedType elementType = qualifiedTypeFromAST(arrayOp->arg(0));
+      DASSERT(elementType);
       return const_cast<CompositeType *>(getArrayTypeForElement(elementType));
     }
 
     case ASTNode::BuiltIn: {
       Defn * def = static_cast<const ASTBuiltIn *>(ast)->value();
       if (TypeDefn * tdef = dyn_cast<TypeDefn>(def)) {
-        return tdef->mutableTypePtr();
+        return tdef->value();
       } else {
         diag.fatal(ast) << "'" << def->name() << "' is not a type";
         return &BadType::instance;
@@ -96,23 +105,12 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
 
     case ASTNode::Tuple: {
       const ASTOper * tupleOp = static_cast<const ASTOper *>(ast);
-      const ASTNodeList & args = tupleOp->args();
-      QualifiedTypeList fieldTypes;
-      for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
-        Type * fieldType = typeFromAST(*it);
-        if (isErrorResult(fieldType)) {
-          return NULL;
-        }
-
-        fieldTypes.push_back(fieldType);
-      }
-
-      return TupleType::get(fieldTypes.begin(), fieldTypes.end());
+      return tupleTypeFromASTNodeList(tupleOp->args());
     }
 
     case ASTNode::AnonFn: {
       const ASTFunctionDecl * fnDecl = static_cast<const ASTFunctionDecl *>(ast);
-      FunctionType * ftype = typeFromFunctionAST(fnDecl);
+      FunctionType * ftype = functionTypeFromAST(fnDecl);
       if (isErrorResult(ftype)) {
         return ftype;
       }
@@ -137,7 +135,7 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
       if (isErrorResult(typeExpr)) {
         return &BadType::instance;
       } else if (TypeLiteralExpr * type = dyn_cast_or_null<TypeLiteralExpr>(typeExpr)) {
-        return const_cast<Type *>(type->value());
+        return type->value();
       } else {
         diag.error(ast) << "Type name expected";
         return &BadType::instance;
@@ -149,8 +147,11 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
 
     case ASTNode::Address: {
       const ASTOper * op = static_cast<const ASTOper *>(ast);
-      QualifiedType ty = qualifiedTypeFromAST(op->arg(0));
+      QualifiedType ty = qualifiedTypeFromAST(op->arg(0), defaultQualifiers);
       if (!isErrorResult(ty)) {
+        if (defaultQualifiers) {
+          //ty.addQualifiers(defaultQualifiers);
+        }
         return AddressType::get(ty);
       }
       return &BadType::instance;
@@ -173,28 +174,6 @@ Type * TypeAnalyzer::typeFromAST(const ASTNode * ast) {
     case ASTNode::TypeModMutable:
     case ASTNode::TypeModImmutable:
     case ASTNode::TypeModAdopted:
-    case ASTNode::TypeModVolatile:
-      diag.error(ast) << "Type modifier not valid in this context " <<
-          nodeTypeName(ast->nodeType());
-      break;
-
-    default:
-      diag.fatal(ast) << "invalid node type " << nodeTypeName(ast->nodeType());
-      break;
-  }
-  return NULL;
-}
-
-QualifiedType TypeAnalyzer::qualifiedTypeFromAST(const ASTNode * ast) {
-  if (ast == NULL) {
-    return QualifiedType(NULL);
-  }
-
-  switch (ast->nodeType()) {
-    case ASTNode::TypeModReadOnly:
-    case ASTNode::TypeModMutable:
-    case ASTNode::TypeModImmutable:
-    case ASTNode::TypeModAdopted:
     case ASTNode::TypeModVolatile: {
       const ASTOper * op = static_cast<const ASTOper *>(ast);
       QualifiedType baseType = qualifiedTypeFromAST(op->arg(0));
@@ -212,9 +191,25 @@ QualifiedType TypeAnalyzer::qualifiedTypeFromAST(const ASTNode * ast) {
       return &BadType::instance;
     }
 
+    case ASTNode::Qualify: {
+      const ASTOper * op = static_cast<const ASTOper *>(ast);
+      const Type * fnVal = typeFromAST(op->arg(0));
+      QualifiedType arg = qualifiedTypeFromAST(op->arg(1));
+      if (isErrorResult(arg)) {
+        return &BadType::instance;
+      }
+      const TupleType * args = TupleType::get(arg);
+      if (const TypeFunction * tfn = dyn_cast<TypeFunction>(fnVal)) {
+        return tfn->apply(args);
+      }
+      return new TypeFunctionCall(fnVal, args);
+    }
+
     default:
-      return typeFromAST(ast);
+      diag.fatal(ast) << "invalid node type " << nodeTypeName(ast->nodeType());
+      break;
   }
+  return NULL;
 }
 
 void TypeAnalyzer::undefinedType(const ASTNode * ast) {
@@ -226,17 +221,13 @@ void TypeAnalyzer::undefinedType(const ASTNode * ast) {
 }
 
 bool TypeAnalyzer::typeDefnListFromAST(const ASTNode * ast, DefnList & defns) {
-  ExprList results;
+  LookupResults results;
   lookupName(results, ast);
   const SourceLocation & loc = ast->location();
-  for (ExprList::iterator it = results.begin(); it != results.end();
+  for (LookupResults::iterator it = results.begin(); it != results.end();
       ++it) {
-    if (TypeLiteralExpr * ctype = dyn_cast<TypeLiteralExpr>(*it)) {
-      if (TypeDefn * tdef = ctype->value()->typeDefn()) {
-        defns.push_back(tdef);
-      } else {
-        diag.fatal(loc) << "'" << ctype << "' is not a named type.";
-      }
+    if (TypeDefn * tdef = dyn_cast<TypeDefn>(it->defn())) {
+      defns.push_back(tdef);
     } else {
       diag.fatal(loc) << "'" << *it << "' is not a type.";
     }
@@ -245,16 +236,16 @@ bool TypeAnalyzer::typeDefnListFromAST(const ASTNode * ast, DefnList & defns) {
   return !defns.empty();
 }
 
-FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
-  Type * returnType = typeFromAST(ast->returnType());
+FunctionType * TypeAnalyzer::functionTypeFromAST(const ASTFunctionDecl * ast) {
+  QualifiedType returnType = qualifiedTypeFromAST(ast->returnType());
   const ASTParamList & astParams = ast->params();
   ParameterList params;
   for (ASTParamList::const_iterator it = astParams.begin(); it != astParams.end(); ++it) {
     ASTParameter * aparam = *it;
 
     if (aparam->flags() & Param_Star) {
-      Type * paramType = typeFromAST(aparam->type());
-      if (const TupleType * paramTypes = dyn_cast<TupleType>(paramType)) {
+      QualifiedType paramType = qualifiedTypeFromAST(aparam->type());
+      if (const TupleType * paramTypes = dyn_cast<TupleType>(paramType.type())) {
         if (aparam->flags() & Param_Variadic) {
           diag.error(aparam) << "*Type params cannot be variadic";
         } else if (aparam->value() != NULL) {
@@ -265,10 +256,9 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
           // TODO - give each param a name.
           // TODO - make an alias for the params that can be used within the function body
           // accessible as an array.
-          const Type * ptype = it->type();
+          QualifiedType paramType = *it;
           ParameterDefn * param = new ParameterDefn(module_, "");
-          param->setType(ptype);
-          param->setInternalType(ptype);
+          setParamType(param, paramType);
           params.push_back(param);
           if (aparam->flags() & Param_KeywordOnly) {
             param->setFlag(ParameterDefn::KeywordOnly, true);
@@ -280,11 +270,12 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
     } else {
       // Note that type might be NULL if not specified. We'll pick it up
       // later from the default value.
-      QualifiedType paramType = qualifiedTypeFromAST(aparam->type());
+      unsigned defaultQualifiers = 0;
+      if (!(aparam->flags() & Param_Variadic)) {
+        defaultQualifiers = QualifiedType::READONLY;
+      }
+      QualifiedType paramType = qualifiedTypeFromAST(aparam->type(), defaultQualifiers);
       ParameterDefn * param = new ParameterDefn(module_, aparam);
-      param->setType(paramType);
-      param->setInternalType(paramType);
-      params.push_back(param);
       if (aparam->flags() & Param_Variadic) {
         param->setFlag(ParameterDefn::Variadic, true);
       }
@@ -292,10 +283,42 @@ FunctionType * TypeAnalyzer::typeFromFunctionAST(const ASTFunctionDecl * ast) {
       if (aparam->flags() & Param_KeywordOnly) {
         param->setFlag(ParameterDefn::KeywordOnly, true);
       }
+      setParamType(param, paramType);
+      params.push_back(param);
     }
   }
 
   return new FunctionType(returnType, params);
+}
+
+void TypeAnalyzer::setParamType(ParameterDefn * param, QualifiedType paramType) {
+//  if (paramType.isAdopted()) {
+//    paramType.removeQualifiers(QualifiedType::MUTABILITY_MASK);
+//    paramType.addQualifiers(QualifiedType::ADOPTED);
+//  } else if (paramType.isExplicitMutable()) {
+//    paramType.removeQualifiers(QualifiedType::MUTABILITY_MASK);
+//  } else  if (!paramType.isImmutable()) {
+//    paramType.removeQualifiers(QualifiedType::MUTABILITY_MASK);
+//    if (!param->isVariadic() && isQualifiableType(paramType.unqualified())) {
+//      paramType.addQualifiers(QualifiedType::READONLY);
+//    }
+//  }
+  param->setType(paramType);
+  param->setInternalType(paramType);
+}
+
+TupleType * TypeAnalyzer::tupleTypeFromASTNodeList(const ASTNodeList & args) {
+  QualifiedTypeList fieldTypes;
+  for (ASTNodeList::const_iterator it = args.begin(); it != args.end(); ++it) {
+    QualifiedType fieldType = qualifiedTypeFromAST(*it);
+    if (isErrorResult(fieldType)) {
+      return NULL;
+    }
+
+    fieldTypes.push_back(fieldType);
+  }
+
+  return TupleType::get(fieldTypes.begin(), fieldTypes.end());
 }
 
 Type * TypeAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
@@ -313,7 +336,7 @@ bool TypeAnalyzer::getUnionTypes(const ASTNode * ast, QualifiedTypeList & result
       }
     }
   } else {
-    Type * elementType = typeFromAST(ast);
+    QualifiedType elementType = qualifiedTypeFromAST(ast);
     if (isErrorResult(elementType)) {
       return false;
     }

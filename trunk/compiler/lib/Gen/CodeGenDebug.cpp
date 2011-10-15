@@ -147,12 +147,13 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
   if ((MDNode *)sp == NULL) {
     DIType diFuncType = genDIFunctionType(fn->functionType());
     Function * fval = genFunctionValue(fn->mergeTo() ? fn->mergeTo() : fn);
-    DASSERT_OBJ(fn->hasBody(), fn);
+    DASSERT(fn->hasBody()) << "genDISubprogram: Function " << fn << " has no body!";
     DASSERT_OBJ(!fn->isIntrinsic(), fn);
     DASSERT_OBJ(!fn->isAbstract(), fn);
     DASSERT_OBJ(!fn->isInterfaceMethod(), fn);
+    DASSERT(diBuilder_.getCU() != NULL) << "No compile unit!";
     bool isDefinition = !fn->isExtern() && fn->module() == module_;
-    isDefinition = true;
+    //isDefinition = true;
     if (fn->storageClass() == Storage_Instance) {
       sp = diBuilder_.createMethod(
           compileUnit(),

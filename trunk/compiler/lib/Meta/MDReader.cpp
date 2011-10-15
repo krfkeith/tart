@@ -471,6 +471,7 @@ Defn * MDReader::readMember(NodeRef node, Scope * parent, StorageClass storage) 
 
       param->passes().finish(VariableDefn::VariableTypePass);
       param->passes().finish(VariableDefn::InitializerPass);
+      param->passes().finish(VariableDefn::TypeModifierPass);
       param->addTrait(Defn::Singular);
       return param;
     }

@@ -175,7 +175,7 @@ llvm::FunctionType * FunctionType::createIRFunctionType(
   // Generate the argument signature
   for (ParameterList::const_iterator it = params.begin(); it != params.end(); ++it) {
     const ParameterDefn * param = *it;
-    const Type * paramType = param->internalType();
+    const Type * paramType = param->internalType().unqualified();
     DASSERT_OBJ(paramType != NULL, param);
     parameterTypes.push_back(paramType->irParameterType());
   }
@@ -293,7 +293,7 @@ StringRef FunctionType::invokeName() const {
 bool FunctionType::hasErrors() const {
   for (ParameterList::const_iterator it = params_.begin(); it != params_.end(); ++it) {
     const ParameterDefn * param = *it;
-    if (param->type() == &BadType::instance) {
+    if (param->type().unqualified() == &BadType::instance) {
       return true;
     }
   }

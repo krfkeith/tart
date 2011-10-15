@@ -29,7 +29,8 @@ class AsExpr;
 class SeqExpr : public ArglistExpr {
 public:
   /** Constructor. */
-  SeqExpr(const SourceLocation & loc, LocalScope * scope, const ExprList & exprs, const Type * type)
+  SeqExpr(const SourceLocation & loc, LocalScope * scope, const ExprList & exprs,
+      QualifiedType type)
     : ArglistExpr(Seq, loc, exprs, type)
     , scope_(scope)
   {}

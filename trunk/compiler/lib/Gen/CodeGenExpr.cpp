@@ -97,7 +97,7 @@ Value * CodeGenerator::genExpr(const Expr * in) {
       return genConstantObjectPtr(static_cast<const ConstantObjectRef *>(in), "", false);
 
     case Expr::ConstEmptyArray:
-      return genConstantEmptyArray(cast<CompositeType>(in->type()));
+      return genConstantEmptyArray(cast<CompositeType>(in->type().unqualified()));
 
     case Expr::LValue:
       return genLoadLValue(static_cast<const LValueExpr *>(in), true);
@@ -131,6 +131,9 @@ Value * CodeGenerator::genExpr(const Expr * in) {
 
     case Expr::DynamicCast:
       return genDynamicCast(static_cast<const CastExpr *>(in), false, false);
+
+    case Expr::QualCast:
+      return genExpr(static_cast<const CastExpr *>(in)->arg());
 
     case Expr::BitCast:
       return genBitCast(static_cast<const CastExpr *>(in), false);
@@ -213,7 +216,7 @@ Value * CodeGenerator::genExpr(const Expr * in) {
       return genClosureEnv(static_cast<const ClosureEnvExpr *>(in));
 
     case Expr::TypeLiteral:
-      return getTypeObjectPtr(static_cast<const TypeLiteralExpr *>(in)->value());
+      return getTypeObjectPtr(static_cast<const TypeLiteralExpr *>(in)->value().unqualified());
 
     case Expr::NoOp:
       return voidValue_;
@@ -288,7 +291,7 @@ llvm::Constant * CodeGenerator::genConstExpr(const Expr * in) {
       return genConstantNativeArray(static_cast<const ConstantNativeArray *>(in));
 
     case Expr::ConstEmptyArray:
-      return genConstantEmptyArray(cast<CompositeType>(in->type()));
+      return genConstantEmptyArray(cast<CompositeType>(in->type().unqualified()));
 
     case Expr::ConstString:
       return genStringLiteral(static_cast<const ConstantString *> (in)->value());
@@ -324,7 +327,7 @@ llvm::Constant * CodeGenerator::genConstRef(const Expr * in, StringRef name, boo
       return genConstantObjectPtr(static_cast<const ConstantObjectRef *>(in), name, synthetic);
 
     case Expr::ConstEmptyArray:
-      return genConstantEmptyArray(cast<CompositeType>(in->type()));
+      return genConstantEmptyArray(cast<CompositeType>(in->type().unqualified()));
 
     case Expr::ConstNArray:
       return genConstantNativeArrayPtr(static_cast<const ConstantNativeArray *>(in), name);
@@ -480,7 +483,7 @@ llvm::Value * CodeGenerator::genCompare(const tart::CompareExpr* in) {
 }
 
 Value * CodeGenerator::genInstanceOf(const tart::InstanceOfExpr* in) {
-  DASSERT_OBJ(in->value()->type() != NULL, in);
+  DASSERT(in->value()->type()) << "Missing type for 'isa' expression " << in;
   Value * val = genExpr(in->value());
   if (val == NULL) {
     return NULL;
@@ -488,11 +491,15 @@ Value * CodeGenerator::genInstanceOf(const tart::InstanceOfExpr* in) {
 
   TypeShape shape = in->type()->typeShape();
 
-  return genTypeTest(val, in->value()->type(), in->toType(), shape == Shape_Large_Value);
+  return genTypeTest(
+      val, in->value()->type().unqualified(), in->toType(), shape == Shape_Large_Value);
 }
 
 Value * CodeGenerator::genRefEq(const BinaryExpr * in, bool invert) {
-  DASSERT_OBJ(TypeRelation::isEqual(in->first()->type(), in->second()->type()), in);
+  DASSERT(TypeRelation::isEqual(
+      in->first()->type().unqualified(), in->second()->type().unqualified())) <<
+      "Unequal types for reference equality test: '" << in->first()->type() << "' and '" <<
+      in->second()->type() << "'.";
   Value * first = genExpr(in->first());
   Value * second = genExpr(in->second());
   if (first != NULL && second != NULL) {
@@ -809,7 +816,7 @@ Value * CodeGenerator::genGEPIndices(const Expr * expr, ValueList & indices, For
       const CompositeType * fieldClass = field->definingClass();
       fieldClass->createIRTypeFields();
       DASSERT(fieldClass != NULL);
-      const CompositeType * baseClass = cast<CompositeType>(lval->base()->type());
+      const CompositeType * baseClass = cast<CompositeType>(lval->base()->type().unqualified());
       DASSERT(TypeRelation::isSubclass(baseClass, fieldClass));
       while (baseClass != fieldClass) {
         baseClass = baseClass->super();
@@ -897,7 +904,7 @@ Value * CodeGenerator::genBaseAddress(const Expr * in, ValueList & indices,
     const ValueDefn * field = lval->value();
     const Type * fieldType = field->type().dealias().unqualified();
     if (const ParameterDefn * param = dyn_cast<ParameterDefn>(field)) {
-      fieldType = dealias(param->internalType());
+      fieldType = dealias(param->internalType()).unqualified();
       if (param->getFlag(ParameterDefn::Reference)) {
         needsDeref = true;
       }
@@ -977,7 +984,7 @@ Value * CodeGenerator::genBaseAddress(const Expr * in, ValueList & indices,
   }
 
   // Assert that the type is what we expected.
-  DASSERT_OBJ(in->type() != NULL, in);
+  DASSERT_OBJ(in->type(), in);
   if (!indices.empty()) {
     DASSERT_TYPE_EQ(in,
         in->type()->irType(),
@@ -989,7 +996,7 @@ Value * CodeGenerator::genBaseAddress(const Expr * in, ValueList & indices,
 }
 
 Value * CodeGenerator::genTupleCtor(const TupleCtorExpr * in) {
-  const TupleType * tt = cast<TupleType>(in->canonicalType());
+  const TupleType * tt = cast<TupleType>(in->canonicalType().unqualified());
   if (in->canonicalType()->typeShape() == Shape_Small_RValue ||
       in->canonicalType()->typeShape() == Shape_Small_LValue) {
     // Small tuple values are stored in SSA vars.
@@ -1071,7 +1078,7 @@ llvm::Constant * CodeGenerator::genStringLiteral(StringRef strval, StringRef sym
 }
 
 Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
-  const CompositeType * arrayType = cast<CompositeType>(in->type());
+  const CompositeType * arrayType = cast<CompositeType>(in->type().unqualified());
   arrayType->createIRTypeFields();
   size_t arrayLength = in->args().size();
 
@@ -1085,7 +1092,7 @@ Value * CodeGenerator::genArrayLiteral(const ArrayLiteralExpr * in) {
   ValueList args;
   args.push_back(getIntVal(arrayLength));
   Constant * allocFunc = findMethod(arrayType, "alloc");
-  Value * result = genCallInstr(allocFunc, args.begin(), args.end(), "ArrayLiteral");
+  Value * result = genCallInstr(allocFunc, args, "ArrayLiteral");
 
   // Evaluate the array elements.
   ValueList arrayVals;
@@ -1163,7 +1170,6 @@ Value * CodeGenerator::genClosureEnv(const ClosureEnvExpr * in) {
 }
 
 Value * CodeGenerator::genVarSizeAlloc(const Type * objType, Value * sizeValue) {
-
   llvm::Type * resultType = objType->irType();
   resultType = resultType->getPointerTo();
 
@@ -1206,15 +1212,15 @@ GlobalVariable * CodeGenerator::genConstantObjectPtr(const ConstantObjectRef * o
     return NULL;
   }
 
-  bool isMutable = false;
-  if (const CompositeType * ctype = dyn_cast<CompositeType>(obj->type())) {
-    isMutable = ctype->isMutable();
+  bool isExplicitMutable = false;
+  if (const CompositeType * ctype = dyn_cast<CompositeType>(obj->type().unqualified())) {
+    isExplicitMutable = ctype->isExplicitMutable();
   }
   GlobalVariable * var = new GlobalVariable(
-      *irModule_, constObject->getType(), !isMutable,
+      *irModule_, constObject->getType(), !isExplicitMutable,
       synthetic ? GlobalValue::LinkOnceODRLinkage : GlobalValue::ExternalLinkage,
       constObject, name);
-  addStaticRoot(var, obj->type());
+  addStaticRoot(var, obj->type().unqualified());
   return var;
 }
 
@@ -1224,7 +1230,7 @@ Constant * CodeGenerator::genConstantObject(const ConstantObjectRef * obj) {
     return it->second;
   }
 
-  const CompositeType * type = cast<CompositeType>(obj->type());
+  const CompositeType * type = cast<CompositeType>(obj->type().unqualified());
   type->createIRTypeFields();
   llvm::Constant * structVal = genConstantObjectStruct(obj, type);
 
@@ -1238,7 +1244,7 @@ Constant * CodeGenerator::genConstantObjectStruct(
   bool hasFlexibleArrayField = false;
   if (type == Builtins::typeObject) {
     // Generate the TIB pointer.
-    llvm::Constant * tibPtr = getTypeInfoBlockPtr(cast<CompositeType>(obj->type()));
+    llvm::Constant * tibPtr = getTypeInfoBlockPtr(cast<CompositeType>(obj->type().unqualified()));
     if (tibPtr == NULL) {
       return NULL;
     }
@@ -1293,7 +1299,7 @@ llvm::Constant * CodeGenerator::genConstantNativeArrayPtr(const ConstantNativeAr
       *irModule_, nativeArray->getType(), false,
       GlobalValue::InternalLinkage, nativeArray, name);
   // TODO: Might need to make this a root.
-  addStaticRoot(var, array->type());
+  addStaticRoot(var, array->type().unqualified());
   return var;
 }
 
@@ -1313,8 +1319,8 @@ llvm::Constant * CodeGenerator::genConstantNativeArray(const ConstantNativeArray
 }
 
 llvm::Constant * CodeGenerator::genConstantUnion(const CastExpr * in) {
-  const Type * fromType = in->arg()->type();
-  const Type * toType = in->type();
+  const Type * fromType = in->arg()->type().unqualified();
+  const Type * toType = in->type().unqualified();
   Constant * value = NULL;
 
   if (!fromType->isVoidType()) {

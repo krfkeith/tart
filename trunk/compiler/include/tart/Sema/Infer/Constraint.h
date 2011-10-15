@@ -72,6 +72,7 @@ public:
 
   /** The set of conditions which must all be true, otherwise this constraint is ignored. */
   const ProvisionSet & provisions() const { return provisions_; }
+  ProvisionSet & provisions() { return provisions_; }
 
   /** Check whether all of the provisions are true. */
   bool checkProvisions() const;

@@ -184,18 +184,18 @@ Expr * FindExternalRefsPass::visitNew(NewExpr * in) {
     function_->setFlag(FunctionDefn::MakesAllocs, true);
     function_->setFlag(FunctionDefn::HasSafePoints, true);
   }
-  addTypeRef(in->type());
+  addTypeRef(in->type().unqualified());
   return in;
 }
 
 Expr * FindExternalRefsPass::visitConstantObjectRef(ConstantObjectRef * in) {
-  const CompositeType * ctype = cast<CompositeType>(in->type());
+  const CompositeType * ctype = cast<CompositeType>(in->type().unqualified());
   module_->addSymbol(ctype->typeDefn());
   return CFGPass::visitConstantObjectRef(in);
 }
 
 Expr * FindExternalRefsPass::visitConstantEmptyArray(ConstantEmptyArray * in) {
-  const CompositeType * ctype = cast<CompositeType>(in->type());
+  const CompositeType * ctype = cast<CompositeType>(in->type().unqualified());
   module_->addSymbol(ctype->typeDefn());
   return CFGPass::visitConstantEmptyArray(in);
 }
@@ -209,7 +209,7 @@ Expr * FindExternalRefsPass::visitCast(CastExpr * in) {
 }
 
 Expr * FindExternalRefsPass::visitArrayLiteral(ArrayLiteralExpr * in) {
-  const CompositeType * arrayType = cast<CompositeType>(in->type());
+  const CompositeType * arrayType = cast<CompositeType>(in->type().unqualified());
   DASSERT(arrayType->passes().isFinished(CompositeType::ScopeCreationPass));
   Defn * allocFunc = arrayType->lookupSingleMember("alloc");
   DASSERT(allocFunc != NULL);
@@ -224,11 +224,11 @@ Expr * FindExternalRefsPass::visitTypeLiteral(TypeLiteralExpr * in) {
     module_->addSymbol(td);
   }
 
-  if (!isa<CompositeType>(in->value())) {
+  if (!in->value().isa<CompositeType>()) {
     if (td != NULL) {
       module_->reflect(td);
     }
-    if (isa<PrimitiveType>(in->value())) {
+    if (in->value().isa<PrimitiveType>()) {
       module_->addSymbol(Builtins::typePrimitiveType.typeDefn());
     }
   }

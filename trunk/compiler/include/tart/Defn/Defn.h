@@ -171,7 +171,7 @@ public:
   bool isUnsafe() const { return traits_.contains(Unsafe); }
   bool isScaffold() const { return traits_.contains(Scaffold); }
   bool isReadOnly() const { return (modifiers_.flags & ReadOnly) != 0; }
-  bool isMutable() const { return (modifiers_.flags & Mutable) != 0; }
+  bool isExplicitMutable() const { return (modifiers_.flags & Mutable) != 0; }
   bool isImmutable() const { return (modifiers_.flags & Immutable) != 0; }
 
   const DeclModifiers & modifiers() const { return modifiers_; }
@@ -299,7 +299,7 @@ public:
   {}
 
   /** Type of this variable. */
-  virtual QualifiedType type() const = 0;
+  virtual const QualifiedType type() const = 0;
 
   /** Class in which this is defined, or NULL if defining scope is not a class. */
   const CompositeType * definingClass() const;
@@ -323,20 +323,20 @@ protected:
 /// A reference an imported symbol as declared by an 'import' statement.
 class ExplicitImportDefn : public Defn {
 private:
-  ExprList importValues_;
+  DefnList importDefs_;
   Scope * definingScope_;
 
 public:
-  ExplicitImportDefn(Module * m, StringRef name, const ExprList & defs)
+  ExplicitImportDefn(Module * m, StringRef name, const DefnList & defs)
     : Defn(ExplicitImport, m, name)
-    , importValues_(defs)
+    , importDefs_(defs)
     , definingScope_(NULL)
   {
   }
 
-  /** Get the value(s) of this import. */
-  const ExprList & importValues() const { return importValues_; }
-  ExprList & importValues() { return importValues_; }
+  /** Get the defns of this import. */
+  const DefnList & importDefs() const { return importDefs_; }
+  DefnList & importDefs() { return importDefs_; }
 
   // Overrides
 

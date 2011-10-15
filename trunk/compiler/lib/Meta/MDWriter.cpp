@@ -329,13 +329,13 @@ void MDWriter::putDefnHeader(MDNodeBuilder & builder, const Defn * de, meta::Def
 Value * MDWriter::templateSignature(const Defn * de) {
   const Template * tm = de->templateSignature();
   const TupleType * typeParams = tm->typeParams();
-  const TypeList & typeParamDefaults = tm->typeParamDefaults();
+  const QualifiedTypeList & typeParamDefaults = tm->typeParamDefaults();
   size_t numTypeParams = typeParams->size();
   ASTWriter writer;
   for (size_t i = 0; i < numTypeParams; ++i) {
     QualifiedType param = typeParams->member(i);
-    const Type * paramDefault = typeParamDefaults[i];
-    if (paramDefault != NULL) {
+    QualifiedType paramDefault = typeParamDefaults[i];
+    if (paramDefault) {
       writer.write(meta::AST::ASSIGN);
       writer.write(param);
       writer.write(paramDefault);
@@ -365,7 +365,7 @@ MDNode * MDWriter::attributeList(const Defn * de) {
   MDNodeBuilder builder(context_);
   for (ExprList::const_iterator it = de->attrs().begin(); it != de->attrs().end(); ++it) {
     Expr * attrExpr = *it;
-    if (const CompositeType * attrClass = dyn_cast<CompositeType>(attrExpr->type())) {
+    if (const CompositeType * attrClass = dyn_cast<CompositeType>(attrExpr->type().unqualified())) {
       if (!attrNeedsSerialization(attrClass)) {
         continue;
       }

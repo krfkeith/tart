@@ -98,6 +98,8 @@ public:
   // System functions
   static FunctionDefn * funcHasBase;
   static FunctionDefn * funcTypecastError;
+  static FunctionDefn * funcTypecastErrorExt;
+  static FunctionDefn * funcDispatchError;
   static FunctionDefn * funcUndefinedMethod;
 
   /** Initialization function for builtins. */

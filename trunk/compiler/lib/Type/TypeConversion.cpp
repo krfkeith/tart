@@ -7,21 +7,22 @@
 
 #include "tart/Expr/Exprs.h"
 
-#include "tart/Type/Type.h"
-#include "tart/Type/TypeConversion.h"
-#include "tart/Type/TypeAlias.h"
-#include "tart/Type/PrimitiveType.h"
-#include "tart/Type/CompositeType.h"
-#include "tart/Type/EnumType.h"
-#include "tart/Type/NativeType.h"
-#include "tart/Type/UnionType.h"
-#include "tart/Type/UnitType.h"
-#include "tart/Type/TupleType.h"
-#include "tart/Type/TypeLiteral.h"
-#include "tart/Type/TypeRelation.h"
 #include "tart/Type/AmbiguousParameterType.h"
 #include "tart/Type/AmbiguousResultType.h"
 #include "tart/Type/AmbiguousTypeParamType.h"
+#include "tart/Type/CompositeType.h"
+#include "tart/Type/EnumType.h"
+#include "tart/Type/NativeType.h"
+#include "tart/Type/PrimitiveType.h"
+#include "tart/Type/Type.h"
+#include "tart/Type/TypeAlias.h"
+#include "tart/Type/TypeConversion.h"
+#include "tart/Type/TupleType.h"
+#include "tart/Type/TypeFunction.h"
+#include "tart/Type/TypeLiteral.h"
+#include "tart/Type/TypeRelation.h"
+#include "tart/Type/UnionType.h"
+#include "tart/Type/UnitType.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -35,22 +36,76 @@
 namespace tart {
 namespace TypeConversion {
 
+ConversionRank qualifierConversionRank(unsigned srcQualifiers, unsigned dstQualifiers) {
+  if (areQualifiersEquivalent(srcQualifiers, dstQualifiers)) {
+    return IdenticalTypes;
+  } else if (canAssignQualifiers(srcQualifiers, dstQualifiers)) {
+    return ExactConversion;
+  } else {
+    return QualifierLoss;
+  }
+}
+
+void assignSrcToDst(QualifiedType srcType, Expr * srcExpr, QualifiedType dstType, Expr **dstExpr) {
+  if (dstExpr) {
+    if (srcType.qualifiers() != dstType.qualifiers()) {
+      *dstExpr = CastExpr::qualCast(srcExpr, dstType);
+    } else {
+      *dstExpr = srcExpr;
+    }
+  }
+}
+
+#if 0
+void assignSrcToDst(
+    const Type * srcType, unsigned srcQualifiers, Expr * srcExpr,
+    const Type * dstType, unsigned dstQualifiers, Expr **dstExpr) {
+  if (dstExpr) {
+    if (srcQualifiers != dstQualifiers) {
+      *dstExpr = CastExpr::qualCast(srcExpr, QualifiedType(dstType, dstQualifiers));
+    } else {
+      *dstExpr = srcExpr;
+    }
+  }
+}
+
+void assignSrcToDst(Expr * srcExpr, const Type * dstType, unsigned dstQualifiers, Expr **dstExpr) {
+  if (dstExpr) {
+    QualifiedType srcType = srcExpr->type();
+    if (srcType.qualifiers() != dstType.qualifiers()) {
+      *dstExpr = CastExpr::qualCast(srcExpr, QualifiedType(dstType, dstQualifiers));
+    } else {
+      *dstExpr = srcExpr;
+    }
+  }
+}
+#endif
+
 ConversionRank convertToPrimitive(
     const Type * srcType, Expr * srcExpr,
-    const PrimitiveType * dstPrimType, Expr ** dstExpr, int options) {
-  if (dstPrimType->isUnsizedIntType()) {
+    const PrimitiveType * dstType, Expr ** dstExpr, int options) {
+  if (dstType->isUnsizedIntType()) {
     return Incompatible;
   }
+
   // For now call the old type conversion functions.
   Conversion cn(srcType, options);
   cn.fromValue = srcExpr;
   cn.resultValue = dstExpr;
-  return dstPrimType->convertImpl(cn);
+  ConversionRank rank = dstType->convertImpl(cn);
+  if (rank == Incompatible) {
+    return Incompatible;
+  } else {
+    return rank;
+  }
 }
 
 ConversionRank convertToComposite(
     const Type * srcType, unsigned srcQuals, Expr * srcExpr,
     const CompositeType * dstClass, unsigned dstQuals, Expr ** dstExpr, int options) {
+  if (!canAssignQualifiers(srcQuals, dstQuals)) {
+    return QualifierLoss;
+  }
   if (const CompositeType * srcClass = dyn_cast_or_null<CompositeType>(srcType)) {
     DASSERT(dstClass->passes().isFinished(CompositeType::BaseTypesPass)) <<
         "Base type analysis not finished for " << dstClass;
@@ -58,7 +113,8 @@ ConversionRank convertToComposite(
         "Base type analysis not finished for " << srcClass;
     if (dstClass->typeClass() != Type::Struct && TypeRelation::isSubtype(srcClass, dstClass)) {
       if (srcExpr && dstExpr) {
-        *dstExpr = CastExpr::upCast(srcExpr, dstClass)->at(srcExpr->location());
+        *dstExpr = CastExpr::upCast(
+            srcExpr, QualifiedType(dstClass, dstQuals))->at(srcExpr->location());
       }
       return ExactConversion;
     }
@@ -77,7 +133,8 @@ ConversionRank convertToComposite(
     // Check dynamic casts.
     if ((options & CHECKED) && dstClass->isReferenceType() && srcClass->isReferenceType()) {
       if (srcExpr && dstExpr) {
-        *dstExpr = CastExpr::tryCast(srcExpr, dstClass)->at(srcExpr->location());
+        *dstExpr = CastExpr::tryCast(
+            srcExpr, QualifiedType(dstClass, dstQuals))->at(srcExpr->location());
       }
 
       return NonPreferred;
@@ -148,8 +205,13 @@ ConversionRank convertToComposite(
 ConversionRank convertToEnum(
     const Type * srcType, Expr * srcExpr,
     const EnumType * dstEnumType, Expr ** dstExpr, int options) {
-  const Type * baseType = dstEnumType->baseType();
+  if (srcType == dstEnumType) {
+    assignSrcToDst(srcType, srcExpr, dstEnumType, dstExpr);
+    return ExactConversion;
+  }
+
   // An integer 0 can be converted to a flags enum.
+  const Type * baseType = dstEnumType->baseType();
   if (dstEnumType->isFlags() && srcType->isIntType() && srcExpr != NULL && srcExpr->isConstant()) {
     if (ConstantInteger * cint = dyn_cast<ConstantInteger>(srcExpr)) {
       if (cint->value()->isNullValue()) {
@@ -184,8 +246,11 @@ ConversionRank convertToEnum(
 }
 
 ConversionRank convertToFunction(
-    const Type * srcType, Expr * srcExpr,
-    const FunctionType * dstFnType, Expr ** dstExpr, int options) {
+    const Type * srcType, unsigned srcQuals, Expr * srcExpr,
+    const FunctionType * dstFnType, unsigned dstQuals, Expr ** dstExpr, int options) {
+  if (!canAssignQualifiers(srcQuals, dstQuals)) {
+    return QualifierLoss;
+  }
   // No conversion for functions, only same types.
   if (TypeRelation::isEqual(srcType, dstFnType)) {
     if (dstExpr) {
@@ -198,8 +263,8 @@ ConversionRank convertToFunction(
 }
 
 ConversionRank convertToTuple(
-    const Type * srcType, Expr * srcExpr,
-    const TupleType * dstTupleType, Expr ** dstExpr, int options) {
+    const Type * srcType, unsigned srcQuals, Expr * srcExpr,
+    const TupleType * dstTupleType, unsigned dstQuals, Expr ** dstExpr, int options) {
   const TupleType * srcTupleType = dyn_cast<TupleType>(srcType);
   if (srcTupleType == NULL) {
     return Incompatible;
@@ -254,6 +319,10 @@ ConversionRank convertToTuple(
     }
   }
 
+  if (!canAssignQualifiers(srcQuals, dstQuals)) {
+    return QualifierLoss;
+  }
+
   return rank;
 }
 
@@ -278,13 +347,14 @@ std::pair<ConversionRank, size_t> selectUnionMember(
 }
 
 ConversionRank convertToUnion(
-    const Type * srcType, Expr * srcExpr,
+    QualifiedType srcType, Expr * srcExpr,
     const UnionType * dstUnionType, Expr ** dstExpr, int options) {
 
   ConversionRank rank;
   size_t index;
 
-  if (const UnionType * srcUnionType = dyn_cast<UnionType>(srcType)) {
+  if (Qualified<UnionType> srcUnionType = srcType.dyn_cast<UnionType>()) {
+    // Identical unions
     if (TypeRelation::isEqual(&srcUnionType->members(), &dstUnionType->members())) {
       if (dstExpr != NULL) {
         *dstExpr = srcExpr;
@@ -293,6 +363,7 @@ ConversionRank convertToUnion(
       return IdenticalTypes;
     }
 
+    // Compatible unions
     ConversionRank worstRank = IdenticalTypes;
     for (UnionType::const_iterator it = srcUnionType->begin(), itEnd = srcUnionType->end(); it != itEnd; ++it) {
       llvm::tie(rank, index) = selectUnionMember(dstUnionType, *it, NULL, options);
@@ -330,27 +401,215 @@ ConversionRank convertToUnion(
   return rank;
 }
 
+// Determine if an individual array element can legally be cast from one type to another by
+// re-interpreting the bits of the data as the destination type - essentially taking the
+// address of the source data and casting that pointer to the destination type.
+// This means no coercions are allowed.
+ConversionRank convertElement(QualifiedType srcType, QualifiedType dstType) {
+  DASSERT(!srcType.isNull());
+  DASSERT(!dstType.isNull());
+
+  unsigned srcQualifiers = srcType.qualifiers();
+  unsigned dstQualifiers = dstType.qualifiers();
+  ConversionRank qualifierRank = qualifierConversionRank(srcQualifiers, dstQualifiers);
+
+  // Early out
+  if (srcType.unqualified() == dstType.unqualified()) {
+    return qualifierRank;
+  }
+
+  // Special cases for source types.
+  switch (srcType->typeClass()) {
+    case Type::Alias:
+      return convertElement(srcType.as<TypeAlias>()->value() | srcQualifiers, dstType);
+
+    case Type::AmbiguousParameter:
+    case Type::AmbiguousResult:
+    case Type::AmbiguousTypeParam: {
+      QualifiedTypeSet expansion;
+      srcType.expand(expansion);
+      ConversionRank best = Incompatible;
+      for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
+        best = std::max(best, convertElement(*it | srcQualifiers, dstType));
+        if (best == IdenticalTypes) {
+          break;
+        }
+      }
+
+      return best;
+    }
+
+    case Type::AmbiguousPhi: {
+      QualifiedTypeSet expansion;
+      srcType.expand(expansion);
+      ConversionRank worst = IdenticalTypes;
+      for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
+        worst = std::min(worst, convertElement(*it | srcQualifiers, dstType));
+        if (worst == Incompatible) {
+          break;
+        }
+      }
+
+      return worst;
+    }
+
+    case Type::Assignment: {
+      const TypeAssignment * ta = static_cast<const TypeAssignment *>(srcType.unqualified());
+      if (ta->value()) {
+        return convertElement(ta->value() | srcQualifiers, dstType);
+      }
+
+      ConversionRank rank = Incompatible;
+      for (ConstraintSet::const_iterator ci = ta->begin(), ciEnd = ta->end(); ci != ciEnd; ++ci) {
+        Constraint * c = *ci;
+        if (!c->visited() && c->checkProvisions()) {
+          c->setVisited(true);
+          switch (c->kind()) {
+            case Constraint::EXACT:
+              rank = std::max(rank, convertElement(c->value() | srcQualifiers, dstType));
+              break;
+
+            case Constraint::LOWER_BOUND:
+              // In general, the answer to this case is unknowable.
+              // For the moment, we'll say 'yes', but with a lower ranking.
+              rank = std::max(rank,
+                  std::min(NonPreferred, convertElement(c->value() | srcQualifiers, dstType)));
+              break;
+
+            case Constraint::UPPER_BOUND:
+              rank = std::max(rank, convertElement(c->value() | srcQualifiers, dstType));
+              break;
+          }
+          c->setVisited(false);
+        }
+      }
+
+      return rank;
+    }
+
+    case Type::TypeFnCall: {
+      Qualified<TypeFunctionCall> ta = srcType.as<TypeFunctionCall>();
+      if (const TypeFunction * tfn = dyn_cast<TypeFunction>(dealias(ta->fnVal()))) {
+        return convertElement(tfn->apply(ta->args()) | srcQualifiers, dstType);
+      }
+      return Incompatible;
+    }
+
+    default:
+      break;
+  }
+
+  switch (dstType->typeClass()) {
+    case Type::Alias:
+      // Dealias dstType
+      return convertElement(srcType, dstType.as<TypeAlias>()->value() | dstQualifiers);
+
+    case Type::AmbiguousParameter:
+    case Type::AmbiguousResult:
+    case Type::AmbiguousTypeParam: {
+      QualifiedTypeSet expansion;
+      dstType.expand(expansion);
+      ConversionRank best = Incompatible;
+      for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
+        best = std::max(best, convertElement(srcType, *it | dstQualifiers));
+        if (best == IdenticalTypes) {
+          break;
+        }
+      }
+
+      return best;
+    }
+
+    case Type::AmbiguousPhi: {
+      QualifiedTypeSet expansion;
+      dstType.expand(expansion);
+      ConversionRank worst = IdenticalTypes;
+      for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
+        worst = std::min(worst, convertElement(srcType, *it | dstQualifiers));
+        if (worst == Incompatible) {
+          break;
+        }
+      }
+
+      return worst;
+    }
+
+    case Type::Assignment: {
+      Qualified<TypeAssignment> ta = dstType.as<TypeAssignment>();
+      if (ta->value()) {
+        return convertElement(srcType, ta->value() | dstQualifiers);
+      } else {
+        ConversionRank rank = Incompatible;
+        for (ConstraintSet::const_iterator ci = ta->begin(), ciEnd = ta->end(); ci != ciEnd; ++ci) {
+          Constraint * c = *ci;
+          if (!c->visited() && c->checkProvisions()) {
+            c->setVisited(true);
+            switch (c->kind()) {
+              case Constraint::EXACT:
+                rank = std::max(rank, convertElement(srcType, c->value() | dstQualifiers));
+                break;
+
+              case Constraint::LOWER_BOUND:
+                // Means T == value or is a supertype of value.
+                // Can we convert from srcType to a supertype of 'value'?
+                // Should in general be the same as converting to 'value'.
+                rank = std::max(rank, convertElement(srcType, c->value() | dstQualifiers));
+                break;
+
+              case Constraint::UPPER_BOUND:
+                // In general, the answer to this case is unknowable.
+                // Means T == value or is a subtype of value.
+                rank = std::max(rank, std::min(
+                    std::min(rank, NonPreferred),
+                    convertElement(srcType, c->value() | dstQualifiers)));
+                break;
+            }
+            c->setVisited(false);
+          }
+        }
+        return rank;
+      }
+    }
+
+    case Type::TypeFnCall: {
+      Qualified<TypeFunctionCall> ta = dstType.as<TypeFunctionCall>();
+      if (const TypeFunction * tfn = dyn_cast<TypeFunction>(dealias(ta->fnVal()))) {
+        return convertElement(srcType, tfn->apply(ta->args()) | dstQualifiers);
+      }
+      return Incompatible;
+    }
+
+    default:
+      // Compare unqualified types for equality.
+      if (TypeRelation::isEqual(srcType.unqualified(), dstType.unqualified())) {
+        return qualifierRank;
+      } else {
+        return Incompatible;
+      }
+  }
+
+  return Incompatible;
+}
+
 ConversionRank convertToAddress(
-    const Type * srcType, Expr * srcExpr,
-    const AddressType * dstType, Expr ** dstExpr, int options) {
+    QualifiedType srcType, Expr * srcExpr,
+    Qualified<AddressType> dstType, Expr ** dstExpr, int options) {
   QualifiedType dstElementType = dstType->typeParam(0);
   DASSERT(!dstElementType.isNull());
-  if (isa<AddressType>(srcType)) {
+  if (srcType.isa<AddressType>()) {
     QualifiedType srcElementType = srcType->typeParam(0);
     DASSERT(!srcElementType.isNull());
 
-    // For addresses, the element type must be the same.
-    if (TypeRelation::isEqual(dstElementType, srcElementType)) {
-      if (dstExpr) {
-        *dstExpr = srcExpr;
-      }
-      return IdenticalTypes;
+    ConversionRank rank = std::min(
+        convertElement(srcElementType, dstElementType),
+        qualifierConversionRank(srcType.qualifiers(), dstType.qualifiers()));
+    if (dstExpr && rank > QualifierLoss) {
+      assignSrcToDst(srcType, srcExpr, dstType.as<Type>(), dstExpr);
     }
-
-    return Incompatible;
+    return rank;
   } else if (srcType->isNullType()) {
     if (dstExpr) {
-      *dstExpr = ConstantNull::get(srcExpr->location(), dstType);
+      *dstExpr = ConstantNull::get(srcExpr->location(), dstType.unqualified());
     }
 
     return ExactConversion;
@@ -360,10 +619,10 @@ ConversionRank convertToAddress(
 }
 
 ConversionRank convertToNativeArray(
-    const Type * srcType, Expr * srcExpr,
-    const NativeArrayType * dstArrayType, Expr ** dstExpr, int options) {
+    QualifiedType srcType, Expr * srcExpr,
+    Qualified<NativeArrayType> dstArrayType, Expr ** dstExpr, int options) {
   QualifiedType dstElementType = dstArrayType->elementType();
-  if (const NativeArrayType * srcArrayType = dyn_cast<NativeArrayType>(srcType)) {
+  if (Qualified<NativeArrayType> srcArrayType = srcType.dyn_cast<NativeArrayType>()) {
     QualifiedType srcElementType = srcArrayType->elementType();
     DASSERT(!srcElementType.isNull());
 
@@ -371,14 +630,14 @@ ConversionRank convertToNativeArray(
       return Incompatible;
     }
 
-    // For native arrays, the element type must be the same.
-    if (TypeRelation::isEqual(dstElementType, srcElementType)) {
-      if (dstExpr) {
-        *dstExpr = srcExpr;
-      }
-      return IdenticalTypes;
+    ConversionRank rank = std::min(
+        convertElement(srcElementType, dstElementType),
+        qualifierConversionRank(srcType.qualifiers(), dstArrayType.qualifiers()));
+    if (dstExpr && rank > QualifierLoss) {
+      assignSrcToDst(srcType, srcExpr, dstArrayType.as<Type>(), dstExpr);
     }
-  } else if (const CompositeType * cfrom = dyn_cast<CompositeType>(srcType)) {
+    return rank;
+  } else if (Qualified<CompositeType> cfrom = srcType.dyn_cast<CompositeType>()) {
     // Special case for initializing a native type from an array literal.
     if (cfrom->typeDefn()->ast() == Builtins::typeArray->typeDefn()->ast()) {
       QualifiedType srcElementType = cfrom->typeParam(0);
@@ -394,20 +653,21 @@ ConversionRank convertToNativeArray(
 }
 
 ConversionRank convertToFlexibleArray(
-    const Type * srcType, Expr * srcExpr,
-    const FlexibleArrayType * dstArrayType, Expr ** dstExpr, int options) {
+    QualifiedType srcType, Expr * srcExpr,
+    Qualified<FlexibleArrayType> dstArrayType, Expr ** dstExpr, int options) {
   QualifiedType dstElementType = dstArrayType->elementType();
-  if (const FlexibleArrayType * srcArrayType = dyn_cast<FlexibleArrayType>(srcType)) {
+  if (Qualified<FlexibleArrayType> srcArrayType = srcType.dyn_cast<FlexibleArrayType>()) {
     QualifiedType srcElementType = srcArrayType->elementType();
     DASSERT(!srcElementType.isNull());
 
-    // For native arrays, the element type must be the same.
-    if (TypeRelation::isEqual(dstElementType, srcElementType)) {
-      if (dstExpr) {
-        *dstExpr = srcExpr;
-      }
-      return IdenticalTypes;
+    // For flex arrays, the element type must be the same.
+    ConversionRank rank = std::min(
+        convertElement(srcElementType, dstElementType),
+        qualifierConversionRank(srcType.qualifiers(), dstArrayType.qualifiers()));
+    if (dstExpr && rank > QualifierLoss) {
+      assignSrcToDst(srcType, srcExpr, dstArrayType.as<Type>(), dstExpr);
     }
+    return rank;
   }
   return Incompatible;
 }
@@ -434,17 +694,18 @@ ConversionRank convert(
   DASSERT(!srcType.isNull());
   DASSERT(!dstType.isNull());
 
-  if (!canAssignQualifiers(srcType.qualifiers(), dstType.qualifiers())) {
-    return QualifierLoss;
-  }
-
   // Early out
   if (srcType.unqualified() == dstType.unqualified()) {
-    if (dstExpr != NULL) {
-      *dstExpr = srcExpr;
+    if (areQualifiersEquivalent(srcType.qualifiers(), dstType.qualifiers()) || (options & UNQUAL)) {
+      assignSrcToDst(srcType, srcExpr, dstType, dstExpr);
+      return IdenticalTypes;
+    } else if (canAssignQualifiers(srcType.qualifiers(), dstType.qualifiers())) {
+      assignSrcToDst(srcType, srcExpr, dstType, dstExpr);
+      return ExactConversion;
     }
-    return IdenticalTypes;
   }
+
+  unsigned srcQualifiers = srcType.qualifiers();
 
   // Special cases for source types.
   switch (srcType->typeClass()) {
@@ -468,7 +729,9 @@ ConversionRank convert(
 
     case Type::Alias:
       // Dealias srcType
-      return convert(srcType.as<TypeAlias>()->value(), srcExpr, dstType, dstExpr, options);
+      return convert(
+          srcType.as<TypeAlias>()->value() | srcQualifiers, srcExpr,
+          dstType, dstExpr, options);
 
     case Type::AmbiguousParameter:
     case Type::AmbiguousResult:
@@ -479,10 +742,10 @@ ConversionRank convert(
       }
 
       QualifiedTypeSet expansion;
-      srcType->expand(expansion);
+      srcType.expand(expansion);
       ConversionRank best = Incompatible;
       for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
-        best = std::max(best, convert(*it, srcExpr, dstType, NULL, options));
+        best = std::max(best, convert(*it | srcQualifiers, srcExpr, dstType, NULL, options));
         if (best == IdenticalTypes) {
           break;
         }
@@ -498,10 +761,11 @@ ConversionRank convert(
       }
 
       QualifiedTypeSet expansion;
-      srcType->expand(expansion);
+      srcType.expand(expansion);
       ConversionRank worst = IdenticalTypes;
       for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
-        worst = std::min(worst, convert(*it, srcExpr, dstType, NULL, options));
+        worst = std::min(
+            worst, convert(*it | srcQualifiers, srcExpr, dstType, NULL, options));
         if (worst == Incompatible) {
           break;
         }
@@ -513,7 +777,7 @@ ConversionRank convert(
     case Type::Assignment: {
       const TypeAssignment * ta = static_cast<const TypeAssignment *>(srcType.type());
       if (ta->value()) {
-        return convert(ta->value(), srcExpr, dstType, dstExpr, options);
+        return convert(ta->value() | srcQualifiers, srcExpr, dstType, dstExpr, options);
       }
 
       if (dstExpr != NULL) {
@@ -527,18 +791,21 @@ ConversionRank convert(
           c->setVisited(true);
           switch (c->kind()) {
             case Constraint::EXACT:
-              rank = std::max(rank, convert(c->value(), srcExpr, dstType, dstExpr, options));
+              rank = std::max(rank,
+                  convert(c->value() | srcQualifiers, srcExpr, dstType, dstExpr, options));
               break;
 
             case Constraint::LOWER_BOUND:
               // In general, the answer to this case is unknowable.
               // For the moment, we'll say 'yes', but with a lower ranking.
               rank = std::max(rank, std::min(
-                  NonPreferred, convert(c->value(), srcExpr, dstType, dstExpr, options)));
+                  NonPreferred,
+                  convert(c->value() | srcQualifiers, srcExpr, dstType, dstExpr, options)));
               break;
 
             case Constraint::UPPER_BOUND:
-              rank = std::max(rank, convert(c->value(), srcExpr, dstType, dstExpr, options));
+              rank = std::max(rank,
+                  convert(c->value() | srcQualifiers, srcExpr, dstType, dstExpr, options));
               break;
           }
           c->setVisited(false);
@@ -548,55 +815,69 @@ ConversionRank convert(
       return rank;
     }
 
+    case Type::TypeFnCall: {
+      Qualified<TypeFunctionCall> ta = srcType.as<TypeFunctionCall>();
+      if (const TypeFunction * tfn = dyn_cast<TypeFunction>(dealias(ta->fnVal()))) {
+        return convert(
+            tfn->apply(ta->args()) | srcQualifiers, srcExpr,
+            dstType, dstExpr, options);
+      }
+      return Incompatible;
+    }
+
     default:
       break;
   }
 
+  unsigned dstQualifiers = dstType.qualifiers();
   switch (dstType->typeClass()) {
     case Type::Alias:
       // Dealias dstType
-      return convert(srcType, srcExpr, dstType.as<TypeAlias>()->value(), dstExpr, options);
+      return convert(
+          srcType, srcExpr,
+          dstType.as<TypeAlias>()->value() | dstQualifiers, dstExpr, options);
 
     case Type::Primitive:
-      return convertToPrimitive(srcType.type(), srcExpr,
-          dstType.as<PrimitiveType>().type(), dstExpr, options);
+      return convertToPrimitive(
+          srcType.unqualified(), srcExpr,
+          static_cast<const PrimitiveType *>(dstType.unqualified()), dstExpr, options);
 
     case Type::Class:
     case Type::Struct:
     case Type::Interface:
     case Type::Protocol:
       return convertToComposite(
-          srcType.type(), srcType.qualifiers(), srcExpr,
-          static_cast<const CompositeType *>(dstType.type()), dstType.qualifiers(), dstExpr,
+          srcType.unqualified(), srcQualifiers, srcExpr,
+          static_cast<const CompositeType *>(dstType.type()), dstQualifiers, dstExpr,
           options);
 
     case Type::Enum:
-      return convertToEnum(srcType.type(), srcExpr,
-          dstType.as<EnumType>().type(), dstExpr, options);
+      return convertToEnum(srcType.unqualified(), srcExpr,
+          dstType.as<EnumType>().unqualified(), dstExpr, options);
 
     case Type::Function:
-      return convertToFunction(srcType.type(), srcExpr,
-          dstType.as<FunctionType>().type(), dstExpr, options);
+      return convertToFunction(srcType.unqualified(), srcQualifiers, srcExpr,
+          dstType.as<FunctionType>().unqualified(), dstQualifiers, dstExpr, options);
 
     case Type::Tuple:
-      return convertToTuple(srcType.type(), srcExpr,
-          dstType.as<TupleType>().type(), dstExpr, options);
+      return convertToTuple(srcType.unqualified(), srcQualifiers, srcExpr,
+          dstType.as<TupleType>().unqualified(), dstQualifiers, dstExpr, options);
 
     case Type::Union:
-      return convertToUnion(srcType.type(), srcExpr,
+      return convertToUnion(srcType, srcExpr,
           dstType.as<UnionType>().type(), dstExpr, options);
 
     case Type::NAddress:
-      return convertToAddress(srcType.type(), srcExpr,
-          dstType.as<AddressType>().type(), dstExpr, options);
+      return convertToAddress(srcType, srcExpr,
+          dstType.as<AddressType>(), dstExpr, options);
 
     case Type::NArray:
-      return convertToNativeArray(srcType.type(), srcExpr,
-          dstType.as<NativeArrayType>().type(), dstExpr, options);
+      return convertToNativeArray(srcType, srcExpr,
+          dstType.as<NativeArrayType>(), dstExpr, options);
 
     case Type::FlexibleArray:
-      return convertToFlexibleArray(srcType.type(), srcExpr,
-          dstType.as<FlexibleArrayType>().type(), dstExpr, options);
+      return convertToFlexibleArray(srcType, srcExpr,
+          dstType.as<FlexibleArrayType>(), dstExpr, options);
 
     case Type::Unit:
       DASSERT(dstExpr == NULL);
@@ -619,10 +900,10 @@ ConversionRank convert(
       }
 
       QualifiedTypeSet expansion;
-      dstType->expand(expansion);
+      dstType.expand(expansion);
       ConversionRank best = Incompatible;
       for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
-        best = std::max(best, convert(srcType, srcExpr, *it, NULL, options));
+        best = std::max(best, convert(srcType, srcExpr, *it | dstQualifiers, NULL, options));
         if (best == IdenticalTypes) {
           break;
         }
@@ -638,10 +919,10 @@ ConversionRank convert(
       }
 
       QualifiedTypeSet expansion;
-      dstType->expand(expansion);
+      dstType.expand(expansion);
       ConversionRank worst = IdenticalTypes;
       for (QualifiedTypeSet::iterator it = expansion.begin(); it != expansion.end(); ++it) {
-        worst = std::min(worst, convert(srcType, srcExpr, *it, NULL, options));
+        worst = std::min(worst, convert(srcType, srcExpr, *it | dstQualifiers, NULL, options));
         if (worst == Incompatible) {
           break;
         }
@@ -653,7 +934,7 @@ ConversionRank convert(
     case Type::Assignment: {
       Qualified<TypeAssignment> ta = dstType.as<TypeAssignment>();
       if (ta->value()) {
-        return convert(srcType, srcExpr, ta->value(), dstExpr, options);
+        return convert(srcType, srcExpr, ta->value() | dstQualifiers, dstExpr, options);
       } else {
         ConversionRank rank = Incompatible;
         for (ConstraintSet::const_iterator ci = ta->begin(), ciEnd = ta->end(); ci != ciEnd; ++ci) {
@@ -662,21 +943,24 @@ ConversionRank convert(
             c->setVisited(true);
             switch (c->kind()) {
               case Constraint::EXACT:
-                rank = std::max(rank, convert(srcType, srcExpr, c->value(), dstExpr, options));
+                rank = std::max(rank,
+                    convert(srcType, srcExpr, c->value() | dstQualifiers, dstExpr, options));
                 break;
 
               case Constraint::LOWER_BOUND:
                 // Means T == value or is a supertype of value.
                 // Can we convert from srcType to a supertype of 'value'?
                 // Should in general be the same as converting to 'value'.
-                rank = std::max(rank, convert(srcType, srcExpr, c->value(), dstExpr, options));
+                rank = std::max(rank,
+                    convert(srcType, srcExpr, c->value() | dstQualifiers, dstExpr, options));
                 break;
 
               case Constraint::UPPER_BOUND:
                 // In general, the answer to this case is unknowable.
                 // Means T == value or is a subtype of value.
                 rank = std::max(rank, std::min(
-                    NonPreferred, convert(srcType, srcExpr, c->value(), dstExpr, options)));
+                    std::min(rank, NonPreferred),
+                    convert(srcType, srcExpr, c->value() | dstQualifiers, dstExpr, options)));
                 break;
             }
             c->setVisited(false);
@@ -686,8 +970,18 @@ ConversionRank convert(
       }
     }
 
+    case Type::TypeFnCall: {
+      Qualified<TypeFunctionCall> ta = dstType.as<TypeFunctionCall>();
+      if (const TypeFunction * tfn = dyn_cast<TypeFunction>(dealias(ta->fnVal()))) {
+        return convert(srcType, srcExpr,
+            tfn->apply(ta->args()) | dstQualifiers, dstExpr, options);
+      }
+      return Incompatible;
+    }
+
+    case Type::TypeFnQual:
     case Type::KindCount:
-      DFAIL("Type class not supported by convert()");
+      DASSERT(false) << "Type class " << dstType->typeClass() << " not supported by convert()";
       break;
   }
 

@@ -70,7 +70,7 @@ Expr * ExprAnalyzer::inferTypes(Defn * subject, Expr * expr, QualifiedType expec
 
   BindingEnv env;
   if (expr && !expr->isSingular()) {
-    expr = TypeInferencePass::run(subject->module(), expr, env, expected.type());
+    expr = TypeInferencePass::run(subject->module(), expr, env, expected);
   }
 
   expr = FinalizeTypesPass::run(subject, expr, env);
@@ -86,7 +86,7 @@ Expr * ExprAnalyzer::reduceExpr(const ASTNode * ast, QualifiedType expected) {
   Expr * result = reduceExprImpl(ast, expected);
   if (result != NULL) {
     DASSERT(result->exprType() < Expr::TypeCount);
-    if (result->type() == NULL) {
+    if (!result->type()) {
       diag.fatal() << "Expression '" << result << "' has no type.";
       DFAIL("MissingType");
     }
@@ -129,6 +129,14 @@ Expr * ExprAnalyzer::reduceExprImpl(const ASTNode * ast, QualifiedType expected)
       // Specialize works here because lookupName() does explicit specialization
       // for us.
       return reduceLoadValue(ast);
+
+    case ASTNode::TypeModMutable:
+    case ASTNode::TypeModImmutable:
+    case ASTNode::TypeModReadOnly:
+    case ASTNode::TypeModAdopted:
+    case ASTNode::TypeModVolatile: {
+      return reduceTypeModification(static_cast<const ASTOper *> (ast), expected);
+    }
 
     case ASTNode::Call:
       return reduceCall(static_cast<const ASTCall *> (ast), expected);
@@ -309,8 +317,8 @@ Expr * ExprAnalyzer::reduceRefEqualityTest(const ASTOper * ast) {
   Expr * second = reduceExpr(ast->arg(1), NULL);
 
   if (first != NULL && second != NULL) {
-    DASSERT_OBJ(first->type() != NULL, first);
-    DASSERT_OBJ(second->type() != NULL, second);
+    DASSERT_OBJ(first->type(), first);
+    DASSERT_OBJ(second->type(), second);
 
     Expr * result = new BinaryExpr(Expr::RefEq, ast->location(),
         &BoolType::instance, first, second);
@@ -360,7 +368,7 @@ Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
     return &Expr::ErrorVal;
   }
 
-  DASSERT_OBJ(value->type() != NULL, value);
+  DASSERT_OBJ(value->type(), value);
   DASSERT_OBJ(value->isSingular(), value);
 
   if (TypeRelation::isEqual(value->type(), type)) {
@@ -368,8 +376,8 @@ Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
   }
 
   if (CompositeType * ctd = dyn_cast<CompositeType>(type)) {
-    DASSERT_OBJ(value->type() != NULL, value);
-    if (const CompositeType * valueClass = dyn_cast<CompositeType>(value->type())) {
+    DASSERT_OBJ(value->type(), value);
+    if (const CompositeType * valueClass = dyn_cast<CompositeType>(value->type().unqualified())) {
       if (TypeRelation::isSubclass(valueClass, ctd)) {
         return ConstantInteger::getConstantBool(ast->location(), true);
       }
@@ -379,7 +387,7 @@ Expr * ExprAnalyzer::reduceTypeTest(const ASTOper * ast) {
   }
 
   // See if the value is a union.
-  if (isa<UnionType>(value->type())) {
+  if (value->type().isa<UnionType>()) {
     return new InstanceOfExpr(ast->location(), value, type);
   }
 
@@ -470,7 +478,7 @@ Expr * ExprAnalyzer::reduceComplement(const ASTOper * ast) {
 
   if (ConstantExpr * cval = dyn_cast<ConstantExpr>(value)) {
     if (ConstantInteger * cint = dyn_cast<ConstantInteger>(cval)) {
-      return ConstantInteger::get(ast->location(), cint->type(),
+      return ConstantInteger::get(ast->location(), cint->type().unqualified(),
           cast<llvm::ConstantInt>(llvm::ConstantInt::get(
               cint->value()->getType(),
               ~cint->value()->getValue())));
@@ -553,6 +561,38 @@ Expr * ExprAnalyzer::reduceSetParamPropertyValue(const SourceLocation & loc, Cal
 
   module()->addSymbol(setter);
   return setterCall;
+}
+
+Expr * ExprAnalyzer::reduceTypeModification(const ASTOper * ast, QualifiedType expected) {
+  unsigned mask = 0;
+  switch (int(ast->nodeType())) {
+    case ASTNode::TypeModReadOnly:  mask = QualifiedType::READONLY; break;
+    case ASTNode::TypeModMutable:   mask = QualifiedType::MUTABLE; break;
+    case ASTNode::TypeModImmutable: mask = QualifiedType::IMMUTABLE; break;
+    case ASTNode::TypeModAdopted:   mask = QualifiedType::ADOPTED; break;
+    case ASTNode::TypeModVolatile:  mask = QualifiedType::VOLATILE; break;
+  }
+
+  Expr * expr = reduceExpr(ast->arg(0), expected);
+  if (isErrorResult(expr)) {
+    return expr;
+  }
+
+  if (TypeLiteralExpr * tl = dyn_cast<TypeLiteralExpr>(expr)) {
+    QualifiedType newType = tl->value() | mask;
+//    if (!isQualifiableType(newType.unqualified())) {
+//      newType.removeQualifiers(QualifiedType::MUTABILITY_MASK);
+//    }
+
+    if (newType == tl->value()) {
+      return tl;
+    } else {
+      return new TypeLiteralExpr(tl->location(), newType);
+    }
+  } else {
+    DFAIL("Implement type modification of expressions");
+    return NULL;
+  }
 }
 
 } // namespace tart

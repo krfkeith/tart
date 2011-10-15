@@ -22,10 +22,11 @@
 
 #include "tart/Objects/Builtins.h"
 #include "tart/Objects/SystemDefs.h"
-//
+
 #include "llvm/Type.h"
 #include "llvm/Value.h"
 #include "llvm/Function.h"
+#include "llvm/Module.h"
 
 namespace tart {
 
@@ -52,11 +53,11 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
       Value * sret = builder_.CreateAlloca(toType->irType(), 0, "sret");
       args.push_back(sret);
       args.push_back(in);
-      genCallInstr(fnVal, args.begin(), args.end(), "convert");
+      genCallInstr(fnVal, args, "convert");
       return sret;
     } else {
       args.push_back(in);
-      return genCallInstr(fnVal, args.begin(), args.end(), "convert");
+      return genCallInstr(fnVal, args, "convert");
     }
   }
 
@@ -86,7 +87,7 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
       ValueList args;
       Value * fnVal = genFunctionValue(coerceFn);
       args.push_back(in);
-      return genCallInstr(fnVal, args.begin(), args.end(), "coerce");
+      return genCallInstr(fnVal, args, "coerce");
     } else if (const CompositeType * cto = dyn_cast<CompositeType>(toType)) {
       (void)cto;
       // TODO: This would be *much* easier to handle in the analysis phase.
@@ -104,7 +105,7 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
 Value * CodeGenerator::genNumericCast(const CastExpr * in) {
   Value * value = genExpr(in->arg());
   TypeId fromTypeId = TypeId_Void;
-  if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(in->arg()->type())) {
+  if (const PrimitiveType * ptype = dyn_cast<PrimitiveType>(in->arg()->type().unqualified())) {
     fromTypeId = ptype->typeId();
   }
 
@@ -151,8 +152,8 @@ Value * CodeGenerator::genNumericCast(const CastExpr * in) {
 
 Value * CodeGenerator::genUpCast(const CastExpr * in, bool saveRoots) {
   Value * value = genArgExpr(in->arg(), saveRoots);
-  const Type * fromType = dealias(in->arg()->type());
-  const Type * toType = dealias(in->type());
+  const Type * fromType = dealias(in->arg()->type().unqualified());
+  const Type * toType = dealias(in->type().unqualified());
 
   if (value != NULL && fromType != NULL && toType != NULL) {
     return genUpCastInstr(value, fromType, toType);
@@ -163,14 +164,14 @@ Value * CodeGenerator::genUpCast(const CastExpr * in, bool saveRoots) {
 
 Value * CodeGenerator::genDynamicCast(const CastExpr * in, bool throwOnFailure, bool saveRoots) {
   Value * value = genArgExpr(in->arg(), saveRoots);
-  const CompositeType * fromCls = cast<CompositeType>(in->arg()->type());
-  const CompositeType * toCls = cast<CompositeType>(in->type());
+  const CompositeType * fromCls = cast<CompositeType>(in->arg()->type().unqualified());
+  const CompositeType * toCls = cast<CompositeType>(in->type().unqualified());
   return genCompositeCast(value, fromCls, toCls, throwOnFailure);
 }
 
 Value * CodeGenerator::genBitCast(const CastExpr * in, bool saveRoots) {
   Value * value = genArgExpr(in->arg(), saveRoots);
-  const Type * toType = in->type();
+  const Type * toType = in->type().unqualified();
 
   if (value != NULL && toType != NULL) {
     //if (toType->typeClass() == Type::Function)
@@ -190,12 +191,12 @@ Value * CodeGenerator::genCompositeCast(Value * in,
     }
 
     // Composite to composite.
-    Value * typeTest = genCompositeTypeTest(in, fromCls, toCls);
     if (throwOnFailure) {
-      throwCondTypecastError(typeTest);
+      genClassCastCheck(in, toCls);
       return builder_.CreatePointerCast(in, toCls->irEmbeddedType(), "typecast");
     } else {
       DFAIL("Implement null on failure");
+      // Value * typeTest = genCompositeTypeTest(in, toCls);
     }
   }
 
@@ -204,8 +205,8 @@ Value * CodeGenerator::genCompositeCast(Value * in,
 }
 
 Value * CodeGenerator::genUnionCtorCast(const CastExpr * in, bool saveRoots) {
-  const Type * fromType = in->arg()->type();
-  const Type * toType = in->type();
+  const Type * fromType = in->arg()->type().unqualified();
+  const Type * toType = in->type().unqualified();
   Value * value = NULL;
 
   if (!fromType->isVoidType()) {
@@ -276,8 +277,8 @@ Value * CodeGenerator::genUnionCtorCast(const CastExpr * in, bool saveRoots) {
 Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
   // Retrieve a value from a union. Presumes that the type-test has already been done.
   bool checked = in->exprType() == Expr::CheckedUnionMemberCast;
-  const Type * fromType = in->arg()->type();
-  const Type * toType = in->type();
+  const Type * fromType = in->arg()->type().unqualified();
+  const Type * toType = in->type().unqualified();
   if (fromType != NULL) {
     const UnionType * utype = cast<UnionType>(fromType);
     if (!utype->hasRefTypesOnly()) {
@@ -398,7 +399,7 @@ Value * CodeGenerator::genUnionMemberCast(const CastExpr * in) {
 
         if (const CompositeType * cto = dyn_cast<CompositeType>(toType)) {
           if (!utype->isSupertypeOfAllMembers(cto)) {
-            Value * test = genCompositeTypeTest(refTypeVal, Builtins::typeObject.get(), cto);
+            Value * test = genCompositeTypeTest(refTypeVal, cto);
             throwCondTypecastError(test);
           }
         } else {
@@ -460,17 +461,15 @@ Value * CodeGenerator::genTypeTest(Value * val, const Type * fromType, const Typ
     bool valIsLval) {
   if (const UnionType * utype = dyn_cast<UnionType>(fromType)) {
     return genUnionTypeTest(val, utype, toType, false);
-  } else if (const CompositeType * cFrom = dyn_cast<CompositeType>(fromType)) {
+  } else if (isa<CompositeType>(fromType)) {
     const CompositeType * cTo = cast<CompositeType>(toType);
-    return genCompositeTypeTest(val, cFrom, cTo);
+    return genCompositeTypeTest(val, cTo);
   }
 
   DFAIL("Unsupported type test");
 }
 
-Value * CodeGenerator::genCompositeTypeTest(Value * val, const CompositeType * fromType,
-    const CompositeType * toType) {
-  DASSERT(fromType != NULL);
+Value * CodeGenerator::genCompositeTypeTest(Value * val, const CompositeType * toType) {
   DASSERT(toType != NULL);
 
   // Make sure it's a class.
@@ -484,11 +483,9 @@ Value * CodeGenerator::genCompositeTypeTest(Value * val, const CompositeType * f
   // Upcast to type 'object' and load the TIB pointer.
   Value * tib = builder_.CreateLoad(builder_.CreateStructGEP(valueAsObjType, 0, "tib.addr"), "tib");
 
-  ValueList args;
-  args.push_back(tib);
-  args.push_back(toTypeObj);
+  Value * args[2] = { tib, toTypeObj };
   Function * upcastTest = genFunctionValue(Builtins::funcHasBase);
-  checkCallingArgs(upcastTest, args.begin(), args.end());
+  checkCallingArgs(upcastTest, args);
   Value * result = builder_.CreateCall(upcastTest, args,
       Twine("isa.") + toType->typeDefn()->name());
   return result;
@@ -578,8 +575,35 @@ Value * CodeGenerator::genUnionTypeTest(llvm::Value * in, const UnionType * unio
     }
 
     const CompositeType * cto = cast<CompositeType>(toType);
-    return genCompositeTypeTest(refTypeVal, Builtins::typeObject.get(), cto);
+    return genCompositeTypeTest(refTypeVal, cto);
   }
+}
+
+void CodeGenerator::genClassCastCheck(Value * inObj, const CompositeType * to) {
+  SmallString<32> castFnName;
+  (Twine(".check_cast.") + to->typeDefn()->qualifiedName()).toStringRef(castFnName);
+  Function * castFn = irModule_->getFunction(castFnName);
+  if (castFn == NULL) {
+    BasicBlock * savePoint = builder_.GetInsertBlock();
+    llvm::Type * paramType = Builtins::typeObject->irParameterType();
+    llvm::FunctionType * fnType = llvm::FunctionType::get(builder_.getVoidTy(), paramType, false);
+    castFn = Function::Create(fnType, Function::LinkOnceODRLinkage, Twine(castFnName), irModule_);
+    BasicBlock * initBlock = BasicBlock::Create(context_, "entry", castFn);
+    builder_.SetInsertPoint(initBlock);
+    Value * typeTestResult = genCompositeTypeTest(castFn->arg_begin(), to);
+    BasicBlock * blkCastFail = BasicBlock::Create(context_, "typecast_fail", castFn);
+    BasicBlock * blkCastSucc = BasicBlock::Create(context_, "typecast_succ", castFn);
+    builder_.CreateCondBr(typeTestResult, blkCastSucc, blkCastFail);
+    builder_.SetInsertPoint(blkCastFail);
+    throwTypecastErrorExt(castFn->arg_begin(), getTypeInfoBlockPtr(to));
+    builder_.SetInsertPoint(blkCastSucc);
+    builder_.CreateRetVoid();
+    builder_.SetInsertPoint(savePoint);
+  }
+
+  Value * valueAsObjType = builder_.CreateBitCast(
+      inObj, Builtins::typeObject->irType()->getPointerTo(), "object");
+  builder_.CreateCall(castFn, valueAsObjType);
 }
 
 void CodeGenerator::throwCondTypecastError(Value * typeTestResult) {
@@ -596,14 +620,30 @@ void CodeGenerator::throwTypecastError() {
   typecastFailure->setDoesNotReturn(true);
   if (isUnwindBlock_) {
     Function * f = currentFn_;
-    ValueList emptyArgs;
     BasicBlock * normalDest = BasicBlock::Create(context_, "nounwind", f);
     moveToEnd(normalDest);
-    builder_.CreateInvoke(typecastFailure, normalDest, getUnwindBlock(), emptyArgs, "");
+    builder_.CreateInvoke(typecastFailure, normalDest, getUnwindBlock());
     builder_.SetInsertPoint(normalDest);
     builder_.CreateUnreachable();
   } else {
     builder_.CreateCall(typecastFailure);
+    builder_.CreateUnreachable();
+  }
+}
+
+void CodeGenerator::throwTypecastErrorExt(Value * obj, Value * tibPtr) {
+  Function * typecastFailure = genFunctionValue(Builtins::funcTypecastErrorExt);
+  typecastFailure->setDoesNotReturn(true);
+  if (isUnwindBlock_) {
+    Function * f = currentFn_;
+    BasicBlock * normalDest = BasicBlock::Create(context_, "nounwind", f);
+    moveToEnd(normalDest);
+    Value * args[] = { obj, tibPtr };
+    builder_.CreateInvoke(typecastFailure, normalDest, getUnwindBlock(), args);
+    builder_.SetInsertPoint(normalDest);
+    builder_.CreateUnreachable();
+  } else {
+    builder_.CreateCall2(typecastFailure, obj, tibPtr);
     builder_.CreateUnreachable();
   }
 }

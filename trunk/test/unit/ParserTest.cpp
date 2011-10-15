@@ -618,6 +618,10 @@ TEST_F(ParserTest, Decls) {
   ast = parseDeclaration("class X[%T] {}");
   ASSERT_EQ(ASTDecl::Template, ast->nodeType());
   EXPECT_AST_EQ("[%T] class X", ast);
+
+  ast = parseDeclaration("class X[%T(?)] {}");
+  ASSERT_EQ(ASTDecl::Template, ast->nodeType());
+  EXPECT_AST_EQ("[%T] class X", ast);
 }
 
 }  // namespace

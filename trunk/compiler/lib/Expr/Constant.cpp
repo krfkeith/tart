@@ -28,7 +28,7 @@ namespace tart {
 // ConstantInteger
 
 const PrimitiveType * ConstantInteger::primitiveType() const {
-  const Type * ty = type();
+  const Type * ty = type().unqualified();
   while (const EnumType * etype = dyn_cast<EnumType>(ty)) {
     ty = etype->baseType();
   }
@@ -161,7 +161,7 @@ ConstantNull::ConstantNull(SourceLocation l)
   : ConstantExpr(ConstNull, l, &NullType::instance)
 {}
 
-ConstantNull::ConstantNull(SourceLocation l, const Type * t)
+ConstantNull::ConstantNull(SourceLocation l, QualifiedType t)
   : ConstantExpr(ConstNull, l, t)
 {}
 
@@ -175,11 +175,11 @@ void ConstantNull::format(FormatStream & out) const {
 
 /// -------------------------------------------------------------------
 /// TypeLiteralExpr
-TypeLiteralExpr::TypeLiteralExpr(SourceLocation l, const Type * val)
-  : ConstantExpr(TypeLiteral, l, TypeLiteralType::get(val))
+TypeLiteralExpr::TypeLiteralExpr(SourceLocation l, QualifiedType val)
+  : ConstantExpr(TypeLiteral, l, TypeLiteralType::get(val.unqualified()))
   , value_(val)
 {
-  DASSERT(value_ != NULL);
+  DASSERT(value_);
 }
 
 bool TypeLiteralExpr::isSingular() const {

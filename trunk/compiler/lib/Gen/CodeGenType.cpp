@@ -343,10 +343,10 @@ Function * CodeGenerator::genInterfaceDispatchFunc(const CompositeType * type) {
   builder_.SetInsertPoint(blk);
 
   // Throw a typecast exception
-  Function * typecastFailure = genFunctionValue(Builtins::funcTypecastError);
-  typecastFailure->setDoesNotReturn(true);
-  builder_.CreateCall(typecastFailure);
-  //builder_.CreateUnreachable();
+
+  Function * dispatchFailure = genFunctionValue(Builtins::funcDispatchError);
+  dispatchFailure->setDoesNotReturn(true);
+  builder_.CreateCall2(dispatchFailure, getTypeInfoBlockPtr(type), iid);
   builder_.CreateRet(ConstantPointerNull::get(methodPtrType_));
 
   if (savePoint != NULL) {
@@ -669,7 +669,7 @@ llvm::Function * CodeGenerator::genCallAdapterFn(const FunctionType * fnType) {
 
   // Typecast all of the arguments.
   for (size_t i = 0; i < numParams; ++i) {
-    const Type * paramType = fnType->param(i)->internalType();
+    const Type * paramType = fnType->param(i)->internalType().unqualified();
     Value * indices[3];
     indices[0] = getInt32Val(0);
     indices[1] = getInt32Val(2);
@@ -688,7 +688,7 @@ llvm::Function * CodeGenerator::genCallAdapterFn(const FunctionType * fnType) {
   }
 
   fnPtr = builder_.CreatePointerCast(fnPtr, callType->getPointerTo());
-  checkCallingArgs(fnPtr, args.begin(), args.end());
+  checkCallingArgs(fnPtr, args);
   Value * returnVal = builder_.CreateCall(fnPtr, args /*, "invoke"*/);
 
   if (!fnType->returnType()->isVoidType()) {

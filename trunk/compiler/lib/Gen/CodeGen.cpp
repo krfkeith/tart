@@ -166,11 +166,11 @@ void CodeGenerator::generate() {
     genEntryPoint();
   }
 
-  genModuleMetadata();
-
   if (debug_) {
     diBuilder_.finalize();
   }
+
+  genModuleMetadata();
 
   if (Dump) {
     if (diag.getErrorCount() == 0) {

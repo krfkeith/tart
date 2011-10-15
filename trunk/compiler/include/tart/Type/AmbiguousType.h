@@ -31,7 +31,7 @@ public:
   }
 
   /** The type of this prospect. */
-  QualifiedType type() const { return type_; }
+  const QualifiedType type() const { return type_; }
 
   /** The set of provisions associated with this type. */
   const ProvisionSet & provisions() const { return provisions_; }

@@ -27,7 +27,7 @@ public:
   bool analyzeTypeModifiers();
   bool resolveInitializers();
 
-  void setTargetType(const Type * type);
+  void setTargetType(QualifiedType type);
 
 private:
   VariableDefn * target;

@@ -26,6 +26,11 @@ TYPE_CLASS(AmbiguousParameter)// Unresolved param type of function
 TYPE_CLASS(AmbiguousPhi)      // Unresolved possible alternate values
 TYPE_CLASS(AmbiguousTypeParam)// Unresolved param of template
 
+// Functions that operate on types
+TYPE_CLASS(TypeFnCall)        // An application of a type function
+TYPE_CLASS(TypeFnQual)        // A type function that adds qualifiers
+
 TYPE_RANGE(Composites, Class, Protocol)
 TYPE_RANGE(AmbiguousTypes, AmbiguousResult, AmbiguousTypeParam)
 TYPE_RANGE(TypeConstraints, AmbiguousResult, AmbiguousTypeParam)
+TYPE_RANGE(TypeFunctions, TypeFnQual, TypeFnQual)

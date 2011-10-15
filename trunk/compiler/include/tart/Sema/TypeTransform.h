@@ -15,16 +15,17 @@
 
 namespace tart {
 
+class AddressType;
 class EnumType;
-class UnionType;
-class UnitType;
-class TypeVariable;
+class FlexibleArrayType;
+class TypeAlias;
 class TypeAssignment;
 class TypeConstraint;
-class TypeAlias;
+class TypeFunctionCall;
 class TypeLiteralType;
-class AddressType;
-class FlexibleArrayType;
+class TypeVariable;
+class UnionType;
+class UnitType;
 
 typedef llvm::DenseMap<const TypeVariable *, const Type *> TypeVarMap;
 
@@ -36,7 +37,7 @@ public:
 
   QualifiedType transform(QualifiedType in) { return visit(in); }
 
-  const Type * operator()(const Type * in) { return visit(in).unqualified(); }
+  //const Type * operator()(const Type * in) { return visit(in).unqualified(); }
   QualifiedType operator()(QualifiedType in) { return visit(in); }
 
   QualifiedType visit(QualifiedType in);
@@ -55,6 +56,7 @@ public:
   virtual QualifiedType visitTypeVariable(const TypeVariable * in);
   virtual QualifiedType visitTypeAssignment(const TypeAssignment * in);
   virtual QualifiedType visitTypeConstraint(const TypeConstraint * in);
+  virtual QualifiedType visitTypeFnCall(const TypeFunctionCall * in);
 
   virtual QualifiedType visitTypeAlias(const TypeAlias * in);
 };

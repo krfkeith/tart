@@ -110,6 +110,8 @@ bool DefnAnalyzer::analyzeModule() {
   analyzeType(Builtins::typeStaticRoot.get(), Task_PrepConstruction);
   if (Builtins::funcTypecastError != NULL) {
     analyzeFunction(Builtins::funcTypecastError, Task_PrepTypeGeneration);
+    analyzeFunction(Builtins::funcTypecastErrorExt, Task_PrepTypeGeneration);
+    analyzeFunction(Builtins::funcDispatchError, Task_PrepTypeGeneration);
     analyzeFunction(gc_allocContext, Task_PrepCodeGeneration);
     analyzeFunction(gc_alloc, Task_PrepConstruction);
   }
@@ -201,7 +203,7 @@ bool DefnAnalyzer::resolveAttributes(Defn * in) {
 bool DefnAnalyzer::propagateSubtypeAttributes(Defn * baseDefn, Defn * target) {
   const ExprList & baseAttributes = baseDefn->attrs();
   for (ExprList::const_iterator it = baseAttributes.begin(); it != baseAttributes.end(); ++it) {
-    if (const CompositeType * attrType = dyn_cast<CompositeType>((*it)->type())) {
+    if (const CompositeType * attrType = dyn_cast<CompositeType>((*it)->type().unqualified())) {
       DASSERT(attrType->isAttribute());
       if (attrType->attributeInfo().propagation() & AttributeInfo::SUBTYPES) {
         if (!propagateAttribute(target, *it)) {
@@ -217,7 +219,7 @@ bool DefnAnalyzer::propagateSubtypeAttributes(Defn * baseDefn, Defn * target) {
 bool DefnAnalyzer::propagateMemberAttributes(Defn * scopeDefn, Defn * target) {
   const ExprList & scopeAttributes = scopeDefn->attrs();
   for (ExprList::const_iterator it = scopeAttributes.begin(); it != scopeAttributes.end(); ++it) {
-    if (const CompositeType * attrType = dyn_cast<CompositeType>((*it)->type())) {
+    if (const CompositeType * attrType = dyn_cast<CompositeType>((*it)->type().unqualified())) {
       DASSERT(attrType->isAttribute());
       if (attrType->attributeInfo().propagation() & AttributeInfo::MEMBERS) {
         if (!propagateAttribute(target, *it)) {
@@ -231,11 +233,12 @@ bool DefnAnalyzer::propagateMemberAttributes(Defn * scopeDefn, Defn * target) {
 }
 
 bool DefnAnalyzer::propagateAttribute(Defn * in, Expr * attr) {
-  const CompositeType * attrType = cast<CompositeType>(attr->type());
+  const CompositeType * attrType = cast<CompositeType>(attr->type().unqualified());
   DASSERT(attrType->isAttribute());
   for (ExprList::const_iterator it = in->attrs().begin(); it != in->attrs().end(); ++it) {
     Expr * existingAttr = *it;
-    const CompositeType * existingAttrType = cast<CompositeType>(existingAttr->type());
+    const CompositeType * existingAttrType = cast<CompositeType>(
+        existingAttr->type().unqualified());
     if (TypeRelation::isEqual(existingAttrType, attrType)) {
       return true;
     }
@@ -271,7 +274,7 @@ void DefnAnalyzer::applyAttributes(Defn * in) {
     *it = attrExpr;
 
     // Handle @Intrinsic as a special case.
-    const Type * attrType = attrExpr->type();
+    const Type * attrType = attrExpr->type().unqualified();
     if (attrType == Builtins::typeIntrinsicAttribute) {
       handleIntrinsicAttribute(in, attrExpr);
       continue;
@@ -286,7 +289,8 @@ void DefnAnalyzer::applyAttributes(Defn * in) {
       }
 
       if (!attrClass->attributeInfo().canAttachTo(in)) {
-        diag.error(attrExpr) << "Attribute '" << attrClass << "' cannot apply to target '" << in << "'";
+        diag.error(attrExpr) << "Attribute '" << attrClass <<
+            "' cannot apply to target '" << in << "'";
         diag.recovered();
         continue;
       }
@@ -365,7 +369,7 @@ void DefnAnalyzer::handleAttributeAttribute(Defn * de, ConstantObjectRef * attrO
 bool DefnAnalyzer::hasAnyRetainedAttrs(Defn * in) {
   const ExprList & attrs = in->attrs();
   for (ExprList::const_iterator it = attrs.begin(), itEnd = attrs.end(); it != itEnd; ++it) {
-    if (const CompositeType * attrClass = dyn_cast<CompositeType>((*it)->type())) {
+    if (const CompositeType * attrClass = dyn_cast<CompositeType>((*it)->type().unqualified())) {
       if (attrClass->attributeInfo().isRetained()) {
         return true;
       }
@@ -376,47 +380,49 @@ bool DefnAnalyzer::hasAnyRetainedAttrs(Defn * in) {
 }
 
 void DefnAnalyzer::importIntoScope(const ASTImport * import, IterableScope * targetScope) {
-  ExprList importDefs;
+  DefnList importDefs;
+  LookupResults importSyms;
   Scope * saveScope = setActiveScope(&Builtins::module); // Inhibit unqualified search.
   diag.recovered();
-  bool found = lookupName(importDefs, import->path(), LOOKUP_ABS_PATH);
+  bool found = lookupName(importSyms, import->path(), LOOKUP_ABS_PATH);
   if (!found) {
-    found = lookupName(importDefs, import->path(), LOOKUP_DEFAULT);
+    found = lookupName(importSyms, import->path(), LOOKUP_DEFAULT);
   }
 
   if (found) {
     if (import->unpack()) {
-      if (importDefs.size() > 1) {
+      if (importSyms.size() > 1) {
         diag.error(import) << "Ambiguous import statement due to multiple definitions of " <<
             import->path();
         diag.recovered();
       }
 
-      Expr * impExpr = importDefs.front();
+      Defn * importDefn = importSyms.front().defn();
       Scope * impScope = NULL;
-      if (ScopeNameExpr * se = dyn_cast<ScopeNameExpr>(impExpr)) {
-        if (Module * mod = dyn_cast<Module>(se->value())) {
-          createMembersFromAST(mod);
-          //analyzeDefn(mod, Task_PrepMemberLookup);
-          impScope = mod;
-        } else if (NamespaceDefn * ns = dyn_cast<NamespaceDefn>(se->value())) {
-          analyzeNamespace(ns, Task_PrepMemberLookup);
-          impScope = &ns->memberScope();
-        }
-      } else if (TypeLiteralExpr * tl = dyn_cast<TypeLiteralExpr>(impExpr)) {
-        if (tl->type()->typeDefn() != NULL) {
-          analyzeTypeDefn(tl->type()->typeDefn(), Task_PrepMemberLookup);
-        }
-        impScope = const_cast<IterableScope *>(tl->value()->memberScope());
+      if (Module * mod = dyn_cast<Module>(importDefn)) {
+        createMembersFromAST(mod);
+        impScope = mod;
+        importDefs.push_back(mod);
+      } else if (NamespaceDefn * ns = dyn_cast<NamespaceDefn>(importDefn)) {
+        analyzeNamespace(ns, Task_PrepMemberLookup);
+        impScope = &ns->memberScope();
+        importDefs.push_back(ns);
+      } else if (TypeDefn * tdef = dyn_cast<TypeDefn>(importDefn)) {
+        importDefs.push_back(tdef);
+      } else {
+        diag.error(import) << "Invalid type for import: " << importDefn;
+        diag.recovered();
       }
 
       if (impScope != NULL) {
         targetScope->auxScopes().insert(impScope);
-      } else {
-        diag.error(import) << "Invalid type for import: " << impExpr;
-        diag.recovered();
       }
     } else {
+      for (LookupResults::const_iterator it = importSyms.begin(); it != importSyms.end(); ++it) {
+        DASSERT(it->defn() != NULL);
+        importDefs.push_back(it->defn());
+      }
+      DASSERT(!importDefs.empty()) << "Import " << import << " has no definitions";
       targetScope->addMember(new ExplicitImportDefn(module_, import->asName(), importDefs));
     }
   } else {
@@ -476,9 +482,9 @@ void DefnAnalyzer::analyzeTemplateSignature(Defn * de) {
         }
 
         if (Qualified<TypeVariable> tv = param.dyn_cast<TypeVariable>()) {
-          if (tv->value()) {
+          if (tv->metaType()) {
             ConstantExpr * defaultValue = dyn_cast_or_null<ConstantExpr>(
-                ea.reduceConstantExpr(node, tv->value()));
+                ea.reduceConstantExpr(node, tv->metaType()));
             if (isErrorResult(defaultValue)) {
               break;
             }
@@ -596,7 +602,7 @@ bool DefnAnalyzer::reflectType(const Type * type) {
       ExprAnalyzer ea(module_, activeScope_, subject_, currentFunction_);
       for (ParameterList::const_iterator it = ft->params().begin();
           it != ft->params().end(); ++it) {
-        const Type * paramType = (*it)->internalType();
+        const Type * paramType = (*it)->internalType().type();
         reflectType(paramType);
         // Cache the unbox function for this type.
         if (paramType->isBoxableType()) {

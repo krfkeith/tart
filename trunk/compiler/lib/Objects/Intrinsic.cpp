@@ -115,7 +115,7 @@ TypeOfIntrinsic TypeOfIntrinsic::instance;
 Value * TypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const Expr * arg = call->arg(0);
   const TypeLiteralExpr * type = cast<TypeLiteralExpr>(arg);
-  return cg.getTypeObjectPtr(type->value());
+  return cg.getTypeObjectPtr(type->value().unqualified());
 }
 
 // -------------------------------------------------------------------
@@ -125,7 +125,7 @@ CompositeTypeOfIntrinsic CompositeTypeOfIntrinsic::instance;
 Value * CompositeTypeOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const Expr * arg = call->arg(0);
   const TypeLiteralExpr * typeLiteral = cast<TypeLiteralExpr>(arg);
-  return cg.getCompositeTypeObjectPtr(cast<CompositeType>(typeLiteral->value()));
+  return cg.getCompositeTypeObjectPtr(cast<CompositeType>(typeLiteral->value().unqualified()));
 }
 
 // -------------------------------------------------------------------
@@ -135,7 +135,7 @@ TraceTableOfIntrinsic TraceTableOfIntrinsic::instance;
 Value * TraceTableOfIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const Expr * arg = call->arg(0);
   const TypeLiteralExpr * typeLiteral = cast<TypeLiteralExpr>(arg);
-  const Type * type = typeLiteral->value();
+  const Type * type = typeLiteral->value().unqualified();
   Value * indices[2];
   indices[0] = indices[1] = cg.getInt32Val(0);
   llvm::Constant * traceTable = cg.getTraceTable(type);
@@ -173,7 +173,7 @@ Value * PrimitiveToStringIntrinsic::generate(CodeGenerator & cg, const FnCallExp
   Value * selfArg = cg.genExpr(self);
   //Value * formatStringArg = cg.genExpr(formatString);
 
-  const PrimitiveType * ptype = cast<PrimitiveType>(dealias(self->type()));
+  const PrimitiveType * ptype = cast<PrimitiveType>(dealias(self->type().unqualified()));
   TypeId id = ptype->typeId();
 
   if (functions_[id] == NULL) {
@@ -337,7 +337,7 @@ Value * DefaultAllocIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * c
 FlexAllocIntrinsic FlexAllocIntrinsic::instance;
 
 Value * FlexAllocIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
-  const Type * objType = dealias(call->type());
+  const Type * objType = dealias(call->type()).unqualified();
   if (objType->typeClass() != Type::Class) {
     diag.fatal(call->location()) << "__flexAalloc can only be used with classes.";
     return NULL;
@@ -379,7 +379,7 @@ Value * FlexAllocIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
 NullObjectIntrinsic NullObjectIntrinsic::instance;
 
 Value * NullObjectIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call) const {
-  const Type * retType = dealias(call->type());
+  const Type * retType = dealias(call->type()).unqualified();
   llvm::Type * type = retType->irType();
   return ConstantPointerNull::get(type->getPointerTo());
 }
@@ -459,7 +459,7 @@ Value * PointerDiffIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
   Value * firstVal = cg.genExpr(firstPtr);
   Value * lastVal = cg.genExpr(lastPtr);
   Value * diffVal = cg.builder().CreatePtrDiff(lastVal, firstVal, "ptrDiff");
-  if (call->type() == &Int32Type::instance) {
+  if (call->type().unqualified() == &Int32Type::instance) {
     return cg.builder().CreateTrunc(diffVal, cg.builder().getInt32Ty());
   } else {
     return diffVal;
@@ -602,7 +602,8 @@ Value * ArrayCopyIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * call
   const Expr * srcArray = call->arg(1);
   const Expr * count = call->arg(2);
 
-  DASSERT_OBJ(TypeRelation::isEqual(srcArray->type(), dstArray->type()), call);
+  DASSERT_OBJ(TypeRelation::isEqual(
+      srcArray->type().unqualified(), dstArray->type().unqualified()), call);
   QualifiedType elemType = srcArray->type()->typeParam(0);
   Value * srcPtr = cg.genExpr(srcArray);
   Value * dstPtr = cg.genExpr(dstArray);
@@ -663,7 +664,7 @@ Expr * MathIntrinsic1i<id>::eval(const SourceLocation & loc, Module * callingMod
 template<llvm::Intrinsic::ID id>
 inline Value * MathIntrinsic1i<id>::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const Expr * arg = call->arg(0);
-  const PrimitiveType * argType = cast<PrimitiveType>(dealias(arg->type()));
+  const PrimitiveType * argType = cast<PrimitiveType>(dealias(arg->type()).unqualified());
   Value * argVal = cg.genExpr(arg);
 
   if (argType->typeId() != TypeId_SInt32 && argType->typeId() != TypeId_SInt64) {
@@ -690,7 +691,7 @@ MathIntrinsic1i<llvm::Intrinsic::cttz>::instance("tart.core.BitTricks.trailingZe
 template<llvm::Intrinsic::ID id>
 inline Value * MathIntrinsic1f<id>::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const Expr * arg = call->arg(0);
-  const PrimitiveType * argType = cast<PrimitiveType>(dealias(arg->type()));
+  const PrimitiveType * argType = cast<PrimitiveType>(dealias(arg->type()).unqualified());
   Value * argVal = cg.genExpr(arg);
 
   if (argType->typeId() != TypeId_Float && argType->typeId() != TypeId_Double) {
@@ -722,8 +723,8 @@ template<llvm::Intrinsic::ID id>
 inline Value * MathIntrinsic2f<id>::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const Expr * arg0 = call->arg(0);
   const Expr * arg1 = call->arg(1);
-  const PrimitiveType * arg0Type = cast<PrimitiveType>(dealias(arg0->type()));
-  const PrimitiveType * arg1Type = cast<PrimitiveType>(dealias(arg1->type()));
+  const PrimitiveType * arg0Type = cast<PrimitiveType>(dealias(arg0->type()).unqualified());
+  const PrimitiveType * arg1Type = cast<PrimitiveType>(dealias(arg1->type()).unqualified());
 
   if (arg0Type->typeId() != TypeId_Float && arg0Type->typeId() != TypeId_Double) {
     diag.fatal(arg0->location()) << "Bad intrinsic type.";
@@ -783,7 +784,7 @@ Expr * FlagsApplyIntrinsic::eval(const SourceLocation & loc, Module * callingMod
     const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   TypeLiteralExpr * ctype = cast<TypeLiteralExpr>(args[0]);
-  EnumType * enumType = cast<EnumType>(const_cast<Type *>(ctype->value()));
+  EnumType * enumType = cast<EnumType>(const_cast<Type *>(ctype->value().unqualified()));
   enumType->setIsFlags(true);
   return args[0];
 }
@@ -861,7 +862,7 @@ Expr * EssentialApplyIntrinsic::eval(const SourceLocation & loc, Module * callin
     const FunctionDefn * method, Expr * self, const ExprList & args, Type * expectedReturn) const {
   assert(args.size() == 1);
   TypeLiteralExpr * ctype = cast<TypeLiteralExpr>(args[0]);
-  Builtins::registerEssentialType(ctype->value());
+  Builtins::registerEssentialType(ctype->value().unqualified());
   return ctype;
 }
 
@@ -1053,7 +1054,7 @@ Value * ProxyCreateIntrinsic::generate(CodeGenerator & cg, const FnCallExpr * ca
   DASSERT(call->argCount() == 2);
   const Expr * typeArg = call->arg(0);
   const TypeLiteralExpr * typeLiteral = cast<TypeLiteralExpr>(typeArg);
-  const Type * type = typeLiteral->value();
+  const Type * type = typeLiteral->value().unqualified();
   if (!type->isReferenceType()) {
     diag.error(call) << "Only reference types can be proxied.";
     return NULL;

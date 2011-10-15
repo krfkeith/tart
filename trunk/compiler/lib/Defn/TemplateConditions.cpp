@@ -25,7 +25,12 @@ void TypeComparisonCondition::trace() const {
 // IsSubclassCondition
 
 bool IsSubtypeCondition::eval() const {
-  return TypeRelation::isSubtype(first_, second_);
+  if (first_.qualifiers() == 0 || second_.qualifiers() == 0) {
+    // If either side lacks explicit qualifiers, then don't use qualifiers at all.
+    return TypeRelation::isSubtype(first_.unqualified(), second_.unqualified());
+  } else {
+    return TypeRelation::isSubtype(first_, second_);
+  }
 }
 
 TemplateCondition * IsSubtypeCondition::transform(TypeTransform & transform) {

@@ -106,6 +106,9 @@ public:
   /** Update the compatibility score for this candidate. */
   ConversionRank updateConversionRank();
 
+  /** Report errors in conversions. */
+  void reportConversionErrors();
+
   /** True if any of the types in the function signature are error types. */
   bool hasErrors() const;
 

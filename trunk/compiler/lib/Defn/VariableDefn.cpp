@@ -15,7 +15,7 @@ namespace tart {
 
 VariableDefn::VariableDefn(DefnType dtype, Module * m, StringRef name, Expr * value)
   : ValueDefn(dtype, m, name)
-  , type_(value ? value->type() : NULL)
+  , type_(value ? value->type() : QualifiedType())
   , sharedRefType_(NULL)
   , flags_(dtype == Defn::Let ? Constant : 0)
   , initValue_(value)

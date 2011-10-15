@@ -520,8 +520,8 @@ bool ClassAnalyzer::analyzeBaseClassesImpl() {
     propagateSubtypeAttributes(primaryBase->typeDefn(), target);
   }
 
-  if (dtype == Type::Interface && Builtins::funcTypecastError != NULL) {
-    module_->addSymbol(Builtins::funcTypecastError);
+  if (dtype == Type::Interface && Builtins::funcDispatchError != NULL) {
+    module_->addSymbol(Builtins::funcDispatchError);
   }
 
   return true;
@@ -1254,7 +1254,6 @@ void ClassAnalyzer::checkForRequiredMethods() {
       for (MethodList::iterator it = unimpMethods.begin(); it != unimpMethods.end(); ++it) {
         diag.info(*it) << Format_Verbose << *it;
       }
-
       return;
     }
   }
@@ -1280,7 +1279,9 @@ void ClassAnalyzer::overrideMethods(MethodList & table, const MethodList & overr
             newMethod->setDispatchIndex(i);
           }
 
-          if ((m->hasBody() || m->isExtern()) && !newMethod->isOverride()) {
+          if ((m->hasBody() || m->isExtern()) &&
+              !newMethod->isOverride() &&
+              !newMethod->isUndefined()) {
             diag.recovered();
             diag.error(newMethod) << "Method '" << newMethod->name() <<
                 "' which overrides method in base class '" << m->parentDefn()->qualifiedName() <<

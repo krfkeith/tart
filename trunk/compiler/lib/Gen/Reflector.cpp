@@ -1210,7 +1210,7 @@ llvm::Constant * Reflector::emitArray(
 Module * Reflector::module() { return cg_.module(); }
 
 llvm::Constant * Reflector::getRetainedAttr(const Expr * attrExpr, StringRef baseName) {
-  const CompositeType * ctype = cast<CompositeType>(attrExpr->type());
+  const CompositeType * ctype = cast<CompositeType>(attrExpr->type().unqualified());
   if (ctype->attributeInfo().isRetained()) {
     if (isa<ConstantObjectRef>(attrExpr)) {
       // Construct a unique name for this attribute instance.

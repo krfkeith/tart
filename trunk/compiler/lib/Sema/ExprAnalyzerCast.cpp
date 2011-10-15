@@ -20,7 +20,6 @@
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/DefnAnalyzer.h"
 #include "tart/Sema/SpCandidate.h"
-#include "tart/Sema/FinalizeTypesPass.h"
 
 namespace tart {
 
@@ -95,9 +94,13 @@ Expr * ExprAnalyzer::doImplicitCast(Expr * in, QualifiedType toType, unsigned op
   if (options & AO_EXPLICIT_CAST) {
     conversionOpts |= TypeConversion::EXPLICIT;
   }
+  if (options & AO_IGNORE_QUALIFIERS) {
+    conversionOpts |= TypeConversion::UNQUAL;
+  }
   ConversionRank rank;
   llvm::tie(rank, castExpr) = TypeConversion::convert(in, toType, conversionOpts);
-  DASSERT(rank == Incompatible || castExpr != NULL);
+  DASSERT(rank <= QualifierLoss || castExpr != NULL) << "NULL result attempting to cast '" << in <<
+      "' from type '" << in->type() << "' to type '" << toType << "'.";
 
   if (rank == Incompatible && (options & (AO_IMPLICIT_CAST | AO_EXPLICIT_CAST))) {
     // Try a coercive cast. Note that we don't do this in 'convert' because it
@@ -109,6 +112,11 @@ Expr * ExprAnalyzer::doImplicitCast(Expr * in, QualifiedType toType, unsigned op
     }
   }
 
+  // Call again - for debugging purposes (set breakpoint here.)
+  if (rank <= QualifierLoss) {
+    TypeConversion::convert(in, toType, conversionOpts);
+  }
+
   compatibilityWarning(in->location(), rank, in, toType);
   if (isErrorResult(castExpr)) {
     return &Expr::ErrorVal;
@@ -118,8 +126,8 @@ Expr * ExprAnalyzer::doImplicitCast(Expr * in, QualifiedType toType, unsigned op
 }
 
 Expr * ExprAnalyzer::doBoxCast(Expr * in) {
-  const Type * fromType = dealias(in->type());
-  FunctionDefn * coerceFn = coerceToObjectFn(fromType);
+  QualifiedType fromType = dealias(in->type());
+  FunctionDefn * coerceFn = coerceToObjectFn(fromType.type());
   FnCallExpr * call = new FnCallExpr(Expr::FnCall, in->location(), coerceFn, NULL);
   call->appendArg(in);
   call->setType(Builtins::typeObject.get());
@@ -163,8 +171,8 @@ FunctionDefn * ExprAnalyzer::coerceToObjectFn(const Type * type) {
   return coercer;
 }
 
-Expr * ExprAnalyzer::doUnboxCast(Expr * in, const Type * toType) {
-  FunctionDefn * valueOfMethod = getUnboxFn(in->location(), toType);
+Expr * ExprAnalyzer::doUnboxCast(Expr * in, QualifiedType toType) {
+  FunctionDefn * valueOfMethod = getUnboxFn(in->location(), toType.unqualified());
   if (valueOfMethod == NULL) {
     return NULL;
   }
@@ -172,7 +180,7 @@ Expr * ExprAnalyzer::doUnboxCast(Expr * in, const Type * toType) {
   DASSERT(valueOfMethod->isSingular());
   FnCallExpr * call = new FnCallExpr(Expr::FnCall, in->location(), valueOfMethod, NULL);
   call->appendArg(doImplicitCast(in, Builtins::typeObject.get()));
-  call->setType(valueOfMethod->returnType());
+  call->setType(valueOfMethod->returnType() | toType.qualifiers());
   return call;
 }
 
@@ -189,7 +197,7 @@ FunctionDefn * ExprAnalyzer::getUnboxFn(SLC & loc, const Type * toType) {
   }
 
   //diag.debug(loc) << Format_Type << "Defining unbox function for " << toType;
-  ExprList methods;
+  LookupResults methods;
   analyzeDefn(Builtins::nsRefs, Task_PrepMemberLookup);
   findInScope(methods, "valueOf", &Builtins::nsRefs->memberScope(), NULL, loc, NO_PREFERENCE);
   DASSERT(!methods.empty());
@@ -223,7 +231,7 @@ FunctionDefn * ExprAnalyzer::getDowncastFn(SLC & loc, const Type * toType) {
   }
 
   //diag.debug(loc) << Format_Type << "Defining downcast function for " << toType << " in module " << module()->linkageName();
-  ExprList methods;
+  LookupResults methods;
   analyzeTypeDefn(Builtins::typeObject->typeDefn(), Task_PrepMemberLookup);
   findInScope(methods, "__downcast", Builtins::typeObject->memberScope(), NULL, loc, NO_PREFERENCE);
   DASSERT(!methods.empty());

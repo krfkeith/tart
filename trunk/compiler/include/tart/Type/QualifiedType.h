@@ -21,16 +21,25 @@
 #include "llvm/ADT/DenseSet.h"
 #endif
 
+#ifndef LLVM_SUPPORT_COMPILER_H
+#include "llvm/Support/Compiler.h"
+#endif
+
 namespace tart {
 
 class Type;
 struct SourceLocation;
+class QualifiedTypeSet;
 
 // Forward declaration of dealias.
 const Type * dealias(const Type * t);
 
 /** Combine type qualifiers. Right side qualifiers override left side precedence. */
 unsigned combineQualifiers(unsigned left, unsigned right);
+
+// Helper functions for debugging.
+const char * typeTostr(const Type * ty, unsigned qual);
+void dumpType(const Type * ty, unsigned qual);
 
 /// -------------------------------------------------------------------
 /// Value type containing a type reference and qualifier bits.
@@ -54,16 +63,28 @@ public:
   Qualified(const T * type, unsigned qualifiers) : type_(type), qualifiers_(qualifiers) {}
   Qualified(const Qualified & qty) : type_(qty.type_), qualifiers_(qty.qualifiers_) {}
 
-  /** The qualifier bits for this modified type. */
+  /** The qualifier bits for this type. */
   unsigned qualifiers() const { return qualifiers_; }
 
+  /** Set the qualifier bits for this type. */
+  void setQualifiers(unsigned qual) { qualifiers_ = qual; }
+
+  /** Add qualifier bits for this type. */
+  void addQualifiers(unsigned qual) { qualifiers_ = combineQualifiers(qualifiers_, qual); }
+
+  /** Remove qualifier bits for this type. */
+  void removeQualifiers(unsigned qual) { qualifiers_ &= ~qual; }
+
   /** Convenience functions. */
-  bool isMutable() const { return (qualifiers_ & MUTABLE) != 0; }
+  bool isExplicitMutable() const { return (qualifiers_ & MUTABLE) != 0; }
   bool isImmutable() const { return (qualifiers_ & IMMUTABLE) != 0; }
   bool isReadOnly() const { return (qualifiers_ & READONLY) != 0; }
   bool isAdopted() const { return (qualifiers_ & ADOPTED) != 0; }
   bool isVariadic() const { return (qualifiers_ & VARIADIC) != 0; }
   bool isVolatile() const { return (qualifiers_ & VOLATILE) != 0; }
+
+  /** True if the type is effectively read-only. */
+  bool isEffectiveReadOnly() const { return (qualifiers_ & (IMMUTABLE|READONLY)) != 0; }
 
   /** The unmodified base type. */
   const T * type() const { return type_; }
@@ -74,6 +95,16 @@ public:
   /** Return this type with aliases removed. */
   Qualified dealias() const {
     return Qualified(static_cast<const T *>(::tart::dealias(type_)), qualifiers_);
+  }
+
+  /** Return all the possible concrete types that this type could be. */
+  void expand(QualifiedTypeSet & out) const {
+    type_->expandImpl(out, qualifiers_);
+  }
+
+  /** Return all the possible concrete types that this type could be. */
+  void expand(QualifiedTypeSet & out, unsigned qualifiers) const {
+    type_->expandImpl(out, combineQualifiers(qualifiers_, qualifiers));
   }
 
   /** Assignment. */
@@ -105,12 +136,12 @@ public:
   }
 
   /** Equality. */
-  bool operator==(const Qualified & qty) {
+  bool operator==(const Qualified & qty) const {
     return type_ == qty.type_ && qualifiers_ == qty.qualifiers_;
   }
 
   /** Inequality. */
-  bool operator!=(const Qualified & qty) {
+  bool operator!=(const Qualified & qty) const {
     return type_ != qty.type_ || qualifiers_ != qty.qualifiers_;
   }
 
@@ -152,6 +183,10 @@ public:
     return type_ != NULL;
   }
 
+  /** Helper methods for debugging. */
+  LLVM_ATTRIBUTE_NOINLINE void dump() const { dumpType(type_, qualifiers_); }
+  LLVM_ATTRIBUTE_NOINLINE const char * str() const { return typeTostr(type_, qualifiers_); }
+
   /** Structure used when using Qualified as a map key. */
   struct KeyInfo {
     static inline Qualified getEmptyKey() {
@@ -191,13 +226,18 @@ typedef Qualified<Type> QualifiedType;
 typedef llvm::SmallVector<QualifiedType, 8> QualifiedTypeList;
 
 /** A set of QualifiedTypes. */
-typedef llvm::DenseSet<QualifiedType, QualifiedType::KeyInfo> QualifiedTypeSet;
+class QualifiedTypeSet : public llvm::DenseSet<QualifiedType, QualifiedType::KeyInfo> {};
+
+/** True if 'lq' and 'rq' qualifiers are equivalent. */
+bool areQualifiersEquivalent(unsigned lq, unsigned rq);
 
 /** True if a value with 'from' qualifiers can be assigned to a variable with 'to' qualifiers. */
 bool canAssignQualifiers(unsigned from, unsigned to);
 
 /** Print a QualifiedType to an output stream. */
 void formatQualifiedType(FormatStream & out, const Type * ty, unsigned qualifiers);
+void formatQualifiedTypePrefix(FormatStream & out, unsigned qualifiers);
+void formatQualifiedTypeSuffix(FormatStream & out, unsigned qualifiers);
 
 template <class T>
 inline FormatStream & operator<<(FormatStream & out, const Qualified<T> & qual) {

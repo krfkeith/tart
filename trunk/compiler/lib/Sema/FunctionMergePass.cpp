@@ -29,43 +29,25 @@ namespace tart {
 bool FunctionMergePass::visit(FunctionDefn * from, FunctionDefn * to) {
   int indentLevel = diag.getIndentLevel();
 
+  showMessages_ = AnalyzerBase::isTraceEnabled(from);
   if (showMessages_) {
     diag.debug() << Format_Verbose << "Merging " << from;
+    diag.debug() << Format_Verbose << "   With " << to;
     diag.indent();
   }
 
-//  BlockList & fromBlocks = from->blocks();
-//  BlockList & toBlocks = to->blocks();
-
-//  int index = 0;
-//  for (BlockList::iterator bi = fromBlocks.begin(); bi != fromBlocks.end(); ++bi) {
-//    (*bi)->setIndex(++index);
-//  }
-//
-//  index = 0;
-//  for (BlockList::iterator bi = toBlocks.begin(); bi != toBlocks.end(); ++bi) {
-//    (*bi)->setIndex(++index);
-//  }
-
-//  size_t blkCount = fromBlocks.size();
-//  if (toBlocks.size() != blkCount) {
-//    diag.debug() << "Merge failure: Difference in block count: " <<
-//        fromBlocks.size() << " vs " << toBlocks.size();
-//    diag.setIndentLevel(indentLevel);
-//    return false;
-//  }
-
-//  for (size_t i = 0; i < blkCount; ++i) {
-//    if (!visitBlock(fromBlocks[i], toBlocks[i])) {
-//      diag.setIndentLevel(indentLevel);
-//      return false;
-//    }
-//  }
   if (!visitExpr(from->body(), to->body())) {
+    if (showMessages_) {
+      diag.debug() << "Merge canceled";
+      diag.setIndentLevel(indentLevel);
+    }
     return false;
   }
 
-  diag.setIndentLevel(indentLevel);
+  if (showMessages_) {
+    diag.debug() << "Success";
+    diag.setIndentLevel(indentLevel);
+  }
   return true;
 }
 
@@ -121,9 +103,6 @@ bool FunctionMergePass::visitExpr(Expr * from, Expr * to) {
 //    case Expr::BoundMethod:
 //      return visitBoundMethod(static_cast<BoundMethodExpr *>(from), static_cast<BoundMethodExpr *>(to));
 //
-//    case Expr::ScopeName:
-//      return visitScopeName(static_cast<ScopeNameExpr *>(from), static_cast<ScopeNameExpr *>(to));
-//
     case Expr::ElementRef:
       return visitElementRef(static_cast<BinaryExpr *>(from), static_cast<BinaryExpr *>(to));
 
@@ -156,6 +135,7 @@ bool FunctionMergePass::visitExpr(Expr * from, Expr * to) {
     case Expr::UpCast:
 //    case Expr::TryCast:
 //    case Expr::DynamicCast:
+    case Expr::QualCast:
 //    case Expr::UnboxCast:
 //    case Expr::Truncate:
     case Expr::SignExtend:
@@ -321,9 +301,6 @@ bool FunctionMergePass::visitBoundMethod(BoundMethodExpr * from, BoundMethodExpr
   return in;
 }
 
-bool FunctionMergePass::visitScopeName(ScopeNameExpr * from, ScopeNameExpr * to) {
-  return in;
-}
 #endif
 
 bool FunctionMergePass::visitElementRef(BinaryExpr * from, BinaryExpr * to) {
@@ -371,12 +348,12 @@ bool FunctionMergePass::visitIndirectCall(CallExpr * from, CallExpr * to) {
 #endif
 
 bool FunctionMergePass::visitNew(NewExpr * from, NewExpr * to) {
-  if (from->type() != to->type()) {
-    reportDifference("Difference in type of new expr", from, to);
-    return false;
+  if (from->type() == to->type()) {
+    return true;
   }
 
-  return true;
+  reportDifference("Difference in type of new expr", from, to);
+  return false;
 }
 
 bool FunctionMergePass::visitCast(CastExpr * from, CastExpr * to) {
@@ -606,6 +583,10 @@ bool FunctionMergePass::visitFunctionRef(FunctionDefn * from, FunctionDefn * to)
   return false;
 }
 
+bool FunctionMergePass::areTypesCompatible(QualifiedType from, QualifiedType to) {
+  return areTypesCompatible(from.unqualified(), to.unqualified());
+}
+
 bool FunctionMergePass::areTypesCompatible(const Type * from, const Type * to) {
   if (from->typeClass() != to->typeClass()) {
     if ((from->typeClass() == Type::Class || from->typeClass() == Type::Interface) &&
@@ -631,6 +612,9 @@ bool FunctionMergePass::areTypesCompatible(const Type * from, const Type * to) {
     case Type::Interface:
       // Any reference type is compatible with any other.
       return true;
+
+    case Type::Struct:
+      return TypeRelation::isEqual(from, to);
 
     case Type::Tuple: {
       const TupleType * ttFrom = static_cast<const TupleType *>(from);

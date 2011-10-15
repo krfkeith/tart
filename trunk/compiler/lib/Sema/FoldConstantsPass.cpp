@@ -24,8 +24,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
   bool hasConstIntArgs = true;
   for (ExprList::const_iterator it = in->args().begin(); it != in->args().end(); ++it) {
     if ((*it)->isConstant()) {
-      const Type * ty = (*it)->type();
-      if (!ty->isUnsizedIntType()) {
+      if (!(*it)->type()->isUnsizedIntType()) {
         hasConstIntArgs = false;
       }
     } else {
@@ -75,7 +74,7 @@ Expr * FoldConstantsPass::visitCall(CallExpr * in) {
               callingArgs[paramIndex] = param->initValue();
             } else if (param->isVariadic()) {
               // Empty array literal.
-              Expr * arrayParam = AnalyzerBase::createArrayLiteral(in->location(), param->type().type());
+              Expr * arrayParam = AnalyzerBase::createArrayLiteral(in->location(), param->type());
               if (param->type()->isSingular()) {
                 AnalyzerBase::analyzeType(arrayParam->type(), Task_PrepConstruction);
                 DASSERT(arrayParam->isSingular());
