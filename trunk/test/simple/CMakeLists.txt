@@ -68,10 +68,9 @@ else (GENERATE_DEBUG_INFO)
   )
 endif (GENERATE_DEBUG_INFO)
 
-set_source_files_properties("${PROJECT_BINARY_DIR}/lib/std/libstd.bc" PROPERTIES GENERATED 1)
-
 # Dummy target needed to depend on a top-level target in another directory
-add_custom_target(test-simple.libdeps DEPENDS libstd)
+#add_custom_target(test-simple.libdeps)
+#add_dependencies(test-simple.libdeps libstd)
 
 # Create and run a test executable for each source file
 set(TEST_BC_FILES)
@@ -92,7 +91,7 @@ foreach(SRC_FILE ${TEST_SRC})
   add_custom_command(OUTPUT ${BC_FILE}
       COMMAND tartc ${TART_OPTIONS} -sourcepath ${SRCDIR} ${MODPATH} ${SRC_FILE}
       MAIN_DEPENDENCY "${SRC_FILE}" 
-      DEPENDS "${PROJECT_BINARY_DIR}/lib/std/libstd.bc" ${${DEPS_NAME}_DEPS}
+      DEPENDS ${${DEPS_NAME}_DEPS}
       COMMENT "Compiling Tart source file ${SRC_FILE}")
 
   # Remember the list of output files.
@@ -106,7 +105,7 @@ foreach(SRC_FILE ${TEST_SRC})
           -o ${LNK_BC_FILE}
           ${BC_FILE} ${BC_LIBS}
       MAIN_DEPENDENCY "${BC_FILE}" 
-      DEPENDS test-simple.libdeps ${BC_LIBS}
+      DEPENDS ${BC_LIBS}
       COMMENT "Linking Tart bitcode file ${BC_FILE}")
 
   # Optimize object files
