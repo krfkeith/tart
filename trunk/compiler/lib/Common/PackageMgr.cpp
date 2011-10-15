@@ -194,9 +194,11 @@ void PackageMgr::addImportPath(StringRef path) {
       importers_.push_back(new ArchiveImporter(path));
     } else {
       diag.error() << "Unsupported path type: " << path;
+      exit(-1);
     }
   } else {
     diag.error() << "Unsupported path type: " << path;
+    exit(-1);
   }
 }
 

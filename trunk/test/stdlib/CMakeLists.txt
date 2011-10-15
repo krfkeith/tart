@@ -88,8 +88,6 @@ else (GENERATE_DEBUG_INFO)
   )
 endif (GENERATE_DEBUG_INFO)
 
-set_source_files_properties("${PROJECT_BINARY_DIR}/lib/std/libstd.bc" PROPERTIES GENERATED 1)
-
 # Create and run a test executable for each source file
 foreach(SRC_FILE ${TART_SRC})
   # Source file name

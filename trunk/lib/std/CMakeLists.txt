@@ -1,4 +1,4 @@
-# CMake build file for lib/core
+# CMake build file for lib/std
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
