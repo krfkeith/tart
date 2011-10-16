@@ -868,6 +868,7 @@ bool AnalyzerBase::analyzeDefn(Defn * in, AnalysisTask task) {
     case Defn::DefnTypeCount:
     default:
       DFAIL("IllegalState");
+      return false;
   }
 }
 
@@ -918,7 +919,7 @@ bool AnalyzerBase::analyzeTypeDefn(TypeDefn * in, AnalysisTask task) {
     default:
       diag.debug(in) << in;
       DFAIL("IllegalState");
-      break;
+      return false;
   }
 }
 

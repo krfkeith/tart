@@ -26,7 +26,7 @@ class FormatStream;
 class SymbolTable {
 public:
   typedef llvm::SmallVector<Defn *, 4> Entry;
-  typedef llvm::StringMap<Entry, llvm::BumpPtrAllocator> NameDefnMap;
+  typedef llvm::StringMap<Entry/*, llvm::BumpPtrAllocator*/> NameDefnMap;
   typedef NameDefnMap::iterator iterator;
   typedef NameDefnMap::const_iterator const_iterator;
 

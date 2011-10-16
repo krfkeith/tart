@@ -14,6 +14,7 @@ Next up:
 * GC: Bug in collection of global vars.
 * Fix bug in nametable static roots.
 * String should take from Collection, not Copyable.
+* HasLength really ought to be HasSize? Also, do we even need it?
 * Type inference
   * Finish refactoring ambiguous types - remove TypeSetConstraint.
   * Pre-cull candidates that can never be chosen
@@ -470,6 +471,7 @@ Environment
 Encoding
 Format
 Instruction
+Language
 Machine
 Representation
 Portable
