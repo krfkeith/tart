@@ -44,6 +44,7 @@ int main(int argc, char **argv) {
   //llvm_shutdown_obj Y; // Call llvm_shutdown() on exit.
 
   InitializeAllTargets();
+  InitializeAllTargetMCs();
 
   // Requires at least one input file
   if (InputFilenames.empty()) {

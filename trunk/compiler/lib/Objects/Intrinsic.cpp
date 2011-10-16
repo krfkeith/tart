@@ -765,14 +765,10 @@ llvm::Value * AtomicCasIntrinsic::generate(CodeGenerator & cg, const FnCallExpr 
   Value * selfValue = cg.genLValueAddress(self);
   Value * theValue = cg.builder().CreateConstInBoundsGEP2_32(selfValue, 0, 0, "value");
   Value * cmpValue = cg.genExpr(cmp);
-  Value * valValue = cg.genExpr(val);
+  Value * newValue = cg.genExpr(val);
 
-  llvm::Type * types[2];
-  types[0] = cmpValue->getType();
-  types[1] = theValue->getType();
-  Function * intrinsic = llvm::Intrinsic::getDeclaration(
-      cg.irModule(), llvm::Intrinsic::atomic_cmp_swap, types);
-  Value * resultVal = cg.builder().CreateCall3(intrinsic, theValue, cmpValue, valValue, "");
+  Value * resultVal = cg.builder().CreateAtomicCmpXchg(
+      theValue, cmpValue, newValue, SequentiallyConsistent);
   return cg.builder().CreateICmpEQ(resultVal, cmpValue);
 }
 

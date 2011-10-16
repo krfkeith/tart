@@ -17,7 +17,7 @@ namespace tart {
 
 /// ---------------------------------------------------------------
 /// Class that handles interning of strings.
-class StringTable : public llvm::StringMap<char, llvm::BumpPtrAllocator> {
+class StringTable : public llvm::StringMap<char/*, llvm::BumpPtrAllocator*/> {
 public:
   /** Given a string, search for a pre-existing string that is the same. If found,
       return it, otherwise insert the new string and return that. */
