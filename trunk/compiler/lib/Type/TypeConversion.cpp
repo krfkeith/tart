@@ -688,8 +688,8 @@ ConversionRank convertToTypeLiteral(
 }
 
 ConversionRank convert(
-    QualifiedType srcType, Expr * srcExpr,
-    QualifiedType dstType, Expr ** dstExpr, int options) {
+    const QualifiedType & srcType, Expr * srcExpr,
+    const QualifiedType & dstType, Expr ** dstExpr, int options) {
 
   DASSERT(!srcType.isNull());
   DASSERT(!dstType.isNull());

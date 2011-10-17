@@ -102,8 +102,8 @@ namespace TypeConversion {
 
   /** Do a type conversion, and return both the conversion rank and the converted type. */
   ConversionRank convert(
-      QualifiedType srcType, Expr * srcExpr,
-      QualifiedType dstType, Expr ** dstExpr, int options = 0);
+      const QualifiedType & srcType, Expr * srcExpr,
+      const QualifiedType & dstType, Expr ** dstExpr, int options = 0);
 
   /** Do a type conversion, and return both the conversion rank and the converted expression. */
   inline ConversionRank convert(
@@ -121,7 +121,7 @@ namespace TypeConversion {
 
   /** Do a type conversion, and return both the conversion rank and the converted expression. */
   inline std::pair<ConversionRank, Expr *> convert(
-      Expr * srcExpr, QualifiedType dstType, int options = 0) {
+      Expr * srcExpr, const QualifiedType & dstType, int options = 0) {
     Expr * dstExpr = NULL;
     ConversionRank rank = convert(srcExpr->type(), srcExpr, dstType, &dstExpr, options);
     return std::make_pair(rank, dstExpr);
@@ -133,12 +133,13 @@ namespace TypeConversion {
   }
 
   /** Check if a conversion is possible, and return a conversion ranking. */
-  inline ConversionRank check(QualifiedType srcType, QualifiedType dstType, int options = 0) {
+  inline ConversionRank check(const QualifiedType & srcType, const QualifiedType & dstType,
+      int options = 0) {
     return convert(srcType, NULL, dstType, NULL, options);
   }
 
   /** Check if a conversion is possible, and return a conversion ranking. */
-  inline ConversionRank check(Expr * srcExpr, QualifiedType dstType, int options = 0) {
+  inline ConversionRank check(Expr * srcExpr, const QualifiedType & dstType, int options = 0) {
     return convert(srcExpr->type(), srcExpr, dstType, NULL, options);
   }
 };

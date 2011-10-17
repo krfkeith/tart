@@ -48,8 +48,13 @@ public:
 
   /** The upper bound of this type var - if non-null, any type bound to this type
       must be equal to upperBound or a subtype of it. */
-  QualifiedType upperBound() const { return upperBound_; }
-  void setUpperBound(QualifiedType ty) { upperBound_ = ty; }
+  const QualifiedTypeList & upperBounds() const { return upperBounds_; }
+  QualifiedTypeList & upperBounds() { return upperBounds_; }
+
+  /** The lower bound of this type var - if non-null, any type bound to this type
+      must be equal to lowerBound or a supertype of it. */
+  const QualifiedTypeList & lowerBounds() const { return lowerBounds_; }
+  QualifiedTypeList & lowerBounds() { return lowerBounds_; }
 
   /** Whether this is a variadic template parameter. */
   bool isVariadic() const { return isVariadic_; }
@@ -76,7 +81,8 @@ private:
   const SourceLocation location_;
   Target target_;
   QualifiedType metaType_;
-  QualifiedType upperBound_;
+  QualifiedTypeList upperBounds_;
+  QualifiedTypeList lowerBounds_;
   StringRef name_;
   bool isVariadic_;
 };

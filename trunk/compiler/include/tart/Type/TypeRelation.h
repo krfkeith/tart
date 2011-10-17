@@ -31,19 +31,32 @@ enum Options {
 
 /** Returns true if the type on the left is equal to the type on
     the right. */
-bool isEqual(QualifiedType lhs, QualifiedType rhs);
+bool isEqual(const QualifiedType & lhs, const QualifiedType & rhs);
 
 /** Returns true if the type on the left is either the same as,
     or is a subtype of, the type on the right. Note that in the case of
     ambiguous types, all possibilities must pass the subclass test
     in order for the whole to be considered a subtype. */
-bool isSubtype(QualifiedType ty, QualifiedType base);
+bool isSubtype(const QualifiedType & ty, const QualifiedType & base);
 
 /** Is similar to isSubtype, but more restrictive - only returns true for class/interface types,
     not other types. As a result of this restriction, we always know that when this function
     returns true, a value of type 'ty' can be stored directly into a variable of type 'base' without
     conversion or transformation. */
-bool isSubclass(QualifiedType ty, QualifiedType base);
+bool isSubclass(const QualifiedType & ty, const QualifiedType & base);
+
+/** Represents whether a constraint is more specific, equally specific, or neither,
+    compared to another constraint. */
+enum RelativeSpecificity {
+  NOT_MORE_SPECIFIC,    // First constraint is not more specific, and not equal either.
+                        // This may be because it's less specific, or may be because it's unknown.
+  EQUAL_SPECIFICITY,    // Both constraints are equally specific
+  MORE_SPECIFIC,        // First constraint is known to be more specific than second
+};
+
+/** Similar to isSubtype, but takes into account the narrowness of upper and lower bounds on
+    template variables. */
+RelativeSpecificity isMoreSpecific(const QualifiedType & lhs, const QualifiedType & rhs);
 
 /** Type equality functor. */
 class Equal {

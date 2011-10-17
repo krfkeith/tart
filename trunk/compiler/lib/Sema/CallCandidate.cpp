@@ -379,10 +379,10 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
     QualifiedType t0 = paramType(i);
     QualifiedType t1 = other->paramType(i);
 
-    RelativeSpecificity rspec = isMoreSpecific(t0, t1);
-    if (rspec == NOT_MORE_SPECIFIC) {
+    TypeRelation::RelativeSpecificity rspec = TypeRelation::isMoreSpecific(t0, t1);
+    if (rspec == TypeRelation::NOT_MORE_SPECIFIC) {
       return false;
-    } else if (rspec == MORE_SPECIFIC) {
+    } else if (rspec == TypeRelation::MORE_SPECIFIC) {
       same = false;
     } else {
       // Variadic parameters are less specific than non-variadic parameters.
@@ -439,6 +439,23 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
   return !same;
 }
 
+#if 0
+CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
+    const QualifiedTypeList & lhs, const QualifiedTypeList & rhs) {
+  // We want to know if list lhs is more restrictive than list rhs.
+  // This is true if each type in rhs is a supertype of some type in lhs.
+  RelativeSpecificity result = MORE_SPECIFIC;
+  for (QualifiedTypeList::const_iterator ri = rhs.begin(); ri != rhs.end(); ++ri) {
+    if (!TypeRelation::isSubtypeOfAny(*ri, lhs)) {
+      return NOT_MORE_SPECIFIC;
+    }
+    if (!TypeRelation::isStrictSubtypeOfAny(*ri, lhs)) {
+      result = EQUAL_SPECIFICITY;
+    }
+  }
+  return result;
+}
+
 CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
     QualifiedType lhs, QualifiedType rhs) {
   while (lhs.isa<TypeAlias>()) {
@@ -459,21 +476,34 @@ CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
     if (rhs.isa<TypeAssignment>()) {
       // Both sides are type variables. Check upper bounds.
       const TypeVariable * rtv = rhs.as<TypeAssignment>()->target();
-      if (ltv->upperBound()) {
-        if (rtv->upperBound()) {
-          return isMoreSpecific(ltv->upperBound(), rtv->upperBound());
-        }
-        // Both sides are type vars, but only lhs has an upper bound, so lhs is more specific.
-        return MORE_SPECIFIC;
-      } else if (rtv->upperBound()) {
-        // Both sides are type vars, but only rhs has an upper bound, so lhs is less specific.
-        return NOT_MORE_SPECIFIC;
-      } else {
-        // Neither side has an upper bound, so they rank the same.
-        return EQUAL_SPECIFICITY;
-      }
+      return isMoreSpecific(ltv->upperBounds(), rtv->upperBounds());
+//      if (!ltv->upperBounds().empty()) {
+//        if (!rtv->upperBound().empty()) {
+//          return isMoreSpecific(ltv->upperBound(), rtv->upperBound());
+//        }
+//        // Both sides are type vars, but only lhs has an upper bound, so lhs is more specific.
+//        return MORE_SPECIFIC;
+//      } else if (!rtv->upperBounds().empty()) {
+//        // Both sides are type vars, but only rhs has an upper bound, so lhs is less specific.
+//        return NOT_MORE_SPECIFIC;
+//      } else {
+//        // Neither side has an upper bound, so they rank the same.
+//        return EQUAL_SPECIFICITY;
+//      }
     } else {
-      if (ltv->upperBound() &&
+      const QualifiedTypeList & lhlist = ltv->upperBounds();
+      for (QualifiedTypeList::const_iterator li = lhlist.begin(); li != lhlist.end(); ++li) {
+        if (TypeRelation::isEqual(*li, rhs)) {
+        } else if (TypeRelation::isSubtype()) {
+
+        } else if (TypeRelation::isSubtype()) {
+
+        } else {
+
+        }
+
+      }
+      if (!ltv->upperBounds().empty() &&
           TypeRelation::isSubtype(ltv->upperBound(), rhs) &&
           !TypeRelation::isEqual(ltv->upperBound(), rhs)) {
         // lhs is a type var whose upper bound is more specific than rhs, so lhs counts as
@@ -486,7 +516,11 @@ CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
     }
   } else if (rhs.isa<TypeAssignment>()) {
     const TypeVariable * rtv = rhs.as<TypeAssignment>()->target();
-    if (rtv->upperBound() &&
+    const QualifiedTypeList & rhlist = rtv->upperBounds();
+    for (QualifiedTypeList::const_iterator ri = rhlist.begin(); ri != rhlist.end(); ++ri) {
+
+    }
+    if (!rtv->upperBound().empty() &&
         TypeRelation::isSubtype(rtv->upperBound(), lhs) &&
         !TypeRelation::isEqual(rtv->upperBound(), lhs)) {
       // rhs is a type var whose upper bound is more specific than lhs, so lhs counts as
@@ -551,6 +585,7 @@ CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
     return NOT_MORE_SPECIFIC;
   }
 }
+#endif
 
 void CallCandidate::combineConversionRanks(ConversionRank newRank) {
   // conversionCount_ is the number of conversions that took place
