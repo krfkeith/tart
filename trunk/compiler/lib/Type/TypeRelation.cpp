@@ -29,6 +29,8 @@
 #include "tart/Sema/Infer/TypeAssignment.h"
 #include "tart/Sema/CallCandidate.h"
 
+#include "llvm/ADT/BitVector.h"
+
 namespace tart {
 
 static bool isEqualTuple(Qualified<TupleType> ltt, Qualified<TupleType> rtt) {
@@ -145,7 +147,7 @@ static bool isEqualUnion(Qualified<UnionType> lut, Qualified<UnionType> rut) {
   return false;
 }
 
-bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
+bool TypeRelation::isEqual(const QualifiedType & lt, const QualifiedType & rt) {
   // Early out
   if (lt.unqualified() == rt.unqualified() && lt.qualifiers() == rt.qualifiers()) {
     return true;
@@ -336,7 +338,7 @@ bool TypeRelation::isEqual(QualifiedType lt, QualifiedType rt) {
   return false;
 }
 
-bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
+bool TypeRelation::isSubtype(const QualifiedType & ty, const QualifiedType & base) {
   if (!canAssignQualifiers(ty.qualifiers(), base.qualifiers())) {
     return false;
   } else if (ty.unqualified() == base.unqualified()) {
@@ -547,7 +549,7 @@ bool TypeRelation::isSubtype(QualifiedType ty, QualifiedType base) {
   return false;
 }
 
-bool TypeRelation::isSubclass(QualifiedType ty, QualifiedType base) {
+bool TypeRelation::isSubclass(const QualifiedType & ty, const QualifiedType & base) {
   if (!canAssignQualifiers(ty.qualifiers(), base.qualifiers())) {
     return false;
   } else if (ty.unqualified() == base.unqualified()) {
@@ -712,6 +714,139 @@ bool TypeRelation::isSubclass(QualifiedType ty, QualifiedType base) {
   }
 
   return false;
+}
+
+TypeRelation::RelativeSpecificity TypeRelation::isMoreSpecific(
+    const QualifiedType & lhs, const QualifiedType & rhs) {
+  if (lhs.isa<TypeAlias>()) {
+    return isMoreSpecific(lhs.as<TypeAlias>()->value() | lhs.qualifiers(), rhs);
+  }
+
+  if (rhs.isa<TypeAlias>()) {
+    return isMoreSpecific(lhs, rhs.as<TypeAlias>()->value() | rhs.qualifiers());
+  }
+
+  DASSERT(!lhs.isa<TypeConstraint>());
+  DASSERT(!rhs.isa<TypeConstraint>());
+
+  if (lhs.isa<TypeAssignment>()) {
+    const TypeVariable * ltv = lhs.as<TypeAssignment>()->target();
+    const QualifiedTypeList & lu = ltv->upperBounds();
+    if (rhs.isa<TypeAssignment>()) {
+      // Both sides are type variables. Check upper bounds.
+      const TypeVariable * rtv = rhs.as<TypeAssignment>()->target();
+      const QualifiedTypeList & ru = rtv->upperBounds();
+      RelativeSpecificity result = EQUAL_SPECIFICITY;
+      // Upper bounds: To say that left's upper bounds are *more* specific than right's, requires
+      // that every member of right is a supertype of some member of left.
+      // To say that left's upper bounds are *equally* specific as right's, requires that every
+      // member of right is equal to some member of left, and not a supertype of another member of
+      // left - and that there aren't any members of left that are also unmatched.
+      llvm::BitVector leftUnmatched(lu.size(), true);
+      for (QualifiedTypeList::const_iterator ri = ru.begin(), rEnd = ru.end(); ri != rEnd; ++ri) {
+        int bestTypeIndex = -1;
+        for (int index = 0; index < int(lu.size()); ++index) {
+          if (isSubtype(lu[index], *ri)) {
+            if (bestTypeIndex < 0 || isSubtype(lu[index], lu[bestTypeIndex])) {
+              bestTypeIndex = index;
+            }
+          }
+        }
+
+        // If no type in left was a subtype of 'ri', then left is not more specific.
+        if (bestTypeIndex < 0) {
+          return NOT_MORE_SPECIFIC;
+        } else {
+          leftUnmatched[bestTypeIndex] = false;
+        }
+      }
+
+      if (leftUnmatched.any()) {
+        return MORE_SPECIFIC;
+      } else {
+        return result;
+      }
+    } else {
+      // Only the left side is a type variable. To say that left's upper bounds are more specific
+      // than the right-hand type, requires that right is a supertype of some member of left.
+      // (They can't ever be equal.)
+      const QualifiedTypeList & lu = ltv->upperBounds();
+      for (QualifiedTypeList::const_iterator li = lu.begin(); li != lu.end(); ++li) {
+        // lhs is a type var whose upper bound is more specific than rhs, so lhs counts as
+        // more specific.
+        if (isSubtype(*li, rhs) && !isEqual(*li, rhs)) {
+          return MORE_SPECIFIC;
+        }
+      }
+      // A type variable is less specific than a concrete type.
+      return NOT_MORE_SPECIFIC;
+    }
+  } else if (rhs.isa<TypeAssignment>()) {
+    // Only the right side is a type variable. To say that left is more specific than the
+    // upper bounds of right would be true only if left is a subtype of *every* type in right.
+    const TypeVariable * rtv = rhs.as<TypeAssignment>()->target();
+    const QualifiedTypeList & ru = rtv->upperBounds();
+    for (QualifiedTypeList::const_iterator ri = ru.begin(); ri != ru.end(); ++ri) {
+      if (!isSubtype(lhs, *ri)) {
+        // A type variable is less specific than a concrete type.
+        return NOT_MORE_SPECIFIC;
+      }
+    }
+
+    return MORE_SPECIFIC;
+  } else {
+    switch (lhs->typeClass()) {
+//      case Type::Class:
+//      case Type::Interface:
+//        if (rhs->typeClass() != Type::Class &&
+//            rhs->typeClass() != Type::Interface &&
+//            rhs->typeClass() != Type::Protocol) {
+//          return NOT_MORE_SPECIFIC;
+//        }
+//        break;
+//
+//      case Type::Struct:
+//        if (rhs->typeClass() != Type::Struct &&
+//            rhs->typeClass() != Type::Protocol) {
+//          return NOT_MORE_SPECIFIC;
+//        }
+//        break;
+//
+//      case Type::Protocol:
+//        if (rhs->typeClass() != Type::Class &&
+//            rhs->typeClass() != Type::Interface &&
+//            rhs->typeClass() != Type::Struct &&
+//            rhs->typeClass() != Type::Protocol) {
+//          return NOT_MORE_SPECIFIC;
+//        }
+//        break;
+
+      case Type::NAddress:
+      case Type::NArray:
+      case Type::FlexibleArray:
+        if (lhs->typeClass() != rhs->typeClass()) {
+          return NOT_MORE_SPECIFIC;
+        }
+        return isMoreSpecific(lhs->typeParam(0), rhs->typeParam(0));
+
+      default:
+//        if (lhs->typeClass() != rhs->typeClass()) {
+//          return NOT_MORE_SPECIFIC;
+//        }
+
+        break;
+    }
+
+    if (isEqual(lhs, rhs)) {
+      // Ensure that equality is symmetrical.
+      DASSERT_OBJ(TypeRelation::isEqual(rhs, lhs), lhs);
+      return EQUAL_SPECIFICITY;
+    } else if (isSubtype(lhs, rhs)) {
+      return MORE_SPECIFIC;
+    } else {
+      return NOT_MORE_SPECIFIC;
+    }
+  }
 }
 
 } // namespace tart

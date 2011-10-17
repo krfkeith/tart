@@ -50,7 +50,7 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
           // Readonly by default.
           type.setQualifiers(QualifiedType::READONLY);
         }
-        tvar->setUpperBound(type);
+        tvar->upperBounds().push_back(type);
         TemplateCondition * condition = new IsSubtypeCondition(tvar, type);
         tsig_->conditions().push_back(condition);
       } else if (ast->constraint() == ASTTypeVariable::IS_SUPERTYPE) {

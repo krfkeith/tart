@@ -18,7 +18,6 @@ TypeVariable::TypeVariable(const SourceLocation & location, StringRef name, Targ
   , location_(location)
   , target_(target)
   , metaType_(metaType)
-  , upperBound_(NULL)
   , name_(name)
   , isVariadic_(false)
 {}

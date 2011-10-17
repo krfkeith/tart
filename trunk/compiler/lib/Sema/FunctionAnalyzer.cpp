@@ -310,11 +310,6 @@ bool FunctionAnalyzer::resolveParameterTypes() {
 bool FunctionAnalyzer::resolveModifiers() {
   bool success = true;
 
-  if (target->hasUnboundTypeParams() || target->isTemplateMember()) {
-    // Don't build CFG for templates
-    return true;
-  }
-
   if (target->passes().begin(FunctionDefn::ModifierPass)) {
     bool isIntrinsic = target->isIntrinsic();
     bool isAbstract = target->isAbstract();

@@ -39,12 +39,6 @@ class FunctionDefn;
 /// A call candidate
 class CallCandidate : public GC, public Formattable {
 public:
-  enum RelativeSpecificity {
-    NOT_MORE_SPECIFIC = 0,
-    EQUAL_SPECIFICITY,
-    MORE_SPECIFIC,
-  };
-
   CallCandidate(CallExpr * call, Expr * baseExpr, FunctionDefn * m,
       const ParameterAssignments & param, SpCandidate * spCandidate = NULL);
 
@@ -160,11 +154,6 @@ public:
 
 private:
   void combineConversionRanks(ConversionRank newRank);
-
-  /** Return whether lhs is equal, or more specific than, rhs. If neither of those
-      is true, it does not mean that lhs is less specific - it may mean that the
-      two types are incomparable. */
-  static RelativeSpecificity isMoreSpecific(QualifiedType lhs, QualifiedType rhs);
 
   CallExpr * callExpr_;
   Expr * base_;
