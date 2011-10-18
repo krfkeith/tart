@@ -384,7 +384,7 @@ bool CompositeType::isSupportedBy(const Type * type) const {
   return true;
 }
 
-bool CompositeType::isExplicitMutable() const {
+bool CompositeType::isMutable() const {
   if (this == Builtins::typeObject.get()) {
     return false;
   }
@@ -399,7 +399,7 @@ bool CompositeType::isExplicitMutable() const {
   }
 
   if (super_) {
-    return super_->isExplicitMutable();
+    return super_->isMutable();
   }
 
   return false;

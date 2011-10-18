@@ -250,9 +250,13 @@ FunctionDefn * ExprAnalyzer::getDowncastFn(SLC & loc, const Type * toType) {
   }
 
   analyzeFunction(downCastMethod, Task_PrepTypeComparison);
+  DASSERT(downCastMethod->returnType().unqualified() == toType)
+      << "Converter function return type '"
+      << downCastMethod->returnType().unqualified() << "' does not match destination type '"
+      << toType << "'.";
   Builtins::module.converters()[conversionKey] = downCastMethod;
   module()->addSymbol(downCastMethod);
-  //diag.info() << Format_Verbose << "Generated boxer " << downCastMethod;
+  //diag.info() << Format_Verbose << "Generated downcast -> '" << toType << "': " << downCastMethod;
   return downCastMethod;
 }
 
@@ -272,10 +276,9 @@ Defn * ExprAnalyzer::findBestSpecialization(SpecializeExpr * spe) {
     }
   }
 
-  env.reset();
-
   if (bestRank == Incompatible) {
     unifyVerbose = true;
+    env.reset();
     if (!spe->args()->containsBadType()) {
       SpCandidate * front = *candidates.begin();
       diag.error(spe) << "No candidate found for '" << front->def()->name() <<

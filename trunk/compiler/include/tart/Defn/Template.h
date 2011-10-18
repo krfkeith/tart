@@ -15,6 +15,7 @@
 
 namespace tart {
 
+class TemplateCondition;
 typedef llvm::SmallVector<TemplateCondition *, 2> TemplateConditionList;
 
 /// -------------------------------------------------------------------

@@ -77,9 +77,9 @@ public:
       assignments from the specified context. */
   void toTypeVarMap(QualifiedTypeVarMap & map, GC * context);
 
-  /** Assign 'value' to the type variable 'var'. This will create a new type assignment
-      in the environment. */
-  TypeAssignment * assign(const TypeVariable * var, const Type * value, GC * context = NULL);
+  /** Create a new assignment (initially NULL) for the the type variable 'var' in this
+      environment. */
+  TypeAssignment * assign(const TypeVariable * var, GC * context = NULL);
 
   /** Return a token that can be used to backtrack to the current state. */
   unsigned stateCount() const {
@@ -97,6 +97,9 @@ public:
   /** Sort assignments by dependency - put assignments before other assignments that
       refer to them. */
   void sortAssignments();
+
+  /** Set the upper and lower bounds for each type assignment. */
+  void setAssignmentBounds(QualifiedTypeVarMap & assignments);
 
   /** Update all type assignments to their current subsitutions, resolving conflicting
       constraints if possible. */

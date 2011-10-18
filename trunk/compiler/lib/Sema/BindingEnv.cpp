@@ -586,7 +586,9 @@ bool BindingEnv::unifyWithTypeFunctionCall(
   const TupleType * args = tfc->args();
 
   if (Qualified<TypeFunctionCall> vfc = value.dyn_cast<TypeFunctionCall>()) {
-    DFAIL("Implement");
+    return true;
+//    diag.debug() << tfc << " <=> " << vfc;
+//    DFAIL("Implement");
   }
 
   // Unify with a type qualifier
@@ -632,7 +634,7 @@ bool BindingEnv::unifyWithAmbiguousType(SourceContext * source, QualifiedType am
   return success;
 }
 
-TypeAssignment * BindingEnv::assign(const TypeVariable * target, const Type * value, GC * scope) {
+TypeAssignment * BindingEnv::assign(const TypeVariable * target, GC * scope) {
   int sequenceNum = 1;
   for (TypeAssignment * ta = assignments_; ta != NULL; ta = ta->next_) {
     DASSERT(ta->target() != target || ta->scope() != scope);
@@ -698,6 +700,57 @@ void BindingEnv::sortAssignments() {
   }
 }
 
+void BindingEnv::setAssignmentBounds(QualifiedTypeVarMap & assignments) {
+  // We need a relabeling transform to convert the bounding types (which may be type
+  // variables) to the corresponding relabeled types.
+  RelabelTransform relabel(assignments);
+
+  // Convert all upper and lower bounds on the type variable into constraints on the assignment.
+  bool first = true;
+  for (QualifiedTypeVarMap::const_iterator it = assignments.begin(), itEnd = assignments.end();
+      it != itEnd; ++it) {
+    Qualified<TypeVariable> tv = it->first;
+    Qualified<TypeAssignment> ta = it->second.as<TypeAssignment>();
+    const QualifiedTypeList & upper = tv->upperBounds();
+    const QualifiedTypeList & lower = tv->lowerBounds();
+
+    if (!upper.empty() || !lower.empty()) {
+      if (DebugUnify || unifyVerbose) {
+        if (first) {
+          diag.debug() << "Computing type assignment bounds:";
+          first = false;
+        }
+        diag.indent();
+        diag.debug() << "For variable: " << tv;
+        diag.indent();
+      }
+
+      // Upper bounds
+      for (QualifiedTypeList::const_iterator ui = upper.begin(); ui != upper.end(); ++ui) {
+        QualifiedType ty = relabel(*ui);
+        if (DebugUnify || unifyVerbose) {
+          diag.debug() << "<= " << ty << " [" << *ui << "]";
+        }
+        ta->mutableConstraints().insert(tv->location(), ty, Constraint::UPPER_BOUND);
+      }
+
+      // Lower bounds
+      for (QualifiedTypeList::const_iterator li = lower.begin(); li != lower.end(); ++li) {
+        QualifiedType ty = relabel(*li);
+        if (DebugUnify || unifyVerbose) {
+          diag.debug() << ">= " << ty << " [" << *li << "]";
+        }
+        ta->mutableConstraints().insert(tv->location(), ty, Constraint::LOWER_BOUND);
+      }
+
+      if (DebugUnify || unifyVerbose) {
+        diag.unindent();
+        diag.unindent();
+      }
+    }
+  }
+}
+
 bool BindingEnv::updateAssignments(SourceLocation loc, GC * context) {
   if (!reconcileConstraints(context)) {
     diag.error(loc) << "Type inference cannot find a solution that satisfies all constraints.";
@@ -734,8 +787,6 @@ bool BindingEnv::reconcileConstraints(GC * context) {
       unsolved.push_back(ta);
     }
   }
-
-  // Sort here?
 
   // Iteratively attempt to assign a value to every TA.
   unsigned prevUnsolvedCount = 0;

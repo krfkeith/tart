@@ -42,8 +42,9 @@ void SpCandidate::relabelTypeVars(BindingEnv & env) {
 
     // For each template parameter, create a TypeAssignment instance.
     for (size_t i = 0; i < numParams; ++i) {
-      assignments[tm->patternVar(i)] = env.assign(tm->patternVar(i), NULL, this);
+      assignments[tm->patternVar(i)] = env.assign(tm->patternVar(i), this);
     }
+    env.setAssignmentBounds(assignments);
 
     // Transform the parameters into type assignments.
     RelabelTransform rt(assignments);
@@ -86,7 +87,7 @@ bool SpCandidate::unify(SourceContext * source, BindingEnv & env) {
     }
   }
 
-  env.updateAssignments(SourceLocation(), this);
+  env.updateAssignments(source->location(), this);
 
   // Transform the condition list based on the unification result.
   conditions_.clear();

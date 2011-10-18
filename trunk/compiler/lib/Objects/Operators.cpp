@@ -552,18 +552,10 @@ static SourceString infixLogicalSrc(
     );
 
 static SourceString infixAddSrc(
-    " @tart.annex.Intrinsic def infixAdd[%T](:  mutable(__Address[T]),  :int32) ->   mutable(__Address[T]);"
-    " @tart.annex.Intrinsic def infixAdd[%T](:immutable(__Address[T]),  :int32) -> immutable(__Address[T]);"
-    " @tart.annex.Intrinsic def infixAdd[%T](: readonly(__Address[T]),  :int32) ->  readonly(__Address[T]);"
-    " @tart.annex.Intrinsic def infixAdd[%T](:  mutable(__Address[T]),  :int64) ->   mutable(__Address[T]);"
-    " @tart.annex.Intrinsic def infixAdd[%T](:immutable(__Address[T]),  :int64) -> immutable(__Address[T]);"
-    " @tart.annex.Intrinsic def infixAdd[%T](: readonly(__Address[T]),  :int64) ->  readonly(__Address[T]);"
-    " @tart.annex.Intrinsic def infixAdd[%T](:  mutable(__Address[T]), :uint32) ->   mutable(__Address[T]);"
-    " @tart.annex.Intrinsic def infixAdd[%T](:immutable(__Address[T]), :uint32) -> immutable(__Address[T]);"
-    " @tart.annex.Intrinsic def infixAdd[%T](: readonly(__Address[T]), :uint32) ->  readonly(__Address[T]);"
-    " @tart.annex.Intrinsic def infixAdd[%T](:  mutable(__Address[T]), :uint64) ->   mutable(__Address[T]);"
-    " @tart.annex.Intrinsic def infixAdd[%T](:immutable(__Address[T]), :uint64) -> immutable(__Address[T]);"
-    " @tart.annex.Intrinsic def infixAdd[%T](: readonly(__Address[T]), :uint64) ->  readonly(__Address[T]);"
+    " @tart.annex.Intrinsic def infixAdd[%T, %Mod(?)](:Mod(__Address[T]),  :int32) -> Mod(__Address[T]);"
+    " @tart.annex.Intrinsic def infixAdd[%T, %Mod(?)](:Mod(__Address[T]),  :int64) -> Mod(__Address[T]);"
+    " @tart.annex.Intrinsic def infixAdd[%T, %Mod(?)](:Mod(__Address[T]), :uint32) -> Mod(__Address[T]);"
+    " @tart.annex.Intrinsic def infixAdd[%T, %Mod(?)](:Mod(__Address[T]), :uint64) -> Mod(__Address[T]);"
     );
 
 } // namespace

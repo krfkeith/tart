@@ -275,7 +275,7 @@ bool VarAnalyzer::analyzeTypeModifiers() {
     } else {
       // It's a 'let' or 'var'.
       if (target->storageClass() != Storage_Instance) {
-        if (target->isExplicitMutable()) {
+        if (target->isMutable()) {
           diag.error(target) << "Only instance variables can be declared 'mutable'";
         } else if (target->modifiers().flags & (ReadOnly | Immutable)) {
           diag.error(target) << "Type modifiers are only allowed on instance variables";

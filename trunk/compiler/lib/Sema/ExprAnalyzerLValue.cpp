@@ -592,7 +592,7 @@ Expr * ExprAnalyzer::getLValue(SLC & loc, ValueDefn * val, Expr * base, bool sto
             "' from static method.";
         return &Expr::ErrorVal;
       }
-      if (store && base->type().isEffectiveReadOnly() && !val->isExplicitMutable()) {
+      if (store && base->type().isEffectiveReadOnly() && !val->isMutable()) {
         diag.error(loc) << "Attempt to write to read-only field '" << val << "'";
       }
       break;

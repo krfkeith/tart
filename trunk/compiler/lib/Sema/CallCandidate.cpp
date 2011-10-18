@@ -113,13 +113,16 @@ void CallCandidate::relabelTypeVars(BindingEnv & env) {
         for (size_t i = 0; i < numParams; ++i) {
           const TypeVariable * var = ts->patternVar(i);
           if (assignments.count(var) == 0) {
-            TypeAssignment * ta = env.assign(var, NULL, this);
+            TypeAssignment * ta = env.assign(var, this);
             ta->setPrimaryProvision(primaryProvision_);
             assignments[var] = ta;
           }
         }
       }
     }
+
+    // Establish the upper and lower bounds of the assignments.
+    env.setAssignmentBounds(assignments);
 
     // If there are any explicit type arguments, then we want to relabel the template
     // parameters themselves so that we can unify the type arguments with them.
@@ -438,154 +441,6 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
   // Return true if they are not the same.
   return !same;
 }
-
-#if 0
-CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
-    const QualifiedTypeList & lhs, const QualifiedTypeList & rhs) {
-  // We want to know if list lhs is more restrictive than list rhs.
-  // This is true if each type in rhs is a supertype of some type in lhs.
-  RelativeSpecificity result = MORE_SPECIFIC;
-  for (QualifiedTypeList::const_iterator ri = rhs.begin(); ri != rhs.end(); ++ri) {
-    if (!TypeRelation::isSubtypeOfAny(*ri, lhs)) {
-      return NOT_MORE_SPECIFIC;
-    }
-    if (!TypeRelation::isStrictSubtypeOfAny(*ri, lhs)) {
-      result = EQUAL_SPECIFICITY;
-    }
-  }
-  return result;
-}
-
-CallCandidate::RelativeSpecificity CallCandidate::isMoreSpecific(
-    QualifiedType lhs, QualifiedType rhs) {
-  while (lhs.isa<TypeAlias>()) {
-    lhs = lhs.as<TypeAlias>()->value();
-    DASSERT(lhs);
-  }
-
-  while (rhs.isa<TypeAlias>()) {
-    rhs = rhs.as<TypeAlias>()->value();
-    DASSERT(rhs);
-  }
-
-  DASSERT(!lhs.isa<TypeConstraint>());
-  DASSERT(!rhs.isa<TypeConstraint>());
-
-  if (lhs.isa<TypeAssignment>()) {
-    const TypeVariable * ltv = lhs.as<TypeAssignment>()->target();
-    if (rhs.isa<TypeAssignment>()) {
-      // Both sides are type variables. Check upper bounds.
-      const TypeVariable * rtv = rhs.as<TypeAssignment>()->target();
-      return isMoreSpecific(ltv->upperBounds(), rtv->upperBounds());
-//      if (!ltv->upperBounds().empty()) {
-//        if (!rtv->upperBound().empty()) {
-//          return isMoreSpecific(ltv->upperBound(), rtv->upperBound());
-//        }
-//        // Both sides are type vars, but only lhs has an upper bound, so lhs is more specific.
-//        return MORE_SPECIFIC;
-//      } else if (!rtv->upperBounds().empty()) {
-//        // Both sides are type vars, but only rhs has an upper bound, so lhs is less specific.
-//        return NOT_MORE_SPECIFIC;
-//      } else {
-//        // Neither side has an upper bound, so they rank the same.
-//        return EQUAL_SPECIFICITY;
-//      }
-    } else {
-      const QualifiedTypeList & lhlist = ltv->upperBounds();
-      for (QualifiedTypeList::const_iterator li = lhlist.begin(); li != lhlist.end(); ++li) {
-        if (TypeRelation::isEqual(*li, rhs)) {
-        } else if (TypeRelation::isSubtype()) {
-
-        } else if (TypeRelation::isSubtype()) {
-
-        } else {
-
-        }
-
-      }
-      if (!ltv->upperBounds().empty() &&
-          TypeRelation::isSubtype(ltv->upperBound(), rhs) &&
-          !TypeRelation::isEqual(ltv->upperBound(), rhs)) {
-        // lhs is a type var whose upper bound is more specific than rhs, so lhs counts as
-        // more specific.
-        return MORE_SPECIFIC;
-      } else {
-        // A type variable is less specific than a concrete type.
-        return NOT_MORE_SPECIFIC;
-      }
-    }
-  } else if (rhs.isa<TypeAssignment>()) {
-    const TypeVariable * rtv = rhs.as<TypeAssignment>()->target();
-    const QualifiedTypeList & rhlist = rtv->upperBounds();
-    for (QualifiedTypeList::const_iterator ri = rhlist.begin(); ri != rhlist.end(); ++ri) {
-
-    }
-    if (!rtv->upperBound().empty() &&
-        TypeRelation::isSubtype(rtv->upperBound(), lhs) &&
-        !TypeRelation::isEqual(rtv->upperBound(), lhs)) {
-      // rhs is a type var whose upper bound is more specific than lhs, so lhs counts as
-      // less specific.
-      return NOT_MORE_SPECIFIC;
-    } else {
-      // A type variable is less specific than a concrete type.
-      return MORE_SPECIFIC;
-    }
-  }
-
-  switch (lhs->typeClass()) {
-    case Type::Class:
-    case Type::Interface:
-      if (rhs->typeClass() != Type::Class &&
-          rhs->typeClass() != Type::Interface &&
-          rhs->typeClass() != Type::Protocol) {
-        return NOT_MORE_SPECIFIC;
-      }
-      break;
-
-    case Type::Struct:
-      if (rhs->typeClass() != Type::Struct &&
-          rhs->typeClass() != Type::Protocol) {
-        return NOT_MORE_SPECIFIC;
-      }
-      break;
-
-    case Type::Protocol:
-      if (rhs->typeClass() != Type::Class &&
-          rhs->typeClass() != Type::Interface &&
-          rhs->typeClass() != Type::Struct &&
-          rhs->typeClass() != Type::Protocol) {
-        return NOT_MORE_SPECIFIC;
-      }
-      break;
-
-    case Type::NAddress:
-    case Type::NArray:
-    case Type::FlexibleArray:
-      if (lhs->typeClass() != rhs->typeClass()) {
-        return NOT_MORE_SPECIFIC;
-      }
-
-      return isMoreSpecific(lhs->typeParam(0), rhs->typeParam(0));
-
-    default:
-      if (lhs->typeClass() != rhs->typeClass()) {
-        return NOT_MORE_SPECIFIC;
-      }
-
-      break;
-  }
-
-  if (TypeRelation::isEqual(lhs, rhs)) {
-    // Ensure that equality is symmetrical.
-    DASSERT_OBJ(TypeRelation::isEqual(rhs, lhs), lhs);
-    return EQUAL_SPECIFICITY;
-  } else if (TypeRelation::isSubtype(lhs, rhs)) {
-    return MORE_SPECIFIC;
-  } else {
-    return NOT_MORE_SPECIFIC;
-  }
-}
-#endif
 
 void CallCandidate::combineConversionRanks(ConversionRank newRank) {
   // conversionCount_ is the number of conversions that took place

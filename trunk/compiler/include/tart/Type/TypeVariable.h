@@ -11,8 +11,6 @@
 
 namespace tart {
 
-class TemplateCondition;
-
 /// -------------------------------------------------------------------
 /// A template pattern variable which can be bound to a type expression.
 class TypeVariable : public TypeImpl, public Locatable {

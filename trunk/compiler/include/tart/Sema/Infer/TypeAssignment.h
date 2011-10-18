@@ -84,10 +84,6 @@ public:
   ConstraintSet::iterator end() { return constraints_.end(); }
   ConstraintSet::const_iterator end() const { return constraints_.end(); }
 
-  /** Add a new constraint to this type assignment. */
-  Constraint * add(const SourceLocation & loc, const Type * value, unsigned state,
-      Constraint::Kind kind, const ProvisionSet & provisions = ProvisionSet());
-
   /** Remove an existing constraint. */
   void remove(ConstraintSet::iterator si);
 

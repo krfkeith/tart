@@ -1212,12 +1212,12 @@ GlobalVariable * CodeGenerator::genConstantObjectPtr(const ConstantObjectRef * o
     return NULL;
   }
 
-  bool isExplicitMutable = false;
+  bool isMutable = false;
   if (const CompositeType * ctype = dyn_cast<CompositeType>(obj->type().unqualified())) {
-    isExplicitMutable = ctype->isExplicitMutable();
+    isMutable = ctype->isMutable();
   }
   GlobalVariable * var = new GlobalVariable(
-      *irModule_, constObject->getType(), !isExplicitMutable,
+      *irModule_, constObject->getType(), !isMutable,
       synthetic ? GlobalValue::LinkOnceODRLinkage : GlobalValue::ExternalLinkage,
       constObject, name);
   addStaticRoot(var, obj->type().unqualified());

@@ -94,6 +94,12 @@ QualifiedType TypeAssignment::findSingularSolution() {
 
   // Now check all the other constraints to insure that it satisfies them all.
   if (value_) {
+    // In template definitions, it can happen that the type assignment is bound to a type variable
+    // of an enclosing template. In such cases, it makes no sense to do upper/lower bounds checks,
+    // since we won't know what type it is until the template gets instantiated.
+    if (value_.isa<TypeVariable>()) {
+      return value_;
+    }
     for (ConstraintSet::const_iterator ci = begin(); ci != ciEnd; ++ci) {
       Constraint * c = *ci;
       if (c->checkProvisions() && c->kind() != Constraint::EXACT && !c->accepts(value_)) {

@@ -295,7 +295,7 @@ void TypeAnalyzer::setParamType(ParameterDefn * param, QualifiedType paramType) 
 //  if (paramType.isAdopted()) {
 //    paramType.removeQualifiers(QualifiedType::MUTABILITY_MASK);
 //    paramType.addQualifiers(QualifiedType::ADOPTED);
-//  } else if (paramType.isExplicitMutable()) {
+//  } else if (paramType.isMutable()) {
 //    paramType.removeQualifiers(QualifiedType::MUTABILITY_MASK);
 //  } else  if (!paramType.isImmutable()) {
 //    paramType.removeQualifiers(QualifiedType::MUTABILITY_MASK);

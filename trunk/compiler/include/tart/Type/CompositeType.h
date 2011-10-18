@@ -153,7 +153,7 @@ public:
   bool isSupportedBy(const Type * type) const;
 
   /** True if this object has any mutable fields. (Not counting garbage collector state) */
-  bool isExplicitMutable() const;
+  bool isMutable() const;
 
   /** Return the default constructor for this type. */
   FunctionDefn * defaultConstructor() const;

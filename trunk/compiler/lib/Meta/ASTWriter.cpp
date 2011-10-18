@@ -182,7 +182,7 @@ ASTWriter & ASTWriter::write(QualifiedType ty) {
     if (ty.isReadOnly()) {
       write(meta::AST::MOD_READONLY);
     }
-    if (ty.isExplicitMutable()) {
+    if (ty.isMutable()) {
       write(meta::AST::MOD_MUTABLE);
     }
     if (ty.isImmutable()) {
@@ -199,6 +199,7 @@ ASTWriter & ASTWriter::write(const Expr * in) {
   switch (in->exprType()) {
   default:
     diag.error(in) << "Implement serialization for: " << exprTypeName(in->exprType());
+    break;
   }
   return *this;
 }
@@ -317,6 +318,7 @@ ASTWriter & ASTWriter::write(const ASTNode * ast) {
 
     case ASTNode::TypeAlias: {
       DFAIL("Implement");
+      break;
     }
 
     case ASTNode::Function:
