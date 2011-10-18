@@ -273,7 +273,7 @@ Expr * ExprAnalyzer::reduceArrayLiteral(const ASTOper * ast, QualifiedType expec
 Expr * ExprAnalyzer::reduceTuple(const ASTOper * ast, QualifiedType expected) {
   DASSERT(ast->count() >= 2);
 
-  if (expected && expected.isExplicitMutable()) {
+  if (expected && expected.isMutable()) {
     diag.error(ast) << "Tuples cannot be made mutable";
   }
 

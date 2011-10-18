@@ -76,7 +76,7 @@ public:
   void removeQualifiers(unsigned qual) { qualifiers_ &= ~qual; }
 
   /** Convenience functions. */
-  bool isExplicitMutable() const { return (qualifiers_ & MUTABLE) != 0; }
+  bool isMutable() const { return (qualifiers_ & MUTABLE) != 0; }
   bool isImmutable() const { return (qualifiers_ & IMMUTABLE) != 0; }
   bool isReadOnly() const { return (qualifiers_ & READONLY) != 0; }
   bool isAdopted() const { return (qualifiers_ & ADOPTED) != 0; }

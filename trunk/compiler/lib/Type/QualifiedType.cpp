@@ -36,9 +36,7 @@ unsigned combineQualifiers(unsigned left, unsigned right) {
 bool areQualifiersEquivalent(unsigned lq, unsigned rq) {
   assertQualifiersValid(lq);
   assertQualifiersValid(rq);
-  lq &= (QualifiedType::READONLY | QualifiedType::IMMUTABLE);
-  rq &= (QualifiedType::READONLY | QualifiedType::IMMUTABLE);
-  return lq == rq;
+  return (lq & QualifiedType::MUTABILITY_MASK) == (rq & QualifiedType::MUTABILITY_MASK);
 }
 
 bool canAssignQualifiers(unsigned src, unsigned dst) {
@@ -47,15 +45,16 @@ bool canAssignQualifiers(unsigned src, unsigned dst) {
   src &= QualifiedType::MUTABILITY_MASK;
   dst &= QualifiedType::MUTABILITY_MASK;
   switch (dst) {
+  case 0:
     case QualifiedType::READONLY:
+    default:
       return true;
 
     case QualifiedType::MUTABLE:
-    default:
       return (src & (QualifiedType::READONLY|QualifiedType::IMMUTABLE)) == 0;
 
     case QualifiedType::IMMUTABLE:
-      return (src & QualifiedType::IMMUTABLE) != 0;
+      return (src & (QualifiedType::READONLY|QualifiedType::MUTABLE)) == 0;
   }
 }
 

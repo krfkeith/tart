@@ -47,6 +47,10 @@ Value * CodeGenerator::genCast(Value * in, const Type * fromType, const Type * t
   }
 
   if (converter != NULL) {
+    DASSERT(converter->returnType().unqualified() == toType) << "Converter function return type '"
+        << converter->returnType().unqualified() << "' does not match destination type '"
+        << toType << "'.";
+    DASSERT(converter->params()[0]->type().unqualified() == fromType);
     ValueList args;
     Value * fnVal = genFunctionValue(converter);
     if (converter->functionType()->isStructReturn()) {

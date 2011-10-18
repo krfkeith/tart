@@ -726,9 +726,6 @@ TypeRelation::RelativeSpecificity TypeRelation::isMoreSpecific(
     return isMoreSpecific(lhs, rhs.as<TypeAlias>()->value() | rhs.qualifiers());
   }
 
-  DASSERT(!lhs.isa<TypeConstraint>());
-  DASSERT(!rhs.isa<TypeConstraint>());
-
   if (lhs.isa<TypeAssignment>()) {
     const TypeVariable * ltv = lhs.as<TypeAssignment>()->target();
     const QualifiedTypeList & lu = ltv->upperBounds();

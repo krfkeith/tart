@@ -171,7 +171,7 @@ public:
   bool isUnsafe() const { return traits_.contains(Unsafe); }
   bool isScaffold() const { return traits_.contains(Scaffold); }
   bool isReadOnly() const { return (modifiers_.flags & ReadOnly) != 0; }
-  bool isExplicitMutable() const { return (modifiers_.flags & Mutable) != 0; }
+  bool isMutable() const { return (modifiers_.flags & Mutable) != 0; }
   bool isImmutable() const { return (modifiers_.flags & Immutable) != 0; }
 
   const DeclModifiers & modifiers() const { return modifiers_; }

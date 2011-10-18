@@ -108,7 +108,7 @@ namespace Memory {
       the value is too large to be contained within a signed integer.
    */
   @Intrinsic
-  def ptrDiff[%ValTy](first:Address[ValTy], last:Address[ValTy]) -> int;
+  def ptrDiff[%ValTy](first:readonly(Address[ValTy]), last:readonly(Address[ValTy])) -> int;
 
   /** Return the integer value of a pointer. Not guaranteed to be convertible back
       into a pointer (may be truncated.) */
@@ -117,11 +117,7 @@ namespace Memory {
 
   /** An unchecked cast of one pointer type to another. */
   @Unsafe @Intrinsic
-  def reinterpretPtr[%S, %T](from:readonly(Address[S])) -> readonly(Address[T]);
-  @Unsafe @Intrinsic
-  def reinterpretPtr[%S, %T](from:mutable(Address[S])) -> Address[T];
-  @Unsafe @Intrinsic
-  def reinterpretPtr[%S, %T](from:mutable(Address[S])) -> readonly(Address[T]);
+  def reinterpretPtr[%S, %T](from:Address[S]) -> Address[T];
 
   /** An unchecked cast of one type to another. Types must be the same size. */
   @Unsafe @Intrinsic
