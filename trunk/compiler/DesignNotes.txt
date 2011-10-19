@@ -12,11 +12,11 @@ Next up:
   * Then redo the ASTReader/Writer to be a CFGReader/Writer instead.
 * How to restrict a template to just an enum or an integer type?
   * Ans: abstract types Enum and Integer, similar to protocols.
+  * Can non-composite types derive from a protocol? We'd have to make some changes...
 * GC: Bug in collection of global vars.
   * Optimization?
   * Fix bug in nametable static roots.
 * String should take from Collection, not Copyable.
-* HasLength really ought to be HasSize? Also, do we even need it?
 * Type inference
   * Finish refactoring ambiguous types - remove TypeSetConstraint.
   * Pre-cull candidates that can never be chosen
@@ -34,12 +34,11 @@ Next up:
 * Implement Attribute.Retention.RUNTIME_ITERABLE.
 * @ReflectOnly (non-propagating reflection.)
 * statements returning values: do try/catch. Also unsized ints.
+* HasLength really ought to be HasSize? Also, do we even need it?
 
 Design TODOS:
 
-* Const:
-  * readonly / mutable / immutable
-  * syntax is readonly(int)
+* Mutability:
   * ImmutableList should derive from immutable(List) or readonly(List)?
 * Need a way to collect all declarations that a given attribute is assigned to.
 * With-statement multiple vars and tuple unpacking.

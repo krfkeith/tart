@@ -9,6 +9,10 @@
 #include "tart/Sema/CFGPass.h"
 #endif
 
+#ifndef TART_SEMA_INFER_CALLSITE_H
+#include "tart/Sema/Infer/CallSite.h"
+#endif
+
 #ifndef TART_SEMA_BINDINGENV_H
 #include "tart/Sema/BindingEnv.h"
 #endif
@@ -16,171 +20,36 @@
 namespace tart {
 
 /// -------------------------------------------------------------------
-/// Represents a point in the expression hierarchy where the AST node
-/// maps to multiple possible items. The type inferencer attempts to
-/// narrow the possibilities to a single choice for each point.
-class ChoicePoint {
+/// A conversion site represents a point in the expression tree where
+/// some type conversion takes place, but which does not involve a
+/// function call.
+///
+/// Unlike call sites, there are no candidates or template parameters
+/// to be determined, in other words there are no decisions to be made.
+/// Conversion sites are only used to measure how good the current
+/// type inference solution is - the ranking for each site is factored
+/// in to the overall ranking for the solution.
+
+struct ConversionSite {
 public:
-
-  virtual ~ChoicePoint() {}
-
-  // Update conversion rankings
-  virtual void update() = 0;
-
-  /** Return the total number of choices. */
-  virtual size_t count() const = 0;
-
-  /** Return the number of viable choices remaining after culling. */
-  virtual int remaining() const = 0;
-
-  /** Return the current worst-case conversion rank. */
-  virtual ConversionRank rank() const = 0;
-
-  /** Replace all type variables in this expression with unique variables, so that we
-      can distinguish between multiple occurances of the same template in an expression. */
-  virtual void relabelVars(BindingEnv & env) = 0;
-
-  /** Do unification of the operation with its arguments. */
-  virtual bool unify(BindingEnv & env, int cullingDepth) = 0;
-
-  /** Generate a printable version of this choice point's expression. */
-  virtual const Expr * expr() const = 0;
-
-  // Eliminate culled candidates
-  virtual void finish() = 0;
-
-  // Report the given error message, along with the calling signature and the candidates.
-  virtual void reportErrors(const char * msg) = 0;
-
-  // Print debugging info
-  virtual void reportRanks() = 0;
-
-  /** Return true if the specified choice has been culled. */
-  virtual bool isCulled(int index) const = 0;
-
-  /** Cull a specific numbered choice. */
-  virtual void cull(int choice, int searchDepth) = 0;
-
-  /** Cull all choices lower than a given conversion rank. */
-  virtual int cullByConversionRank(ConversionRank lowerLimit, int searchDepth) = 0;
-
-  /** Cull all choices which are less specific than others. */
-  virtual void cullBySpecificity(int searchDepth) = 0;
-
-  /** Cull all choices except for the numbered choice. */
-  virtual void cullAllExcept(int choice, int searchDepth) = 0;
-
-  /** Cull all choices except for the best choice. */
-  virtual void cullAllExceptBest(int searchDepth) = 0;
-
-  /** Return true if choice 'choice' depends on any provision in 'p'. */
-  virtual bool dependsOn(int choice, const ProvisionSet & pset) const = 0;
-
-  /** Save the single best candidate. */
-  virtual void saveBest() = 0;
-
-  /** Undo all cullings of greater than search depth. */
-  virtual void backtrack(int searchDepth) = 0;
-
-  /** Generate a printable version of the input expression. */
-  virtual void formatExpression(FormatStream & out) = 0;
-
-  /** True if any of the expressions in this choice point have errors. */
-  virtual bool hasErrors() const = 0;
-};
-
-typedef llvm::SmallVector<ChoicePoint *, 16> ChoicePointList;
-typedef llvm::SmallSet<const Expr *, 16> ExprSet;
-
-/// -------------------------------------------------------------------
-/// Represents a site where a function is called. There are two
-/// kinds of choice: Selecting overloads, and binding template params.
-
-class CallSite : public ChoicePoint {
-public:
-  CallSite()
-    : callExpr_(NULL)
-    , remaining_(0)
-    , lowestRank_(IdenticalTypes)
-    , best_(NULL)
-  {}
-
-  CallSite(CallExpr * call)
-    : callExpr_(call)
-    , remaining_(0)
-    , lowestRank_(IdenticalTypes)
-    , best_(NULL)
-  {}
-
-  void update();
-  size_t count() const;
-  ConversionRank rank() const { return lowestRank_; }
-  int remaining() const { return remaining_; }
-  void relabelVars(BindingEnv & env);
-  bool unify(BindingEnv & env, int cullingDepth);
-  bool isCulled(int ch) const;
-  void cull(int choice, int searchDepth);
-  int cullByConversionRank(ConversionRank lowerLimit, int searchDepth);
-  void cullBySpecificity(int searchDepth);
-  void cullAllExcept(int choice, int searchDepth);
-  void cullAllExceptBest(int searchDepth);
-  void removeCulled();
-  void backtrack(int searchDepth);
-  const Expr * expr() const { return callExpr_; }
-  bool dependsOn(int choice, const ProvisionSet & pset) const;
-  void formatExpression(FormatStream & out);
-  bool hasErrors() const;
-
-  // Eliminate culled candidates
-  void finish();
-
-  // Generate a printable version of the input calling signature.
-  void formatCallSignature(FormatStream & out);
-
-  // Report the given error message, along with the calling signature and the candidates.
-  void reportErrors(const char * msg);
-  void reportRanks();
-
-  /** Save the single best candidate. */
-  void saveBest();
-
-private:
-  /** The overloaded call. */
-  CallExpr * callExpr_;
-
-  /** Number of possible overload choices remaining after pruning. */
-  int remaining_;
-
-  /** The lowest compatibility score of all choices. */
-  ConversionRank lowestRank_;
-
-  /** The best candidate for the current solution being tested. */
-  CallCandidate * best_;
-};
-
-/// -------------------------------------------------------------------
-/// Represents an additional type constraint that is not a choice
-/// point, meaning that it has an influence on the final
-struct ConstraintSite {
-public:
-  ConstraintSite()
+  ConversionSite()
     : expr_(NULL)
     , rank_(IdenticalTypes)
   {}
 
-  ConstraintSite(Expr * ex)
+  ConversionSite(Expr * ex)
     : expr_(ex)
     , rank_(IdenticalTypes)
   {}
 
-  ConstraintSite(const ConstraintSite & src)
+  ConversionSite(const ConversionSite & src)
     : expr_(src.expr_)
     , rank_(src.rank_)
   {}
 
-  virtual ~ConstraintSite() {}
+  virtual ~ConversionSite() {}
 
-  const ConstraintSite & operator=(const ConstraintSite & src) {
+  const ConversionSite & operator=(const ConversionSite & src) {
     expr_ = src.expr_;
     rank_ = src.rank_;
     return *this;
@@ -203,38 +72,38 @@ protected:
   ConversionRank rank_;
 };
 
-typedef llvm::SmallVector<ConstraintSite *, 16> ConstraintSiteSet;
+typedef llvm::SmallVector<ConversionSite *, 16> ConversionSites;
 
 /// -------------------------------------------------------------------
-/// A constraint for assignment statements.
+/// A conversion site for assignment statements.
 
-class AssignmentSite : public ConstraintSite {
+class AssignmentSite : public ConversionSite {
 public:
-  AssignmentSite(AssignmentExpr * in) : ConstraintSite(in) {}
+  AssignmentSite(AssignmentExpr * in) : ConversionSite(in) {}
 
   // Update conversion rankings
   void update();
 };
 
 /// -------------------------------------------------------------------
-/// A constraint for tuple constructors.
+/// A conversion site for tuple constructors.
 
-class TupleCtorSite : public ConstraintSite {
+class TupleCtorSite : public ConversionSite {
 public:
-  TupleCtorSite(TupleCtorExpr * in) : ConstraintSite(in) {}
+  TupleCtorSite(TupleCtorExpr * in) : ConversionSite(in) {}
 
   // Update conversion rankings
   void update();
 };
 
 /// -------------------------------------------------------------------
-/// A constraint for PHI-class expressions, that is expressions which
+/// A conversion site for PHI-class expressions, that is expressions which
 /// choose one of several alternate values to return. (Examples being
 /// 'if' and 'switch' expressions.)
 
-class PHISite : public ConstraintSite {
+class PHISite : public ConversionSite {
 public:
-  PHISite(Expr * in) : ConstraintSite(in) {}
+  PHISite(Expr * in) : ConversionSite(in) {}
 
   // Update conversion rankings
   void update();
@@ -242,18 +111,18 @@ public:
 };
 
 /// -------------------------------------------------------------------
-/// Pass to collect all of the constraints in the expression tree.
+/// Pass to collect all of the conversion sites in the expression tree.
 class GatherConstraintsPass : public CFGPass {
 public:
-  GatherConstraintsPass(ChoicePointList & callSites, ConstraintSiteSet & cstrSites)
-    : choicePoints_(callSites)
-    , constraints_(cstrSites)
+  GatherConstraintsPass(CallSites & callSites, ConversionSites & cstrSites)
+    : calls_(callSites)
+    , conversions_(cstrSites)
   {}
 
 private:
-  ChoicePointList & choicePoints_;
-  ConstraintSiteSet & constraints_;
-  ExprSet visited_;
+  CallSites & calls_;
+  ConversionSites & conversions_;
+  llvm::SmallSet<const Expr *, 16> visited_;
 
   Expr * visitCall(CallExpr * in);
   Expr * visitAssign(AssignmentExpr * in);
@@ -287,8 +156,8 @@ private:
   Expr * rootExpr_;
   BindingEnv & env_;
   QualifiedType expectedType_;
-  ChoicePointList choicePoints_;
-  ConstraintSiteSet cstrSites_;
+  CallSites calls_;
+  ConversionSites cstrSites_;
   ConversionRank lowestRank_;
   ConversionRank bestSolutionRank_;
   int bestSolutionCount_;
@@ -346,7 +215,7 @@ private:
   /** Try removing each from consideration and re-evaluate all conversion
       ranks for the entire AST. Choose the one with the best rank. */
   void cullByElimination();
-  void cullByElimination(ChoicePointList::iterator first, ChoicePointList::iterator last);
+  void cullByElimination(CallSites::iterator first, CallSites::iterator last);
   void cullByElimination(CallSite * site);
 
   // Undo the last pruning
