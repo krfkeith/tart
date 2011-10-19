@@ -168,7 +168,7 @@ private:
   QualifiedTypeList paramTypes_;
   const TupleType * typeParams_;
   const TupleType * typeArgs_;
-  TemplateConditionList conditions_;
+  unsigned conditionCount_;
   SpCandidate * spCandidate_;
   bool isTemplate_;
   bool trace_;

@@ -139,4 +139,14 @@ void ConstraintSet::minimize() {
   std::swap(saved, *this);
 }
 
+bool ConstraintSet::isConsistent() const {
+  for (const_iterator ci = begin(), ciEnd = end(); ci != ciEnd; ++ci) {
+    Constraint * cst = *ci;
+    if (cst->checkProvisions()) {
+    }
+  }
+
+  return true;
+}
+
 } // namespace tart

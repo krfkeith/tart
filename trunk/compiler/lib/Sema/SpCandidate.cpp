@@ -4,7 +4,6 @@
 
 #include "tart/Defn/Defn.h"
 #include "tart/Defn/Template.h"
-#include "tart/Defn/TemplateConditions.h"
 
 #include "tart/Type/FunctionType.h"
 #include "tart/Type/TupleType.h"
@@ -88,20 +87,6 @@ bool SpCandidate::unify(SourceContext * source, BindingEnv & env) {
   }
 
   env.updateAssignments(source->location(), this);
-
-  // Transform the condition list based on the unification result.
-  conditions_.clear();
-  if (!tm->conditions().empty()) {
-    QualifiedTypeVarMap vars;
-    env.toTypeVarMap(vars, this);
-    SubstitutionTransform subst(vars);
-    for (TemplateConditionList::const_iterator it = tm->conditions().begin();
-        it != tm->conditions().end(); ++it) {
-      TemplateCondition * condition = *it;
-      conditions_.push_back(condition->transform(subst));
-    }
-  }
-
   return true;
 }
 
@@ -128,14 +113,6 @@ Type * SpCandidate::toType(SourceContext * source, BindingEnv & env) {
 ConversionRank SpCandidate::updateConversionRank() {
   DASSERT(params_ != NULL);
   conversionRank_ = IdenticalTypes;
-  for (TemplateConditionList::const_iterator it = conditions_.begin();
-      it != conditions_.end(); ++it) {
-    if (!(*it)->eval()) {
-      conversionRank_ = Incompatible;
-      return Incompatible;
-    }
-  }
-
   for (size_t i = 0; i < args_->size(); ++i) {
     QualifiedType pattern = (*params_)[i];
     QualifiedType value = (*args_)[i];

@@ -3,7 +3,6 @@
  * ================================================================ */
 
 #include "tart/Defn/Template.h"
-#include "tart/Defn/TemplateConditions.h"
 
 #include "tart/Sema/TemplateParamAnalyzer.h"
 
@@ -47,13 +46,9 @@ Type * TemplateParamAnalyzer::reduceTypeVariable(const ASTTypeVariable * ast) {
       if (ast->constraint() == ASTTypeVariable::IS_SUBTYPE) {
         // Add a subclass test
         tvar->upperBounds().push_back(type);
-        TemplateCondition * condition = new IsSubtypeCondition(tvar, type);
-        tsig_->conditions().push_back(condition);
       } else if (ast->constraint() == ASTTypeVariable::IS_SUPERTYPE) {
         // Add a subclass test - reversed.
         tvar->lowerBounds().push_back(type);
-        TemplateCondition * condition = new IsSubtypeCondition(type, tvar);
-        tsig_->conditions().push_back(condition);
       } else if (ast->constraint() == ASTTypeVariable::IS_INSTANCE) {
         if (!tvar->metaType()) {
           tvar->setMetaType(type);

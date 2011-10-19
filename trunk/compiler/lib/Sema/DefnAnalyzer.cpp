@@ -7,7 +7,6 @@
 #include "tart/Defn/NamespaceDefn.h"
 #include "tart/Defn/PropertyDefn.h"
 #include "tart/Defn/Template.h"
-#include "tart/Defn/TemplateConditions.h"
 #include "tart/Defn/TypeDefn.h"
 
 #include "tart/Expr/Exprs.h"

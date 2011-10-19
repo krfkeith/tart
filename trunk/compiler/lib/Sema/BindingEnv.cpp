@@ -725,13 +725,16 @@ void BindingEnv::setAssignmentBounds(QualifiedTypeVarMap & assignments) {
         diag.indent();
       }
 
+      ProvisionSet provisions;
+      provisions.insertIfValid(ta->primaryProvision());
+
       // Upper bounds
       for (QualifiedTypeList::const_iterator ui = upper.begin(); ui != upper.end(); ++ui) {
         QualifiedType ty = relabel(*ui);
         if (DebugUnify || unifyVerbose) {
           diag.debug() << "<= " << ty << " [" << *ui << "]";
         }
-        ta->mutableConstraints().insert(tv->location(), ty, Constraint::UPPER_BOUND);
+        ta->mutableConstraints().insert(tv->location(), ty, Constraint::UPPER_BOUND, provisions);
       }
 
       // Lower bounds
@@ -740,7 +743,7 @@ void BindingEnv::setAssignmentBounds(QualifiedTypeVarMap & assignments) {
         if (DebugUnify || unifyVerbose) {
           diag.debug() << ">= " << ty << " [" << *li << "]";
         }
-        ta->mutableConstraints().insert(tv->location(), ty, Constraint::LOWER_BOUND);
+        ta->mutableConstraints().insert(tv->location(), ty, Constraint::LOWER_BOUND, provisions);
       }
 
       if (DebugUnify || unifyVerbose) {

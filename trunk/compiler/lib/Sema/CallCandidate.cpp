@@ -4,7 +4,6 @@
 
 #include "tart/Defn/Defn.h"
 #include "tart/Defn/Template.h"
-#include "tart/Defn/TemplateConditions.h"
 #include "tart/Defn/FunctionDefn.h"
 
 #include "tart/Expr/Exprs.h"
@@ -96,6 +95,7 @@ void CallCandidate::relabelTypeVars(BindingEnv & env) {
     primaryProvision_ = new CandidateNotCulledProvision(this);
   }
 
+  conditionCount_ = 0;
   if (method_->isTemplate() || method_->isTemplateMember() || method_->isPartialInstantiation()) {
     // Normalize the return type and parameter types, replacing all type variables
     // with type assignments which will eventually contain the inferred type for that
@@ -116,6 +116,7 @@ void CallCandidate::relabelTypeVars(BindingEnv & env) {
             TypeAssignment * ta = env.assign(var, this);
             ta->setPrimaryProvision(primaryProvision_);
             assignments[var] = ta;
+            conditionCount_ += var->upperBounds().size() + var->lowerBounds().size();
           }
         }
       }
@@ -157,14 +158,6 @@ void CallCandidate::relabelTypeVars(BindingEnv & env) {
       QualifiedType paramType = relabel.transform(*pt);
       if (AnalyzerBase::analyzeType(paramType, Task_PrepTypeComparison)) {
         *pt = paramType;
-      }
-    }
-
-    if (ts != NULL) {
-      for (TemplateConditionList::const_iterator it = ts->conditions().begin();
-          it != ts->conditions().end(); ++it) {
-        TemplateCondition * condition = *it;
-        conditions_.push_back(condition->transform(relabel));
       }
     }
   }
@@ -249,14 +242,6 @@ ConversionRank CallCandidate::updateConversionRank() {
   conversionRank_ = IdenticalTypes;
   conversionCount_ = 0;
 
-  for (TemplateConditionList::const_iterator it = conditions_.begin();
-      it != conditions_.end(); ++it) {
-    if (!(*it)->eval()) {
-      conversionRank_ = Incompatible;
-      return Incompatible;
-    }
-  }
-
   size_t argCount = callExpr_->argCount();
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
     Expr * argExpr = callExpr_->arg(argIndex);
@@ -297,14 +282,6 @@ ConversionRank CallCandidate::updateConversionRank() {
 
 void CallCandidate::reportConversionErrors() {
   diag.info(method_) << Format_Type << method_ << " [" << conversionRank_ << "]";
-
-  for (TemplateConditionList::const_iterator it = conditions_.begin();
-      it != conditions_.end(); ++it) {
-    if (!(*it)->eval()) {
-      diag.info() << "Template condition could not be satisfied: ";
-      return;
-    }
-  }
 
   size_t argCount = callExpr_->argCount();
   for (size_t argIndex = 0; argIndex < argCount; ++argIndex) {
@@ -433,7 +410,7 @@ bool CallCandidate::isMoreSpecific(const CallCandidate * other) const {
       return true;
     }
 
-    if (conditions_.size() > other->conditions_.size()) {
+    if (conditionCount_ > other->conditionCount_) {
       return true;
     }
   }
@@ -467,7 +444,6 @@ void CallCandidate::trace() const {
   safeMark(typeParams_);
   safeMark(spCandidate_);
   markArray(llvm::ArrayRef<QualifiedType>(paramTypes_));
-  markList(conditions_.begin(), conditions_.end());
 }
 
 void CallCandidate::dumpTypeParams() const {
