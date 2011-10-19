@@ -65,6 +65,7 @@ SystemClass Builtins::typeProperty("tart.reflect.Property");
 SystemClass Builtins::typeField("tart.reflect.Field");
 SystemClass Builtins::typeDataMember("tart.reflect.DataMember");
 SystemClass Builtins::typeMember("tart.reflect.Member");
+SystemClass Builtins::typeStaticList("tart.reflect.StaticList");
 SystemClass Builtins::typeTypeList("tart.reflect.TypeList");
 SystemClass Builtins::typeAttributeList("tart.reflect.AttributeList");
 SystemClass Builtins::typeMethodList("tart.reflect.MethodList");

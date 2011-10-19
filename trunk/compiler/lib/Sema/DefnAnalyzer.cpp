@@ -94,6 +94,7 @@ bool DefnAnalyzer::analyzeModule() {
     analyzeType(Builtins::typeDerivedType.get(), Task_PrepConstruction);
     analyzeType(Builtins::typePrimitiveType.get(), Task_PrepConstruction);
     analyzeType(Builtins::typeFunctionType.get(), Task_PrepConstruction);
+    analyzeType(Builtins::typeStaticList.get(), Task_PrepConstruction);
     analyzeType(Builtins::typeTypeList.get(), Task_PrepConstruction);
     analyzeType(Builtins::typeAttributeList.get(), Task_PrepConstruction);
     analyzeType(Builtins::typeMethod.get(), Task_PrepConstruction);
