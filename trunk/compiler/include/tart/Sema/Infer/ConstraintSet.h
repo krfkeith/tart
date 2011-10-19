@@ -52,6 +52,9 @@ public:
   /** Return if all active constraints in this constraint set accept the give type. */
   bool accepts(const Type * ty) const;
 
+  /** Return true if none of the active constraints in this set contradict one another. */
+  bool isConsistent() const;
+
 private:
   /** Wrap actual insertion so we can set a breakpoint on insert. */
   void insertImpl(Constraint * cst) {

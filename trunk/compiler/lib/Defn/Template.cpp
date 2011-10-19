@@ -4,7 +4,6 @@
 
 #include "tart/Defn/FunctionDefn.h"
 #include "tart/Defn/Template.h"
-#include "tart/Defn/TemplateConditions.h"
 
 #include "tart/Expr/Constant.h"
 
@@ -127,12 +126,6 @@ size_t Template::patternVarCount() const {
 void Template::trace() const {
   safeMark(ast_);
   safeMark(typeParams_);
-  markList(conditions_.begin(), conditions_.end());
-  for (QualifiedTypeList::const_iterator it = typeParamDefaults_.begin(); it != typeParamDefaults_.end(); ++it) {
-    if (*it) {
-      (*it)->mark();
-    }
-  }
   markList(vars_.begin(), vars_.end());
   for (SpecializationMap::const_iterator it = specializations_.begin();
       it != specializations_.end(); ++it) {

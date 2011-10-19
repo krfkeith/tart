@@ -15,9 +15,6 @@
 
 namespace tart {
 
-class TemplateCondition;
-typedef llvm::SmallVector<TemplateCondition *, 2> TemplateConditionList;
-
 /// -------------------------------------------------------------------
 /// Defines the parameters of a template. Also used as a record of
 /// specializations of this template.
@@ -58,10 +55,6 @@ public:
 
   /** Return the Nth type param. */
   QualifiedType typeParam(int index) const;
-
-  /** Return the list of requirements. */
-  const TemplateConditionList & conditions() const { return conditions_; }
-  TemplateConditionList & conditions() { return conditions_; }
 
   /** Return the number of pattern vars. */
   size_t patternVarCount() const;
@@ -110,7 +103,6 @@ private:
   const ASTTemplate * ast_;
   const TupleType * typeParams_;
   QualifiedTypeList typeParamDefaults_;
-  TemplateConditionList conditions_;
   TypeVariableList vars_;
 
   typedef llvm::DenseMap<const Type *, Defn *, Type::KeyInfo> SpecializationMap;

@@ -572,6 +572,10 @@ Expr * TypeInferencePass::runImpl() {
     diag.indent();
     env_.dump();
     diag.unindent();
+
+    if (diag.getErrorCount() > 0) {
+      exit(-1);
+    }
   }
   return rootExpr_;
 }
@@ -839,6 +843,33 @@ bool TypeInferencePass::cullByContradiction() {
 
         if (foundContradiction) {
           unsatisfiable.insert(prov);
+        }
+      } else if (c->provisions().empty() && ta->primaryProvision() != NULL) {
+        // Constraints that have zero provisions are always in effect.
+        bool foundContradiction = false;
+        for (ConstraintSet::const_iterator si = cs.begin(), siEnd = cs.end(); si != siEnd; ++si) {
+          if (ci != si && (*si)->provisions().empty()) {
+            Constraint * s = *si;
+            if (Constraint::contradicts(c, s)) {
+              foundContradiction = true;
+              if (ShowInference) {
+                if (unsatisfiable.empty()) {
+                  diag.debug() << "=== Culling candidates with unsatisfiable constraints ===";
+                }
+                diag.indent();
+                diag.debug() << "Candidate " << ta->primaryProvision() <<
+                    " culled because of constraints: [" <<
+                    c->kind() << " " << c->value() << "] and [" <<
+                    s->kind() << " " << s->value() << "]";
+                diag.unindent();
+              }
+              break;
+            }
+          }
+        }
+
+        if (foundContradiction) {
+          unsatisfiable.insert(ta->primaryProvision());
         }
       }
     }

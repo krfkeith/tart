@@ -87,7 +87,6 @@ private:
   const TupleType * args_;
   const TupleType * params_;
   QualifiedTypeList typeParamDefaults_;
-  TemplateConditionList conditions_;
   ConversionRank conversionRank_;
 };
 
