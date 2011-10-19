@@ -158,33 +158,9 @@ namespace reflect {
     }
   }
 
-  // Members of tart.reflect.TypeList
-  namespace TypeList {
-    SystemClassMember<VariableDefn> size(Builtins::typeTypeList, "_size");
-  }
-
-  // Members of tart.reflect.AttributeList
-  namespace AttributeList {
-    SystemClassMember<VariableDefn> size(Builtins::typeAttributeList, "_size");
-    SystemClassMember<VariableDefn> data(Builtins::typeAttributeList, "_data");
-  }
-
-  // Members of tart.reflect.PropertyList
-  namespace PropertyList {
-    SystemClassMember<VariableDefn> size(Builtins::typePropertyList, "_size");
-    SystemClassMember<VariableDefn> data(Builtins::typePropertyList, "_data");
-  }
-
-  // Members of tart.reflect.MethodList
-  namespace MethodList {
-    SystemClassMember<VariableDefn> size(Builtins::typeMethodList, "_size");
-    SystemClassMember<VariableDefn> data(Builtins::typeMethodList, "_data");
-  }
-
-  // Members of tart.reflect.FieldList
-  namespace FieldList {
-    SystemClassMember<VariableDefn> size(Builtins::typeFieldList, "_size");
-    SystemClassMember<VariableDefn> data(Builtins::typeFieldList, "_data");
+  // Members of tart.reflect.StaticList
+  namespace StaticList {
+    SystemClassMember<VariableDefn> size(Builtins::typeStaticList, "_size");
   }
 
   // Members of tart.reflect.Package.
@@ -338,9 +314,11 @@ llvm::Constant * Reflector::getTypePtr(const Type * type) {
     case Type::NArray:
       diag.fatal() << "Attempt to get type pointer for unimplemented type: " << type;
       DFAIL("Implement");
+      break;
 
     default:
       diag.fatal() << "Attempt to get type pointer for non-supported type: " << type;
+      break;
   }
 
   return NULL;
@@ -1137,7 +1115,7 @@ llvm::Constant * Reflector::emitTypeList(const QualifiedTypeList & types) {
 
   StructBuilder sb(cg_);
   sb.createObjectHeader(Builtins::typeTypeList);
-  sb.addIntegerField(reflect::TypeList::size, typePtrList.size());
+  sb.addIntegerField(reflect::StaticList::size, typePtrList.size());
   sb.addField(typePtrArray);
   Constant * typeListStruct = sb.buildAnon();
 
@@ -1171,7 +1149,7 @@ llvm::Constant * Reflector::emitStaticList(const ConstantList & elements,
 
   StructBuilder sb(cg_);
   sb.createObjectHeader(listType);
-  sb.addIntegerField(reflect::MethodList::size, elements.size());
+  sb.addIntegerField(reflect::StaticList::size, elements.size());
   sb.addField(data);
   Constant * listStruct = sb.buildAnon();
 

@@ -70,6 +70,7 @@ public:
   static SystemClass typeField;
   static SystemClass typeDataMember;
   static SystemClass typeMember;
+  static SystemClass typeStaticList;
   static SystemClass typeTypeList;
   static SystemClass typeAttributeList;
   static SystemClass typeMethodList;
