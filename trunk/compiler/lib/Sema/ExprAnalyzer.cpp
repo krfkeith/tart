@@ -4,26 +4,26 @@
 
 #include "tart/AST/Stmt.h"
 
-#include "tart/Defn/Module.h"
 #include "tart/Defn/FunctionDefn.h"
+#include "tart/Defn/Module.h"
 #include "tart/Defn/PropertyDefn.h"
 
 #include "tart/Expr/Exprs.h"
 
-#include "tart/Type/PrimitiveType.h"
 #include "tart/Type/CompositeType.h"
-#include "tart/Type/UnionType.h"
+#include "tart/Type/PrimitiveType.h"
 #include "tart/Type/TypeRelation.h"
+#include "tart/Type/UnionType.h"
 
 #include "tart/Common/Diagnostics.h"
 
 #include "tart/Objects/Intrinsics.h"
 
-#include "tart/Sema/ExprAnalyzer.h"
-#include "tart/Sema/TypeInference.h"
-#include "tart/Sema/TypeAnalyzer.h"
-#include "tart/Sema/FinalizeTypesPass.h"
 #include "tart/Sema/CallCandidate.h"
+#include "tart/Sema/ExprAnalyzer.h"
+#include "tart/Sema/FinalizeTypesPass.h"
+#include "tart/Sema/Infer/TypeInference.h"
+#include "tart/Sema/TypeAnalyzer.h"
 
 namespace tart {
 

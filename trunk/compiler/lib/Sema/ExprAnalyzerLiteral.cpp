@@ -26,11 +26,11 @@
 
 #include "tart/Common/Diagnostics.h"
 
+#include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/DefnAnalyzer.h"
-#include "tart/Sema/TypeInference.h"
+#include "tart/Sema/Infer/TypeInference.h"
 #include "tart/Sema/TypeAnalyzer.h"
-#include "tart/Sema/CallCandidate.h"
 
 #include "llvm/DerivedTypes.h"
 #include "llvm/ADT/StringExtras.h"

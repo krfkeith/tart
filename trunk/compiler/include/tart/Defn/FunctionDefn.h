@@ -119,7 +119,7 @@ public:
     ExplicitFinal = (1<<11),    // Function was explicitly declared as final (for doc purposes)
     Intrinsic = (1<<12),        // This function is an intrinsic
     TraceMethod = (1<<13),      // This overrides the compiler-generated trace strategy
-    SelfIsReadOnly = (1<<14),   // Mutations to 'self' are not allowed.
+    ReadOnlySelf = (1<<14),     // Guarantees no mutations to 'self'.
     //Commutative = (1<<6),  // A function whose order of arguments can be reversed
     //Associative = (1<<7),  // A varargs function that can be combined with itself.
   };
@@ -217,6 +217,7 @@ public:
   bool isNested() const { return (flags_ & Nested) != 0; }
   bool isIntrinsic() const { return (flags_ & Intrinsic) != 0; }
   bool isTraceMethod() const { return (flags_ & TraceMethod) != 0; }
+  bool isReadOnlySelf() const { return (flags_ & ReadOnlySelf) != 0; }
   bool hasSafePoints() const { return (flags_ & HasSafePoints) != 0; }
 
   /** True if this function has a body. */
@@ -239,6 +240,11 @@ public:
 
   /** Return true if this function can override the function 'base'. */
   bool canOverride(const FunctionDefn * base) const;
+
+  /** Return true if it legal to call this method with the specified 'self' argument.
+      This makes sure that either self is mutable, or this method is a non-mutating method.
+   */
+  bool checkMutableSelf(const Expr * selfExpr) const;
 
   /** The current passes state. */
   const PassMgr & passes() const { return passes_; }

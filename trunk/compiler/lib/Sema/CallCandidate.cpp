@@ -262,6 +262,10 @@ ConversionRank CallCandidate::updateConversionRank() {
     combineConversionRanks(spCandidate_->updateConversionRank());
   }
 
+  if (method_ != NULL && !method_->checkMutableSelf(base_)) {
+    combineConversionRanks(QualifierLoss);
+  }
+
 #if 0
   if (typeArgs_ != NULL) {
     size_t typeArgCount = typeArgs_->size();
@@ -290,7 +294,7 @@ void CallCandidate::reportConversionErrors() {
     ConversionRank rank = TypeConversion::check(argExpr, paramType, TypeConversion::COERCE);
     if (isConversionWarning(rank)) {
       diag.indent();
-      diag.info(method_) << compatibilityError(rank) << Format_Dealias << " converting argument " <<
+      diag.info(callExpr_) << compatibilityError(rank) << Format_Dealias << " converting argument " <<
           argIndex << " from '" << argExpr->type() << "' to '" << paramType << "'.";
       diag.unindent();
     }
@@ -303,7 +307,7 @@ void CallCandidate::reportConversionErrors() {
         resultType_, expectedReturnType, TypeConversion::COERCE);
     if (isConversionWarning(rank)) {
       diag.indent();
-      diag.info(method_) << compatibilityError(rank) << Format_Dealias <<
+      diag.info(callExpr_) << compatibilityError(rank) << Format_Dealias <<
           " converting return value from '" << resultType_ << "' to '" <<
           expectedReturnType << "'.";
       diag.unindent();
@@ -314,6 +318,12 @@ void CallCandidate::reportConversionErrors() {
   // Note that these must be an exact match.
   if (spCandidate_ != NULL) {
     spCandidate_->reportConversionErrors();
+  }
+
+  if (method_ != NULL && !method_->checkMutableSelf(base_)) {
+    diag.indent();
+    diag.info(callExpr_) << "Non-readonly method with a readonly 'self' argument";
+    diag.unindent();
   }
 }
 

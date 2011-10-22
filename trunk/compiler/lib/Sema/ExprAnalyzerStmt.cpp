@@ -26,7 +26,7 @@
 
 #include "tart/Sema/ExprAnalyzer.h"
 #include "tart/Sema/EvalPass.h"
-#include "tart/Sema/TypeInference.h"
+#include "tart/Sema/Infer/TypeInference.h"
 #include "tart/Sema/TypeAnalyzer.h"
 #include "tart/Sema/FinalizeTypesPass.h"
 #include "tart/Sema/VarAnalyzer.h"
