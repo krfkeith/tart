@@ -249,7 +249,7 @@ Defn * Template::instantiate(const SourceLocation & loc, const QualifiedTypeVarM
   for (size_t i = 0; i < vars_.size(); ++i) {
     TypeVariable * var = vars_[i];
     QualifiedType value = paramValues[i];
-    if (!value.isEffectiveReadOnly()) {
+    if (value.isWritable()) {
       // If it's not read-only, make the type explicitly mutable
       //value.addQualifiers(QualifiedType::MUTABLE);
     }

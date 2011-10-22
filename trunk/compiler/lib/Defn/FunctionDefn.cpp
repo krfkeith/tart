@@ -238,6 +238,14 @@ bool FunctionDefn::canOverride(const FunctionDefn * base) const {
   return true;
 }
 
+bool FunctionDefn::checkMutableSelf(const Expr * selfExpr) const {
+  if (selfExpr == NULL || storageClass() != Storage_Instance) {
+    return true;
+  }
+
+  return selfExpr->type().isWritable() || isReadOnlySelf();
+}
+
 StringRef FunctionDefn::linkageName() const {
   if (lnkName.empty()) {
     Defn::linkageName();

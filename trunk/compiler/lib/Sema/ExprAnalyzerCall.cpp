@@ -411,8 +411,7 @@ Expr * ExprAnalyzer::callConstructor(SLC & loc, TypeDefn * tdef, const ASTNodeLi
   return call;
 }
 
-Expr * ExprAnalyzer::callTypeFunction(
-    SLC & loc, QualifiedType callable, const ASTNodeList & args) {
+Expr * ExprAnalyzer::callTypeFunction(SLC & loc, QualifiedType callable, const ASTNodeList & args) {
   TypeAnalyzer ta(this, activeScope_);
   const TupleType * ttArgs = ta.tupleTypeFromASTNodeList(args);
   if (ttArgs == NULL) {

@@ -21,7 +21,7 @@
 
 #include "tart/Sema/StmtAnalyzer.h"
 #include "tart/Sema/VarAnalyzer.h"
-#include "tart/Sema/TypeInference.h"
+#include "tart/Sema/Infer/TypeInference.h"
 #include "tart/Sema/MacroExpansionPass.h"
 #include "tart/Sema/PropertyAccessorPass.h"
 #include "tart/Sema/ScopeBuilder.h"

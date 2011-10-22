@@ -292,8 +292,7 @@ private:
   Expr * selfArg_;
 
 public:
-  FnCallExpr(ExprType k, const SourceLocation & loc, FunctionDefn * function,
-      Expr * self)
+  FnCallExpr(ExprType k, const SourceLocation & loc, FunctionDefn * function, Expr * self)
     : ArglistExpr(k, loc, NULL)
     , function_(function)
     , selfArg_(self)

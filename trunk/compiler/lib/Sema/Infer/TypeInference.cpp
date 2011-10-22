@@ -17,11 +17,12 @@
 #include "tart/Type/AmbiguousPhiType.h"
 
 #include "tart/Sema/AnalyzerBase.h"
-#include "tart/Sema/TypeInference.h"
 #include "tart/Sema/CallCandidate.h"
 #include "tart/Sema/FoldConstantsPass.h"
 #include "tart/Sema/Infer/ConstraintExpansion.h"
+#include "tart/Sema/Infer/GatherConstraintsPass.h"
 #include "tart/Sema/Infer/TypeAssignment.h"
+#include "tart/Sema/Infer/TypeInference.h"
 
 #include "tart/Common/Diagnostics.h"
 
@@ -35,79 +36,6 @@ optShowInference("show-inference",
 
 bool unifyVerbose = false;
 bool showInference = false;
-
-// -------------------------------------------------------------------
-// GatherConstraintsPass
-
-Expr * GatherConstraintsPass::visitCall(CallExpr * in) {
-  if (!in->candidates().empty() && visited_.insert(in)) {
-    // Note: pre-order traversal.
-    Expr * result = CFGPass::visitCall(in);
-    calls_.push_back(new CallSite(in));
-
-    // If the function is NULL, it means that the function reference is
-    // in the individual candidates.
-    if (in->function() == NULL) {
-      Candidates & cd = in->candidates();
-      for (Candidates::iterator it = cd.begin(); it != cd.end(); ++it) {
-        visitExpr((*it)->base());
-      }
-    }
-    return result;
-  } else {
-    return CFGPass::visitCall(in);
-  }
-}
-
-
-Expr * GatherConstraintsPass::visitAssign(AssignmentExpr * in) {
-  if (!in->isSingular() && visited_.insert(in)) {
-    conversions_.push_back(new AssignmentSite(in));
-  }
-
-  return CFGPass::visitAssign(in);
-}
-
-Expr * GatherConstraintsPass::visitPostAssign(AssignmentExpr * in) {
-  if (!in->isSingular() && visited_.insert(in)) {
-    conversions_.push_back(new AssignmentSite(in));
-  }
-
-  return CFGPass::visitPostAssign(in);
-}
-
-Expr * GatherConstraintsPass::visitTupleCtor(TupleCtorExpr * in) {
-  in = cast<TupleCtorExpr>(CFGPass::visitTupleCtor(in));
-  if (!in->isSingular() && visited_.insert(in)) {
-    conversions_.push_back(new TupleCtorSite(in));
-  }
-
-  return in;
-}
-
-Expr * GatherConstraintsPass::visitIf(IfExpr * in) {
-  CFGPass::visitIf(in);
-  visitPHI(in);
-  return in;
-}
-
-Expr * GatherConstraintsPass::visitSwitch(SwitchExpr * in) {
-  CFGPass::visitSwitch(in);
-  visitPHI(in);
-  return in;
-}
-
-Expr * GatherConstraintsPass::visitMatch(MatchExpr * in) {
-  CFGPass::visitMatch(in);
-  visitPHI(in);
-  return in;
-}
-
-void GatherConstraintsPass::visitPHI(Expr * in) {
-  if (in->type().isa<AmbiguousPhiType>()) {
-    conversions_.push_back(new PHISite(in));
-  }
-}
 
 // -------------------------------------------------------------------
 // TypeInference
@@ -690,24 +618,24 @@ void TypeInferencePass::cullByElimination() {
 void TypeInferencePass::cullByElimination(
   CallSites::iterator first, CallSites::iterator last) {
   while (first < last && underconstrained_) {
-    CallSite * pt = *first;
-    if (pt->remaining() <= 1) {
-      DASSERT(pt->remaining() > 0);
+    CallSite * cs = *first;
+    if (cs->remaining() <= 1) {
+      DASSERT(cs->remaining() > 0);
       ++first;
     } else {
-      int numChoices = pt->count();
+      int numChoices = cs->count();
       for (int ch = 0; ch < numChoices; ++ch) {
-        if (pt->isCulled(ch)) {
+        if (cs->isCulled(ch)) {
           continue;
         }
 
         if (showInference) {
-          diag.debug() << Format_Type << "Trying " << pt->expr();
+          diag.debug() << Format_Type << "Trying " << cs->expr();
           diag.indent();
         }
 
         ++searchDepth_;
-        pt->cullAllExcept(ch, searchDepth_);
+        cs->cullAllExcept(ch, searchDepth_);
         cullByElimination(first + 1, last);
         backtrack();
 

@@ -378,7 +378,7 @@ public final immutable class String : Iterable[char] {
         s - the list of strings to join.
       Returns: the joined string.
    */
-  static def join(sep:String, s:String...) -> String {
+  static def join(sep:readonly(String), s:String...) -> String {
     return String.join(sep, s);
   }
 
@@ -388,7 +388,7 @@ public final immutable class String : Iterable[char] {
         s - an 'Iterable' which produces the strings to join.
       Returns: the joined string.
    */
-  static def join(sep:String, strings:Iterable[String]) -> String {
+  static def join(sep:readonly(String), strings:Iterable[String]) -> String {
     let sepSize = sep.size;
     var length:int = 0;
     for s in strings {

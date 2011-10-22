@@ -196,6 +196,13 @@ Expr * FinalizeTypesPassImpl::visitCall(CallExpr * in) {
         return &Expr::ErrorVal;
       }
 
+      if (!method->checkMutableSelf(selfArg)) {
+        diag.indent();
+        diag.error(in) << "Attempt to call non-readonly method '" << method->name()
+            << "' with a readonly 'self' argument";
+        diag.unindent();
+      }
+
       // If the self argument is a struct type, and it's a parameter of the calling
       // function, then we need to insure that we can take the address of the struct
       // by converting it into an LValue.

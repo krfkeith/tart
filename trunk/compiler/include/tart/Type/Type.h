@@ -113,7 +113,7 @@ public:
   static const char * typeClassName(TypeClass tc);
 
   /** Get the kind of type that this is. */
-  virtual TypeClass typeClass() const { return cls; }
+  TypeClass typeClass() const { return cls; }
 
   /** Get the LLVM IR type corresponding to this type. */
   virtual llvm::Type * irType() const = 0;

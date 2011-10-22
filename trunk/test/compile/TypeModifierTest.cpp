@@ -95,23 +95,30 @@ TEST(TypeModifierTest, MemberFunctionDefnModifiers) {
   EXPECT_COMPILE_FAILURE("class Test { immutable def test -> void {} }", "invalid type modifier");
 }
 
+TEST(TypeModifierTest, ReadOnlyVar) {
+  EXPECT_COMPILE_FAILURE(
+      "class Test { def test -> void {} }"
+      "var t:readonly(Test);"
+      "def test2 { t.test(); }",
+      "non-readonly method");
+}
+
 TEST(TypeModifierTest, ReadOnlyMethod) {
   EXPECT_COMPILE_FAILURE(
       "class Test { var m:int; readonly def test -> void { m = 0; } }",
       "write to read-only");
 }
 
-#if 0
-TEST(TypeModifierTest, ReadonlyParam) {
-  EXPECT_COMPILE_FAILURE(
-      "def test(a:int[]) -> void { a[0] = 1; }",
-      "write to read-only");
+TEST(TypeModifierTest, ReadOnlyParam) {
+//  EXPECT_COMPILE_FAILURE(
+//      "def test(a:readonly(int[])) -> void { a[0] = 1; }",
+//      "write to read-only");
 }
 
-TEST(TypeModifierTest, ReadonlyField) {
+TEST(TypeModifierTest, ReadOnlyField) {
   EXPECT_COMPILE_FAILURE(
-      "class Test { var m:int; } def test(t:Test) -> void { t.m = 1; }",
+      "class Test { var m:int; }"
+      "def test(t:readonly(Test)) -> void { t.m = 1; }",
       "write to read-only");
-  EXPECT_COMPILE_SUCCESS("class Test { mutable var m:int; } def test(t:Test) -> void { t.m = 1; }");
+  EXPECT_COMPILE_SUCCESS("class Test { mutable var m:int; } def test(t:readonly(Test)) -> void { t.m = 1; }");
 }
-#endif

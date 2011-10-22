@@ -134,11 +134,11 @@ bool FunctionAnalyzer::runPasses(FunctionDefn::PassSet passesToRun) {
     target->passes().finish(FunctionDefn::AttributePass);
   }
 
-  if (passesToRun.contains(FunctionDefn::ParameterTypePass) && !resolveParameterTypes()) {
+  if (passesToRun.contains(FunctionDefn::ModifierPass) && !resolveModifiers()) {
     return false;
   }
 
-  if (passesToRun.contains(FunctionDefn::ModifierPass) && !resolveModifiers()) {
+  if (passesToRun.contains(FunctionDefn::ParameterTypePass) && !resolveParameterTypes()) {
     return false;
   }
 
@@ -180,133 +180,6 @@ bool FunctionAnalyzer::runPasses(FunctionDefn::PassSet passesToRun) {
   return true;
 }
 
-bool FunctionAnalyzer::resolveParameterTypes() {
-  bool success = true;
-  if (target->passes().begin(FunctionDefn::ParameterTypePass)) {
-    bool trace = isTraceEnabled(target);
-    if (trace) {
-      diag.debug(target) << Format_Type << "Analyzing parameter types for " << target;
-    }
-
-    if (target->mdNode() != NULL) {
-      if (!MDReader(module_, target).readFunctionType(target)) {
-        return false;
-      }
-    }
-
-    FunctionType * ftype = target->functionType();
-
-    // For non-template functions, the active scope is the scope that
-    // encloses the function. For a template instance, the parent scope
-    // will be the scope that defines the template variables.
-    Scope * savedScope = setActiveScope(target->definingScope());
-    bool isFromTemplate =
-        target->isTemplate() || target->isTemplateMember() || target->isPartialInstantiation();
-
-    if (target->isTemplate()) {
-      // Get the template scope and set it as the active scope.
-      analyzeTemplateSignature(target);
-      Template * tm = target->templateSignature();
-      setActiveScope(&tm->paramScope());
-    } else if (target->isTemplateMember()) {
-      for (Defn * parent = target->parentDefn(); parent != NULL; parent = parent->parentDefn()) {
-        if (parent->isTemplate()) {
-          analyzeTemplateSignature(parent);
-          break;
-        }
-      }
-    }
-
-    if (ftype == NULL) {
-      DASSERT(target->ast() != NULL);
-      TypeAnalyzer ta(target->sourceModule(), activeScope());
-      ta.setTypeLookupOptions(isFromTemplate ? LOOKUP_NO_RESOLVE : LOOKUP_DEFAULT);
-      ftype = ta.functionTypeFromAST(target->functionDecl());
-      if (ftype == NULL) {
-        success = false;
-      } else {
-        target->setFunctionType(ftype);
-      }
-    }
-
-    if (ftype != NULL) {
-      ParameterList & params = ftype->params();
-      for (ParameterList::iterator it = params.begin(); it != params.end(); ++it) {
-        ParameterDefn * param = *it;
-        if (!VarAnalyzer(param, target->definingScope(), module_, target, target)
-            .analyze(Task_PrepTypeComparison)) {
-          success = false;
-        }
-
-        if (!param->type()) {
-          diag.error(param) << "No type specified for parameter '" << param << "'";
-        } else {
-          if (param->isVariadic() && param->type()->isSingular()) {
-            if (trace) {
-              diag.debug(target) << Format_Type << "  Analyzing variadic param " << param;
-            }
-            analyzeType(param->type(), Task_PrepTypeComparison);
-            param->setInternalType(getArrayTypeForElement(param->type()));
-            DASSERT_OBJ(param->internalType()->isSingular(), param);
-            analyzeType(param->internalType(), Task_PrepConstruction);
-            module()->addSymbol(param->internalType()->typeDefn());
-          }
-
-          // TODO: Check for other unsafe types.
-          if (param->type()->typeClass() == Type::NAddress) {
-            target->addTrait(Defn::Unsafe);
-          }
-        }
-
-        // TODO: Should only add the param as a member if we "own" it.
-        if (param->definingScope() == NULL && !param->name().empty()) {
-          target->parameterScope().addMember(param);
-        }
-
-        if (trace) {
-          diag.indent();
-          diag.debug(target) << Format_Type << "Parameter " << param;
-          diag.unindent();
-        }
-      }
-    }
-
-    TypeDefn * parentClass = target->enclosingClassDefn();
-    if (parentClass != NULL) {
-      if (const CompositeType * ctype = dyn_cast<CompositeType>(parentClass->typePtr())) {
-        if (ctype->isFinal()) {
-          target->setFlag(FunctionDefn::Final);
-        }
-      }
-    }
-
-    if (target->storageClass() == Storage_Instance && ftype->selfParam() == NULL) {
-      ParameterDefn * selfParam = new ParameterDefn(module(), "self");
-      QualifiedType selfType = target->enclosingClassDefn()->value();
-      DASSERT_OBJ(selfType, target);
-      if (target->isReadOnly()) {
-        selfType.addQualifiers(QualifiedType::READONLY);
-      } else {
-        selfType.removeQualifiers(QualifiedType::MUTABILITY_MASK);
-      }
-      analyzeType(selfType.unqualified(), Task_PrepMemberLookup);
-      selfParam->setLocation(target->location());
-      selfParam->setType(selfType);
-      selfParam->setInternalType(selfType);
-      selfParam->addTrait(Defn::Singular);
-      selfParam->addTrait(Defn::Synthetic);
-      selfParam->setFlag(ParameterDefn::Reference);
-      ftype->setSelfParam(selfParam);
-      target->parameterScope().addMember(selfParam);
-    }
-
-    setActiveScope(savedScope);
-    target->passes().finish(FunctionDefn::ParameterTypePass);
-  }
-
-  return success;
-}
-
 bool FunctionAnalyzer::resolveModifiers() {
   bool success = true;
 
@@ -331,7 +204,7 @@ bool FunctionAnalyzer::resolveModifiers() {
 
     // Handle 'read-only' declaration
     if (isReadOnly) {
-      target->setFlag(FunctionDefn::SelfIsReadOnly, true);
+      target->setFlag(FunctionDefn::ReadOnlySelf, true);
     }
 
     if (target->storageClass() == Storage_Instance) {
@@ -339,7 +212,7 @@ bool FunctionAnalyzer::resolveModifiers() {
       if (parentClass != NULL) {
         // TODO: When should we *not* do this?
         if (parentClass->isReadOnly() || parentClass->isImmutable()) {
-          target->setFlag(FunctionDefn::SelfIsReadOnly, true);
+          target->setFlag(FunctionDefn::ReadOnlySelf, true);
         }
       }
     }
@@ -446,6 +319,133 @@ bool FunctionAnalyzer::resolveModifiers() {
     }
 
     target->passes().finish(FunctionDefn::ModifierPass);
+  }
+
+  return success;
+}
+
+bool FunctionAnalyzer::resolveParameterTypes() {
+  bool success = true;
+  if (target->passes().begin(FunctionDefn::ParameterTypePass)) {
+    bool trace = isTraceEnabled(target);
+    if (trace) {
+      diag.debug(target) << Format_Type << "Analyzing parameter types for " << target;
+    }
+
+    if (target->mdNode() != NULL) {
+      if (!MDReader(module_, target).readFunctionType(target)) {
+        return false;
+      }
+    }
+
+    FunctionType * ftype = target->functionType();
+
+    // For non-template functions, the active scope is the scope that
+    // encloses the function. For a template instance, the parent scope
+    // will be the scope that defines the template variables.
+    Scope * savedScope = setActiveScope(target->definingScope());
+    bool isFromTemplate =
+        target->isTemplate() || target->isTemplateMember() || target->isPartialInstantiation();
+
+    if (target->isTemplate()) {
+      // Get the template scope and set it as the active scope.
+      analyzeTemplateSignature(target);
+      Template * tm = target->templateSignature();
+      setActiveScope(&tm->paramScope());
+    } else if (target->isTemplateMember()) {
+      for (Defn * parent = target->parentDefn(); parent != NULL; parent = parent->parentDefn()) {
+        if (parent->isTemplate()) {
+          analyzeTemplateSignature(parent);
+          break;
+        }
+      }
+    }
+
+    if (ftype == NULL) {
+      DASSERT(target->ast() != NULL);
+      TypeAnalyzer ta(target->sourceModule(), activeScope());
+      ta.setTypeLookupOptions(isFromTemplate ? LOOKUP_NO_RESOLVE : LOOKUP_DEFAULT);
+      ftype = ta.functionTypeFromAST(target->functionDecl());
+      if (ftype == NULL) {
+        success = false;
+      } else {
+        target->setFunctionType(ftype);
+      }
+    }
+
+    if (ftype != NULL) {
+      ParameterList & params = ftype->params();
+      for (ParameterList::iterator it = params.begin(); it != params.end(); ++it) {
+        ParameterDefn * param = *it;
+        if (!VarAnalyzer(param, target->definingScope(), module_, target, target)
+            .analyze(Task_PrepTypeComparison)) {
+          success = false;
+        }
+
+        if (!param->type()) {
+          diag.error(param) << "No type specified for parameter '" << param << "'";
+        } else {
+          if (param->isVariadic() && param->type()->isSingular()) {
+            if (trace) {
+              diag.debug(target) << Format_Type << "  Analyzing variadic param " << param;
+            }
+            analyzeType(param->type(), Task_PrepTypeComparison);
+            param->setInternalType(getArrayTypeForElement(param->type()));
+            DASSERT_OBJ(param->internalType()->isSingular(), param);
+            analyzeType(param->internalType(), Task_PrepConstruction);
+            module()->addSymbol(param->internalType()->typeDefn());
+          }
+
+          // TODO: Check for other unsafe types.
+          if (param->type()->typeClass() == Type::NAddress) {
+            target->addTrait(Defn::Unsafe);
+          }
+        }
+
+        // TODO: Should only add the param as a member if we "own" it.
+        if (param->definingScope() == NULL && !param->name().empty()) {
+          target->parameterScope().addMember(param);
+        }
+
+        if (trace) {
+          diag.indent();
+          diag.debug(target) << Format_Type << "Parameter " << param;
+          diag.unindent();
+        }
+      }
+    }
+
+    TypeDefn * parentClass = target->enclosingClassDefn();
+    if (parentClass != NULL) {
+      if (const CompositeType * ctype = dyn_cast<CompositeType>(parentClass->typePtr())) {
+        if (ctype->isFinal()) {
+          target->setFlag(FunctionDefn::Final);
+        }
+      }
+    }
+
+    if (target->storageClass() == Storage_Instance && ftype->selfParam() == NULL) {
+      ParameterDefn * selfParam = new ParameterDefn(module(), "self");
+      QualifiedType selfType = target->enclosingClassDefn()->value();
+      DASSERT_OBJ(selfType, target);
+      if (target->isReadOnlySelf()) {
+        selfType.addQualifiers(QualifiedType::READONLY);
+      } else {
+        selfType.removeQualifiers(QualifiedType::MUTABILITY_MASK);
+      }
+      analyzeType(selfType.unqualified(), Task_PrepMemberLookup);
+      selfParam->setLocation(target->location());
+      selfParam->setType(selfType);
+      selfParam->setInternalType(selfType);
+      selfParam->addTrait(Defn::Singular);
+      selfParam->addTrait(Defn::Synthetic);
+      selfParam->setFlag(ParameterDefn::Reference);
+      ftype->setSelfParam(selfParam);
+      target->parameterScope().addMember(selfParam);
+    }
+
+    setActiveScope(savedScope);
+    target->passes().finish(FunctionDefn::ParameterTypePass);
   }
 
   return success;

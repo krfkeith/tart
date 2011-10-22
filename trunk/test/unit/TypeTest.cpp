@@ -48,11 +48,8 @@ public:
 };
 
 TEST_F(TupleTest, FindCommonType) {
-  EXPECT_EQ(&Int32Type::instance,
-      findCommonType(&Int32Type::instance, &Int32Type::instance));
-
-  EXPECT_EQ(&Int32Type::instance,
-      findCommonType(&Int32Type::instance, &Int16Type::instance));
+  EXPECT_EQ(&Int32Type::instance, findCommonType(&Int32Type::instance, &Int32Type::instance));
+  EXPECT_EQ(&Int32Type::instance, findCommonType(&Int32Type::instance, &Int16Type::instance));
 }
 
 TEST_F(TupleTest, TypeAttributes) {

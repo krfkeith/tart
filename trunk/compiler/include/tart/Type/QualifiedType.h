@@ -82,9 +82,7 @@ public:
   bool isAdopted() const { return (qualifiers_ & ADOPTED) != 0; }
   bool isVariadic() const { return (qualifiers_ & VARIADIC) != 0; }
   bool isVolatile() const { return (qualifiers_ & VOLATILE) != 0; }
-
-  /** True if the type is effectively read-only. */
-  bool isEffectiveReadOnly() const { return (qualifiers_ & (IMMUTABLE|READONLY)) != 0; }
+  bool isWritable() const { return (qualifiers_ & (IMMUTABLE|READONLY)) == 0; }
 
   /** The unmodified base type. */
   const T * type() const { return type_; }
