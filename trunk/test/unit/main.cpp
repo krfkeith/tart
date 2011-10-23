@@ -5,7 +5,6 @@
 #include "tart/Common/GC.h"
 #include "tart/Common/PackageMgr.h"
 #include "tart/Objects/Builtins.h"
-#include "libpaths.h"
 
 #include <gmock/gmock.h>
 
