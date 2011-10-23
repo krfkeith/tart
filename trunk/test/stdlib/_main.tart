@@ -1,0 +1,7 @@
+import tart.testing.Test;
+import tart.reflect.Package;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.runAllTests(Package.thisPackage());
+}

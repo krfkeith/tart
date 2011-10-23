@@ -1,0 +1,91 @@
+import tart.testing.Test;
+import tart.io.FileStream;
+import tart.io.IOError;
+import tart.io.IOStream;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(FileStreamTest);
+}
+
+class FileStreamTest : Test {
+  def testOpenForRead {
+    let fs = FileStream("iotest.txt");
+    fs.close();
+  }
+
+  def testOpenFailed {
+    try {
+      let fs = FileStream("bogus.txt");
+      fail("IOError expected");
+    } catch e:IOError {
+    }
+  }
+
+  def testAccessFlags {
+    let fs = FileStream("iotest.txt");
+    assertTrue(fs.canRead);
+    assertFalse(fs.canWrite);
+    assertTrue(fs.canSeek);
+    fs.close();
+  }
+
+  def testReadChar {
+    let fs = FileStream("iotest.txt");
+    var ch = fs.read();
+    assertEq('#', char(ch));
+    ch = fs.read();
+    assertEq(' ', char(ch));
+    ch = fs.read();
+    assertEq('T', char(ch));
+    while fs.read() != IOStream.EOF {}
+    fs.close();
+  }
+
+  def testReadArray {
+    let fs = FileStream("iotest.txt");
+    let buf = ubyte[](10);
+    var size = fs.read(buf);
+    assertEq(10, size);
+    assertEq(10, fs.position);
+    assertEq("# Test dat", String.fromBytes(buf));
+
+    // Read part of array
+    size = fs.read(buf, 1, 2);
+    assertEq(2, size);
+    assertEq(12, fs.position);
+    assertEq("#a est dat", String.fromBytes(buf));
+
+    fs.close();
+  }
+
+  def testSeek {
+    let fs = FileStream("iotest.txt");
+    let buf = ubyte[](10);
+    fs.seek(IOStream.SeekFrom.START, 1);
+    assertEq(1, fs.position);
+    var size = fs.read(buf);
+    assertEq(10, size);
+    assertEq(11, fs.position);
+    assertEq(" Test data", String.fromBytes(buf));
+    fs.close();
+  }
+
+  def testReadAll {
+    let fs = FileStream("iotest.txt");
+    let buf = ubyte[](10);
+    let all = fs.readAll();
+    assertEq("# Test data for i/o read test.\nLine 2\nLine 3", String.fromBytes(all));
+    fs.close();
+  }
+}
+
+/*
+  enum SeekFrom {
+    END = 2
+  }
+
+  def write(value:ubyte);
+  def write(buffer:ubyte[], start:int = 0, count:int = int.maxVal);
+  def flush;
+*/

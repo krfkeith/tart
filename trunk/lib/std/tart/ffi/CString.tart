@@ -1,0 +1,13 @@
+import tart.annex.Intrinsic;
+import tart.text.encodings.Codec;
+import tart.text.encodings.Codecs;
+
+/** Attribute that indicates that the return value of a function is a C-style string
+    with the specified encoding. */
+@Attribute(Attribute.Target.CALLABLE)
+class CString {
+  let encoding:Codec;
+
+  public def construct(encoding:Codec = Codecs.UTF_8) { self.encoding = encoding; }
+  @Intrinsic def apply(m:tart.reflect.Method);
+}

@@ -1,0 +1,263 @@
+import tart.reflect.Module;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(TupleTypeTest);
+}
+
+class TupleTypeTest : Test {
+	def testTupleCreate() {
+	  var a = 1, 2;
+	  assertEq(1, a[0]);
+	  assertEq(2, a[1]);
+	}
+
+	def testTupleCreateLarge() {
+	  var a = 1, 2, 3, 4, 5, 6;
+	  assertEq(1, a[0]);
+	  assertEq(2, a[1]);
+	  assertEq(3, a[2]);
+	  assertEq(4, a[3]);
+	  assertEq(5, a[4]);
+	  assertEq(6, a[5]);
+	}
+
+	def testTupleCreate2() {
+	  var a = 1, "Hello";
+	  assertEq(1, a[0]);
+	  assertEq("Hello", a[1]);
+	}
+
+	def testTupleCreate2Large() {
+	  var a = "Hello", "there", "world!";
+	  assertEq("Hello", a[0]);
+	  assertEq("there", a[1]);
+	  assertEq("world!", a[2]);
+	}
+
+	def testTupleCreateExplicitType() {
+	  var a:(int32, int32) = 1, 2;
+	  assertEq(1, a[0]);
+	  assertEq(2, a[1]);
+	}
+
+  def testTupleCreateExplicitCoercedType() {
+    var a:(uint8, uint8) = 77, 78;
+    assertEq(77, a[0]);
+    assertEq(78, a[1]);
+  }
+
+	def testTupleAssign() {
+	  var a = 1, 2;
+	  var b = a;
+	  assertEq(1, b[0]);
+	  assertEq(2, a[1]);
+	}
+
+	def testTupleAssignLarge() {
+	  var a = 1, 2, 3, 4, 5, 6;
+	  var b = a;
+	  assertEq(1, b[0]);
+	  assertEq(2, b[1]);
+	  assertEq(3, b[2]);
+	  assertEq(4, b[3]);
+	  assertEq(5, b[4]);
+	  assertEq(6, b[5]);
+	}
+
+	def testTupleReturn() {
+	  var a = returnTuple();
+	  assertEq(3, a[0]);
+	  assertEq("Hello", a[1]);
+	}
+
+	def testTupleReturn2() {
+		let a = returnTuple2();
+    assertEq(42, a[0]);
+    assertTrue(a[1]);
+	}
+
+	def testTupleReturnLarge() {
+	  var a = returnTupleLarge();
+	  assertEq(3, a[0]);
+	  assertEq("Hello", a[1]);
+	  assertEq(2, a[2]);
+	  assertEq("World", a[3]);
+	}
+
+	def returnTuple() -> (int32, String) {
+	  return 3, "Hello";
+	}
+
+  def returnTuple2() -> (int, bool) {
+    return (42, true);
+  }
+
+	def returnTupleLarge() -> (int32, String, int32, String) {
+	  return 3, "Hello", 2, "World";
+	}
+
+	def testTupleArg() {
+	  tupleArg((3, 4.5));
+	}
+
+	def tupleArg(a:(int32, double)) {
+	  assertEq(3, a[0]);
+	  assertEq(4.5, a[1]);
+	}
+
+	def testUnpackedAssign() {
+	  var a = 1, 2.0;
+	  var b, c = a;
+	  var b2:int, c2:double = a;
+	  //var b3:int64, c3 = a;
+
+	  b, c = a;
+
+	  var d, e = returnTuple();
+	  assertEq(3, d);
+	  assertEq("Hello", e);
+
+	  var d1, e1, d2, e2 = returnTupleLarge();
+	  assertEq(3, d1);
+	  assertEq("Hello", e1);
+	  assertEq(2, d2);
+	  assertEq("World", e2);
+	}
+
+	def testSwapIdiom() {
+	  var a = 1;
+	  var b = 2;
+	  a, b = b, a;
+	  assertEq(2, a);
+	  assertEq(1, b);
+	}
+
+	def testMultiValueReturn() {
+	  let a, b = returnTuple();
+	  assertEq(3, a);
+	  assertEq("Hello", b);
+
+	  var a0, b0 = returnTuple();
+	  assertEq(3, a0);
+	  assertEq("Hello", b0);
+
+	  let a1, b1, c1, d1 = returnTupleLarge();
+	  assertEq(3, a1);
+	  assertEq("Hello", b1);
+	  assertEq(2, c1);
+	  assertEq("World", d1);
+	}
+
+	def testTupleUnion() {
+	  var s:(ubyte, ubyte) or void = (2, 3);
+	  match s as n:(ubyte, ubyte) {
+	    assertEq(2, n[0]);
+	    assertEq(3, n[1]);
+	  }
+	}
+
+	def testTupleLargeUnion() {
+	  var s:(int, int, int, int) or void = (2, 3, 4, 5);
+	  match s as n:(int, int, int, int) {
+	    assertEq(2, n[0]);
+	    assertEq(3, n[1]);
+	    assertEq(4, n[2]);
+	    assertEq(5, n[3]);
+	  }
+	}
+
+	def testTupleUnionReturn() {
+	  let n = upair();
+	  assertEq(1, typecast[(int32, int32)](n)[0]);
+	}
+
+	def upair() -> (int32, int32) or void {
+	  return 1, 2;
+	}
+
+	def testTupleArray() {
+	  var s = [(int32(1), int32(2)), (int32(2), int32(3)), (int32(3), int32(4))];
+	  assertEq(3, s.size);
+	  assertEq(1, s[0][0]);
+	  assertEq(2, s[0][1]);
+	  assertEq(2, s[1][0]);
+	  assertEq(3, s[1][1]);
+	  assertEq(3, s[2][0]);
+	  assertEq(4, s[2][1]);
+
+	  var b = s[0];
+	  assertEq(1, b[0]);
+	  assertEq(2, b[1]);
+
+	  var i = s.iterate();
+	  var n = i.next();
+	  assertFalse(n isa void);
+	  assertTrue(n isa (int32, int32));
+	  match n as t:(int32, int32) {
+		  assertEq(1, t[0]);
+		  assertEq(2, t[1]);
+	  }
+	  assertEq(1, typecast[(int32, int32)](n)[0]);
+	  assertEq(2, typecast[(int32, int32)](n)[1]);
+	}
+
+	/*def testTupleArrayExplicitType() {
+	  var s:(int32, int32)[] = [(1, 2), (2, 3), (3, 4)];
+	  assertEq(3, s.size);
+	  assertEq(1, s[0][0]);
+	  assertEq(2, s[0][1]);
+	  assertEq(2, s[1][0]);
+	  assertEq(3, s[1][1]);
+	  assertEq(3, s[2][0]);
+	  assertEq(4, s[2][1]);
+
+	  var i = s.iterate();
+	  var n = i.next();
+	  assertFalse(n isa void);
+	  assertTrue(n isa (int32, int32));
+	  assertEq(1, typecast[(int32, int32)](n)[0]);
+	  assertEq(2, typecast[(int32, int32)](n)[1]);
+	}*/
+
+	def testTupleIteration() {
+	  var s = [(int32(1), int32(2)), (int32(2), int32(3)), (int32(3), int32(4))];
+	  var asum = 0;
+	  var bsum = 0;
+	  for t in s {
+	    asum += t[0];
+	    bsum += t[1];
+	  }
+
+	  assertEq(6, asum);
+	  assertEq(9, bsum);
+
+		asum = bsum = 0;
+	  for a, b in s {
+	    asum += a;
+	    bsum += b;
+	  }
+
+	  assertEq(6, asum);
+	  assertEq(9, bsum);
+	}
+
+	def testVarargsTuple() {
+	  let s = concat(("A", 1), ("B", 2), ("C", 3));
+	}
+
+	def concat(tuples:(String, int)...) -> String {
+	  let sb = StringBuilder();
+	  for a, b in tuples {
+	    sb.append(a);
+	  }
+
+	  return sb.toString();
+	}
+}
+
+struct TupleContainer {
+  var i:int32;
+  var t:(int32, double);
+}

@@ -1,0 +1,239 @@
+import tart.collections.ArrayList;
+import tart.text.encodings.Codec;
+import tart.text.encodings.Codecs;
+
+/** TextReader that reads from an input stream. */
+final class StreamTextReader : TextReader {
+  static let DEFAULT_BUFFER_SIZE:int = 4096;
+  static let MIN_BUFFER_SIZE:int = 256;
+  static let CHAR_BUFFER_SIZE:int = 256;
+
+  private {
+    var stream:IOStream;
+    var codec:Codec;
+    var buffer:ubyte[];
+    var bufferPos:int;
+    var bufferEnd:int;
+    var charBuffer:char[];
+    var charBufferPos:int;
+    var charBufferEnd:int;
+    var readZero:bool;      // Whether the last read operation returned zero bytes.
+    var crLast:bool;        // Whether the last character in the char buffer was a CR.
+  }
+
+  def construct(stream:IOStream, codec:Codec = Codecs.UTF_8, bufferSize:int = DEFAULT_BUFFER_SIZE) {
+    Preconditions.checkArgument(bufferSize >= MIN_BUFFER_SIZE);
+    self.stream = stream;
+    self.codec = codec;
+    // TODO: Make this a pinned array.
+    self.buffer = ubyte[](bufferSize);
+    self.bufferPos = self.bufferEnd = 0;
+    self.charBufferPos = self.charBufferEnd = 0;
+    self.readZero = false;
+    self.crLast = false;
+  }
+
+  private def fillBuffer -> bool {
+    // Move any bytes at the end of the buffer down to the beginning.
+    if bufferPos > 0 and bufferPos < bufferEnd {
+      buffer.moveElements(0, bufferPos, bufferEnd - bufferPos);
+      bufferEnd -= bufferPos;
+      bufferPos = 0;
+    } else {
+      bufferPos = bufferEnd = 0;
+    }
+
+    // Attempt to fill the buffer from the stream.
+    let actual = stream.read(buffer, bufferEnd, buffer.size - bufferEnd);
+    bufferEnd += actual;
+    readZero = (actual == 0);
+    return bufferPos < bufferEnd;
+  }
+
+  private def fillCharBuffer() -> bool {
+    if charBufferPos > 0 and charBufferPos < bufferEnd {
+      // move any characters from [charBufferPos .. charBufferEnd] to start of buffer
+      charBuffer.moveElements(0, charBufferPos, charBufferEnd - charBufferPos);
+      charBufferEnd -= charBufferPos;
+      charBufferPos = 0;
+    } else {
+      charBufferPos = charBufferEnd = 0;
+      if charBuffer is null {
+        charBuffer = char[](CHAR_BUFFER_SIZE);
+      }
+    }
+
+    if bufferPos == bufferEnd {
+      if not fillBuffer() {
+        return false; // We're at end of file.
+      }
+    }
+
+    if charBufferEnd >= charBuffer.size {
+      // Line is longer than the character buffer - expand the buffer size
+      let newCharBuffer = char[](charBuffer.size * 2);
+      char[].copyElements(newCharBuffer, 0, charBuffer, 0, charBufferEnd);
+      charBuffer = newCharBuffer;
+    }
+
+    let decodeResult = codec.decode(
+        charBuffer, charBufferEnd, charBuffer.size - charBufferEnd,
+        buffer, bufferPos, bufferEnd - bufferPos);
+    charBufferEnd += decodeResult.dstCount;
+    bufferPos += decodeResult.srcCount;
+    if decodeResult.dstCount == 0 {
+      // The only way count could be zero is if there was a character encoding error.
+      if decodeResult.state == Codec.CodecState.MALFORMED_INPUT {
+        // throw an exception here
+      }
+    }
+
+    if crLast and charBufferPos < charBufferEnd and charBuffer[charBufferPos] == '\n' {
+      crLast = false;
+      charBufferPos += 1;
+    }
+
+    return true;
+  }
+
+  def decoder:Codec {
+    get { return codec; }
+    set { codec = value; }
+  }
+
+  def readCh -> char {
+    if charBufferPos == charBufferEnd {
+      if not fillCharBuffer() {
+        return EOF;
+      }
+    }
+    return charBuffer[charBufferPos++];
+  }
+
+  def read(dst:char[], start:int, length:int) -> int {
+    var dstIndex = start;
+    // Read any characters left over in the character buffer.
+    if charBufferPos < charBufferEnd {
+      let actual = Math.min(charBufferEnd - charBufferPos, length);
+      char[].copyElements(dst, dstIndex, charBuffer, charBufferPos, actual);
+      dstIndex += actual;
+      charBufferPos += actual;
+      length -= actual;
+      if length == 0 {
+        return dstIndex - start;
+      }
+    }
+
+    // Once character buffer is exhausted, decode directly into output buffer.
+    while length > 0 {
+      if bufferPos >= bufferEnd {
+        break if not fillBuffer();
+      }
+
+      let result = codec.decode(dst, dstIndex, length, buffer, bufferPos, bufferEnd - bufferPos);
+      if result.dstCount == 0 {
+        // Some kind of error occurred, handle it.
+      }
+      bufferPos += result.srcCount;
+      dstIndex += result.dstCount;
+      length -= result.dstCount;
+    }
+
+    return dstIndex - start;
+  }
+
+  def readLn -> String or void {
+    // Make sure there are some characters in the buffer.
+    if charBufferPos == charBufferEnd {
+      if not fillCharBuffer() {
+        return;
+      }
+    }
+
+    // Use charBufferPos to mark the start of the line.
+    var lineLength = 0;
+    repeat {
+      if charBufferPos + lineLength < charBufferEnd {
+        let ch = charBuffer[charBufferPos + lineLength];
+        if ch == '\n' or ch == '\r' {
+          let result = String(charBuffer, charBufferPos, lineLength);
+          charBufferPos += lineLength + 1;
+          if ch == '\r' {
+            // If it's a CR, skip over the following NL, unless we're at the end of the buffer,
+            // in which case set a flag to do it after the next fill.
+            if charBufferPos < charBufferEnd {
+              if charBuffer[charBufferPos] == '\n' {
+                charBufferPos += 1;
+              }
+            } else {
+              crLast = true;
+            }
+          }
+          return result;
+        }
+        lineLength += 1;
+      } else if not fillCharBuffer() {
+        // We reached end of file with no line break. Return the last line.
+        if charBufferPos < charBufferEnd {
+          let result = String(charBuffer, charBufferPos, charBufferEnd - charBufferPos);
+          charBufferPos = charBufferEnd;
+          return result;
+        }
+
+        // End of file and no more lines.
+        return;
+      } // Otherwise, there should be more chars in the buffer now.
+    }
+  }
+
+  def readAll -> String {
+    let strings = ArrayList[String]();
+    repeat {
+      if charBufferPos < charBufferEnd {
+        // Make a string representing the current contents of the character buffer.
+        let length = charBufferEnd - charBufferPos;
+        strings.append(String(charBuffer, charBufferPos, charBufferEnd - charBufferPos));
+        charBufferPos = charBufferEnd;
+      }
+
+      if not fillCharBuffer() {
+        break;
+      }
+    }
+
+    return String.concat(strings);
+  }
+
+  def lines -> Iterator[String] {
+    return TextLineIterator(self);
+  }
+
+  def skip(count:int64) {
+    repeat {
+      if charBufferPos < charBufferEnd {
+        let charsToSkip = Math.min(count, charBufferEnd - charBufferPos);
+        charBufferPos += charsToSkip;
+        count -= charsToSkip;
+        if count == 0 {
+          return;
+        }
+      }
+
+      if not fillCharBuffer() {
+        return;
+      }
+    }
+  }
+
+  def atEnd: bool {
+    get { return readZero and bufferPos == bufferEnd and charBufferPos == charBufferEnd; }
+  }
+
+  def close {
+    stream.close();
+  }
+
+  def exit {
+    close();
+  }
+}

@@ -1,0 +1,15 @@
+import tart.annex.Intrinsic;
+import tart.text.encodings.Codec;
+import tart.text.encodings.Codecs;
+
+/** Attribute that indicates that the return value of a function is a C-style string
+    with the specified encoding, and that the memory for the string was allocated
+    with the standard malloc() function, and that the ownership of the string is
+    transferred to the caller, who now has responsibility for freeing it. */
+@Attribute(Attribute.Target.CALLABLE)
+class CMallocString {
+  let encoding:Codec;
+
+  public def construct(encoding:Codec = Codecs.UTF_8) { self.encoding = encoding; }
+  @Intrinsic def apply(m:tart.reflect.Method);
+}

@@ -1,0 +1,25 @@
+<html xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+<xi:include href="common.xml"/>
+<head>
+  <title>Name Index</title>
+  <link rel="stylesheet" type="text/css" href="apidoc.css"/>
+  </head>
+<body>
+  ${page_header('names')}
+  <section class="content-section">
+    <header class="content-header">Name Index</header>
+    <section class="name-list-section">
+      <div py:for="letter, names in data.items()">
+        <div py:for="name, symbols in names">
+          <ul>
+            <li py:for="sym in symbols">
+              <a href="${sym.url()}" class="name-list-link">${sym.qualified_name()}</a>
+            </li>        
+          </ul>
+        </div>
+      </div>
+    </section>
+  </section>
+  ${page_footer()}
+</body>
+</html>

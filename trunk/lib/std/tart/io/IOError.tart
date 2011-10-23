@@ -1,0 +1,95 @@
+/** Exception that signals an i/o error. */
+class IOError : Exception {
+  enum IOResult {
+    SUCCESS = 0,
+    EOF = -1,           // End of file reached
+    UNSPECIFIED = -2,   // Unspecified error
+
+    // Posix error codes, abridged
+    ENOENT = -3,        // File or directory does not exist.
+    EEXIST = -4,        // File or directory already exists.
+    EPERM = -5,         // Permission denied for operation.
+    EBUSY = -6,         // Device or resource bust
+    EIO = -7,           // I/O Error
+    ENOSPC = -8,        // No space left on device
+    EBADF = -9,         // Invalid file descriptor
+    EINVAL = -10,       // Invalid argument
+    ESPIPE = -11,       // Operation not supported by this stream type.
+  }
+
+  private let code:IOResult;
+
+  /** Default constructor. */
+  def construct() {
+    self.code = IOResult.UNSPECIFIED;
+  }
+
+  /** Default constructor. */
+  def construct(code:IOResult) {
+    self.code = code;
+  }
+
+  /** Convenience function for checking the result code of an i/o operation.
+      Throws an IOError exception if 'code' is not equal to IOResult.SUCCESS.
+      Parameters:
+        code: The result of an i/o operation.
+      Throws:
+        IOError - if code is not equal to IOResult.SUCCESS.
+   */
+  static def checkResult(code:IOResult) {
+    if code != IOResult.SUCCESS {
+      throw IOError(code);
+    }
+  }
+
+  /** Convenience function for checking the result of an i/o operation which
+      either returns a count or an error code.
+      Throws an IOError exception if 'count' is less than zero, otherwise
+      returns the value of 'count'.
+      Returns: The value of 'count' if it's not an error code.
+      Parameters:
+        count: The return value from an i/o operation.
+      Throws:
+        IOError - if count is less than zero.
+   */
+  static def checkIntResult(count:int32) -> int32 {
+    if count < 0 {
+      throw IOError(IOResult(count));
+    }
+    return count;
+  }
+
+  /** Convenience function for checking the result of an i/o operation which
+      either returns a count or an error code.
+      Throws an IOError exception if 'count' is less than zero, otherwise
+      returns the value of 'count'.
+      Parameters:
+        count: The return value from an i/o operation.
+      Returns: The value of 'count' if it's not an error code.
+      Throws:
+        IOError - if count is less than zero.
+   */
+  static def checkIntResult(count:int64) -> int64 {
+    if count < 0 {
+      throw IOError(IOResult(int32(count)));
+    }
+    return count;
+  }
+
+  /** Convenience function for checking the result of an i/o operation which
+      either returns a boolean value or an error code.
+      Throws an IOError exception if 'code' is less than zero, otherwise
+      returns the value of 'code'.
+      Returns: The value of 'code' if it's not an error code.
+      Parameters:
+        code: The return value from an i/o operation.
+      Throws:
+        IOError - if code is less than zero.
+   */
+  static def checkBoolResult(code:int32) -> bool {
+    if code < 0 {
+      throw IOError(IOResult(code));
+    }
+    return code != 0;
+  }
+}

@@ -1,0 +1,58 @@
+/** Base class for all attributes. */
+@Attribute(Attribute.Target.CLASS)
+class Attribute {
+  /** Defines what types of elements the attribute can be attached to. */
+  @Flags enum Target {
+    CLASS, 				///< Attribute can annotate class types.
+    STRUCT,				///< Attribute can annotate struct types.
+    INTERFACE, 		///< Attribute can annotate interface types.
+    ENUM,			 		///< Attribute can annotate enum types.
+    NAMESPACE, 		///< Attribute can annotate namespaces.
+    FUNCTION, 		///< Attribute can annotate functions and methods.
+    CONSTRUCTOR, 	///< Attribute can annotate constructors.
+    PARAMETER, 		///< Attribute can annotate parameters.
+    VARIABLE, 		///< Attribute can annotate variables and constants.
+    PROPERTY, 		///< Attribute can annotate properties.
+    MACRO, 				///< Attribute can annotate macros.
+
+		/// Attribute can annotate any type definition.
+    TYPE = CLASS | STRUCT | INTERFACE | ENUM,
+
+		/// Attribute can annotate any callable.
+    CALLABLE = CONSTRUCTOR | FUNCTION | MACRO,
+
+		/// Attribute can annotate any declaration.
+    ANY = TYPE | NAMESPACE | CALLABLE | PARAMETER | VARIABLE | PROPERTY,
+  }
+
+  /** Indicates whether the attribute is retained in the compiled binary. */
+  enum Retention {
+    NONE,							///< Attribute is only present during compilation.
+    RUNTIME,					///< Attribute is retained at runtime.
+    RUNTIME_ITERABLE, ///< Attribute is retained at runtime, and all instances are iterable.
+  }
+
+  /** Indicates whether derived elements (callers, subclasses) get the attribute as well. */
+  @Flags enum Propagation {
+    NONE = 0,
+    SUBTYPES,   ///< Attribute propagates to subtypes
+    MEMBERS,    ///< Attribute propagates to members of attached type
+    CALLERS,    ///< Attribute propagates to callers
+  }
+
+  var target:Target;
+  var retention:Retention;
+  var propagation:Propagation;
+
+  def construct() {
+    self.target = Target.ANY;
+    self.retention = Retention.NONE;
+    self.propagation = Propagation.NONE;
+  }
+
+  def construct(target:Target, retention:Retention = NONE, propagation:Propagation = NONE) {
+    self.target = target;
+    self.retention = retention;
+    self.propagation = propagation;
+  }
+}

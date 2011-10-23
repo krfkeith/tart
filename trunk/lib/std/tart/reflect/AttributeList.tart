@@ -1,0 +1,3 @@
+/** An immutable list of attributes that points to a statically-initialized array.
+ */
+final class AttributeList : StaticList[Object] {}

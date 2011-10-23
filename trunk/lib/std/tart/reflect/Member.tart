@@ -1,0 +1,74 @@
+import tart.collections.List;
+
+/** A member of a type */
+class Member {
+  enum Visibility : ubyte {
+    PUBLIC,
+    PROTECTED,
+    PRIVATE,
+  }
+
+  @Flags enum Traits : ubyte {
+    FINAL,
+    ABSTRACT,
+    STATIC,
+    UNSAFE,
+    OVERRIDE,
+  }
+
+  private {
+    var _names:NameTable;
+    var _nameIndex:int16;
+    var _visibility:Visibility;
+    var _traits:Traits;
+    var _type:Type;
+    var _attributes:List[Object];
+
+    undef construct;
+  }
+
+  /** The unqualified member name. */
+  final def name:String { get { return _names.getName(_nameIndex); } }
+
+  /** Accessibility of this member. */
+  final def visibility:Visibility { get { return _visibility; } }
+
+  /** Various member flags. */
+  final def traits:Traits { get { return _traits; } }
+
+  /** The type of this member. */
+  final def memberType:Type { get { return _type; } }
+
+  /** Array of attributes for this member. */
+  final def attributes:List[Object] { get { return _attributes; } }
+
+  /** Return the first attribute of type 'attrType'. */
+  final def findAttribute[%T](attrType:TypeLiteral[T]) -> T? {
+    for attr in _attributes {
+      match attr as result:T {
+        return result;
+      }
+    }
+    return null;
+  }
+
+	/** Return true if this member has an attribute of type 'attrType'. */
+  final def hasAttribute[%T](attrType:TypeLiteral[T]) -> bool {
+	  //return any(_attributes, fn attr { attr isa T; });
+    for attr in _attributes {
+      if attr isa T {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /* True if this member has static or global storage class. */
+  //def isStatic:bool { get { return (Traits.STATIC in _traits) != 0; } }
+
+  /* True if this member was declared 'final'. */
+  //def isFinal:bool { get { return (Traits.FINAL in _traits) != 0; } }
+
+  /* True if this member is abstract. */
+  //def isAbstract:bool { get { return (Traits.ABSTRACT in _traits) != 0; } }
+}

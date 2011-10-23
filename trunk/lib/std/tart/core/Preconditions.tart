@@ -1,0 +1,44 @@
+import tart.core.Memory.Address;
+
+/** Namespace of convenience macros that support design-by-contract programming.
+*/
+namespace Preconditions {
+  private {
+    // Making these functions instead of throwing the exception inline
+    // saves a lot of generated code.
+    def failArgument(msg:String) {
+    	throw ArgumentError(msg);
+	  }
+
+    def failIndex(msg:String) {
+    	throw IndexError(msg);
+	  }
+  }
+
+  /** Ensure that the given expression is true, otherwise throw an IllegalArgumentException. */
+  macro checkArgument(expr:bool) {
+    if not expr {
+      failArgument(Debug.stringify(expr));
+    }
+  }
+
+  /** Ensure that the given expression is true, otherwise throw an IllegalArgumentException. */
+  macro checkState(expr:bool) {
+    if not expr {
+      failArgument(Debug.stringify(expr));
+    }
+  }
+
+  /** Ensure that the given expression is true, otherwise throw an IndexOutOfRangeException. */
+  macro checkIndex(expr:bool) {
+    if not expr {
+      failIndex(Debug.stringify(expr));
+    }
+  }
+
+  macro checkIndex[%T](index:int, begin:Address[T], end:Address[T]) {
+    if not Memory.between(index, begin, end) {
+      failIndex(Debug.stringify(expr));
+    }
+  }
+}

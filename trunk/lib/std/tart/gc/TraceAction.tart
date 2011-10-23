@@ -1,0 +1,85 @@
+import Memory.Address;
+import Memory.addressOf;
+import Memory.objectAddress;
+import Memory.reinterpretPtr;
+import GC;
+
+/** Handles the logic of a tracing pass. */
+abstract class TraceAction {
+  /** Trace a single pointer. Override this in the subclass to implement the trace algorithm. */
+  protected abstract def tracePointer(ptrAddr:Address[readonly(Object)]);
+
+  /** Trace a list of pointers as specified by offsets from a base address. TraceAction subclasses
+      should probably re-implement this for effiency and inline the call to 'tracePointer()'.
+   */
+  protected def tracePointers(baseAddr:Address[ubyte], fieldOffsets:Address[uint], fieldCount:uint32) {
+    for i:uint32 = 0; i < fieldCount; ++i {
+      //Debug.writeIntLn("fieldCount=", int(fieldCount));
+      //Debug.writeIntLn("fieldOffset=", int(fieldOffsets[i]));
+      tracePointer(reinterpretPtr(addressOf(baseAddr[fieldOffsets[i]])));
+    }
+  }
+
+  /** Trace an object given a list of trace descriptor structures. */
+  @LinkageName("TraceAction_traceDescriptors")
+  final def traceDescriptors(
+      baseAddr:Address[ubyte], descriptorList:Address[TraceDescriptor]) {
+    //Debug.writeLn("**traceDescriptors");
+    if descriptorList is not null {
+      var methodDescriptorList:readonly(Address[TraceMethodDescriptor]) =
+          reinterpretPtr(descriptorList);
+      var i = 0;
+      repeat {
+        var fieldAddr = addressOf(baseAddr[descriptorList[i].offset]);
+        var fieldCount = descriptorList[i].fieldCount;
+        if fieldCount != 0 {
+          //Debug.writeLn("  tracePointers ", String(fieldCount));
+          tracePointers(fieldAddr, descriptorList[i].fieldOffsets, fieldCount);
+        } else {
+          //Debug.writeLn("  methodDesc");
+          methodDescriptorList[i].method(fieldAddr, self);
+        }
+        break if descriptorList[i].endList != 0;
+        ++i;
+      }
+    }
+    //Debug.writeLn("**endTraceDescriptors");
+  }
+
+  /** Trace the object 'v', which must not be null. */
+  final def traceObject(v:Object) {
+    traceDescriptors(reinterpretPtr(objectAddress(v)), v.__traceTable);
+  }
+
+  /** Tracer functions for primitive types, which do nothing. */
+  macro trace(v:bool) {}
+  macro trace(v:char) {}
+  macro trace(v:int8) {}
+  macro trace(v:int16) {}
+  macro trace(v:int32) {}
+  macro trace(v:int64) {}
+  macro trace(v:uint8) {}
+  macro trace(v:uint16) {}
+  macro trace(v:uint32) {}
+  macro trace(v:uint64) {}
+  macro trace(v:float) {}
+  macro trace(v:double) {}
+
+  /** Tracer for object fields - updates the object reference. */
+  macro trace(v:readonly(Object)) {
+    self.tracePointer(addressOf(v));
+  }
+
+  /** Tracer for object fields - updates the object reference. */
+  macro trace[%T <: Object](v:T) {
+    self.tracePointer(reinterpretPtr[T, readonly(Object)](addressOf(v)));
+  }
+
+  /** Trace an arbitrary value type. */
+  macro trace[%T](v:T) {
+    self.traceDescriptors(reinterpretPtr(addressOf(v)), GC.traceTableOf(T));
+  }
+
+  /** Don't trace addresses. */
+  macro trace[%T](v:Address[T]) {}
+}

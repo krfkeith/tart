@@ -1,0 +1,2 @@
+/** An immutable list of types that points to a statically-initialized array. */
+final class TypeList : StaticList[Type] {}

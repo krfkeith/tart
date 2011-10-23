@@ -1,0 +1,6 @@
+/** Attribute used on an exception declaration in a catch statement that instructs the
+    compiler to emit code to generate a stack trace. */
+@Attribute(Attribute.Target.VARIABLE)
+class GenerateStackTrace {
+  @Intrinsic def apply(t:tart.reflect.Method);
+}

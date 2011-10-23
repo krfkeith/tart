@@ -1,0 +1,2 @@
+/** An immutable list of methods that points to a statically-initialized array. */
+final class MethodList : StaticList[Method] {}

@@ -1,0 +1,29 @@
+import tart.core.BitTricks.log2;
+import tart.core.Memory.Address;
+import tart.core.Memory.addressOf;
+import tart.gc.AddressRange;
+
+/** Manages the allocation of low-level pages of memory. */
+final class PageAllocator {
+  static {
+    let PAGE_SIZE:int = 0x10000; /// 64K Pages.
+    let PAGE_SIZE_LOG2:int = log2(PAGE_SIZE);
+  }
+
+  private {
+    var _heapExtent:AddressRange;
+  }
+
+ 	if true {
+ 	  var index:int;
+ 	}
+
+  //if SystemConfig.LINUX in SystemConfig.os {
+  //} else if SystemConfig.WINDOWS in SystemConfig.os {
+  //} else if SystemConfig.MACOSX in SystemConfig.os {
+  //}
+
+  /** Deallocate the specified address range. The beginning and ending
+      address must be aligned on a page boundary. */
+  def heapExtent:AddressRange { get { return _heapExtent; } }
+}

@@ -1,0 +1,78 @@
+/** 'IOStream' defines a low-level, sequential data source such as a file or network socket.
+    The interface defines methods for both reading and writing, which operate on bytes
+    and/or arrays of bytes. (For operating on strings or arrays of characters, see
+    'TextReader'/'TextWriter'.)
+
+    Individual implementations of this interface may choose whether to support
+    only reading, only writing, or both reading and writing.
+*/
+interface IOStream : ScopedObject {
+  enum SeekFrom {
+    CURRENT = 0,
+    START = 1,
+    END = 2
+  }
+
+  static let EOF = int32(-1);
+
+  /** Change the current read/write position of the stream.
+    */
+  def seek(from:SeekFrom, offset:int64) -> int64;
+
+  /** True if the stream supports reading. */
+  def canRead:bool { get; }
+
+  /** True if the stream supports writing. */
+  def canWrite:bool { get; }
+
+  /** True if this stream supports seek operations. */
+  def canSeek:bool { get; }
+
+  /** Returns the current position in the stream.
+      Returns: The current stream position.
+   */
+  def position:int64 { get; }
+
+  /** Return the length of the stream, or -1 if indeterminate. */
+  def size:int64 { get; }
+
+  /** Read a single byte from the stream. This method will block until a character
+      is available, an i/o error occurrs, or the end of the stream is reached.
+      Returns: 'EOF' if the end of the stream has been reached, otherwise
+          a number in the range 0..255.
+       Throws: IOError if there was a problem reading the data.
+  */
+  def read -> int32;
+
+  /** Read up to 'count' bytes from the stream and place them into the array 'buffer',
+      starting at position 'start':
+      Parameters:
+        buffer: Where to put the characters being read.
+        start: Offset at which to start storing characters.
+        count: The maximum number of characters to read.
+      Returns: The actual number of characters read.
+      Throws:
+        IOError: If an i/o error occurs.
+   */
+  def read(buffer:ubyte[], start:int = 0, count:int = int.maxVal) -> int;
+
+  /** Read the entire contents of the file, starting from the current read position,
+      and return it as a byte array.
+      Returns: A byte array containing the contents of the file.
+      Throws:
+        IOError: If an i/o error occurs.
+    */
+  def readAll -> ubyte[];
+
+  /** Write a single byte to the stream. */
+  def write(value:ubyte);
+
+  /** Write a buffer of bytes to the stream. */
+  def write(buffer:ubyte[], start:int = 0, count:int = int.maxVal);
+
+  /** Flush any pending writes. */
+  def flush;
+
+  /** Close the stream. */
+  def close;
+}

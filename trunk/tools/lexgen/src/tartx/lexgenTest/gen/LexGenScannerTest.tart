@@ -1,0 +1,47 @@
+import tart.testing.Test;
+import tart.io.StringReader;
+import tartx.lexgen.gen.LexGenScanner;
+import tartx.lexgenTest.FakeLogWriter;
+
+class LexGenScannerTest : Test {
+  def createScanner(s:String) -> LexGenScanner {
+    return LexGenScanner("", StringReader(s), FakeLogWriter());
+  }
+  
+  def testInitialState {
+    let scanner = createScanner("");
+    assertEq(LexGenScanner.LState.START, scanner.state);
+    assertEq("", scanner.tokenText);
+  }
+
+  def testEmptyInput {
+    let scanner = createScanner("");
+    scanner.next();
+    assertEq(LexGenScanner.LToken.EOF, scanner.token);
+    assertEq("", scanner.tokenText);
+  }
+
+  def testInteger {
+    let scanner = createScanner("12");
+    scanner.next();
+    assertEq(LexGenScanner.LToken.INTEGER, scanner.token);
+    assertEq("12", scanner.tokenText);
+    scanner.next();
+    assertEq(LexGenScanner.LToken.EOF, scanner.token);
+  }
+
+  def testPunc {
+    let scanner = createScanner("|*+");
+    scanner.next();
+    assertEq(LexGenScanner.LToken.ALTERNATIVE, scanner.token);
+    assertEq("|", scanner.tokenText);
+    scanner.next();
+    assertEq(LexGenScanner.LToken.ZERO_OR_MORE, scanner.token);
+    assertEq("*", scanner.tokenText);
+    scanner.next();
+    assertEq(LexGenScanner.LToken.ONE_OR_MORE, scanner.token);
+    assertEq("+", scanner.tokenText);
+    scanner.next();
+    assertEq(LexGenScanner.LToken.EOF, scanner.token);
+  }
+}

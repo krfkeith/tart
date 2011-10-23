@@ -1,0 +1,145 @@
+/** Useful functions on iterators. */
+namespace Iterators {
+  /** Return true if both iterable sequences are the same. */
+  def equal[%T](a0:Iterable[T], a1:Iterable[T]) -> bool {
+    return equal(a0.iterate(), a1.iterate());
+  }
+
+  /** Return true if both iterable sequences are the same. */
+  def equal[%T](iter0:Iterator[T], iter1:Iterator[T]) -> bool {
+    repeat {
+      let v0 = iter0.next();
+      let v1 = iter1.next();
+      if v0 isa void and v1 isa void {
+        return true;
+      }
+      match v0 as t0:T {
+        match v1 as t1:T {
+          continue if t0 == t1;
+        }
+      }
+
+      return false;
+    }
+  }
+
+  /** Given an iterator, return an iterator that returns each item as a tuple containing
+      the original item and its ordinal index. */
+  def enumerate[%T](iter:Iterator[T]) -> Iterator[(int, T)] {
+    return Enumerator(iter);
+  }
+
+  /** Given an iterable, return an iterator that returns each item as a tuple containing
+      the original item and its ordinal index. */
+  def enumerate[%T](iter:Iterable[T]) -> Iterator[(int, T)] {
+    return Enumerator(iter.iterate());
+  }
+
+  /** Iterator class used to implement 'enumerate' */
+  private class Enumerator[%T] : Iterator[(int, T)] {
+    let iter:Iterator[T];
+    var index:int = 0;
+
+    def construct(iter:Iterator[T]) {
+      self.iter = iter;
+    }
+
+    def next -> (int, T) or void {
+      match iter.next() {
+        as value:T {
+          return index++, value;
+        } else {
+          return;
+        }
+      }
+    }
+  }
+
+	/** An iterator that returns the integers 0..N-1, for some N. */
+  class CountingIterator : Iterator[int] {
+    var index:int;
+    let end:int;
+
+    def construct(end:int) {
+      self.index = 0;
+      self.end = end;
+    }
+
+    def construct(start:int, end:int) {
+      self.index = start;
+      self.end = end;
+    }
+
+    def next -> int or void {
+      if index < end {
+        return index++;
+      } else {
+        return;
+      }
+    }
+  }
+
+  /** Apply 'function' to every item of 'iter' and return an iterator of the results. */
+  def map[%S, %T](function:fn item:S -> T, iter:Iterator[S]) -> Iterator[T] {
+    return MappingIterator(function, iter);
+  }
+
+  /** Apply 'function' to every item of 'iter' and return an iterator of the results. */
+  def map[%S, %T](function:fn item:S -> T, iter:Iterable[S]) -> Iterator[T] {
+    return MappingIterator(function, iter.iterate());
+  }
+
+  /** Iterator class used to implement 'map'. */
+  private class MappingIterator[%S, %T] : Iterator[T] {
+    private {
+      let function:fn item:S -> T;
+      let iter:Iterator[S];
+    }
+
+    def construct(function:fn item:S -> T, iter:Iterator[S]) {
+      self.function = function;
+      self.iter = iter;
+    }
+
+    def next -> T or void {
+      match iter.next() {
+        as value:T {
+          return function(value);
+        } else {
+          return;
+        }
+      }
+    }
+  }
+
+  /** Return an iterator over all elements of 'iter' for which 'test' returns true. */
+  def filter[%T](function:fn item:T -> bool, iter:Iterator[T]) -> Iterator[T] {
+    return FilteringIterator(function, iter);
+  }
+
+  /** Return an iterator over all elements of 'iter' for which 'test' returns true. */
+  def filter[%T](function:fn item:T -> bool, iter:Iterable[T]) -> Iterator[T] {
+    return FilteringIterator(function, iter.iterate());
+  }
+
+  /** Iterator class used to implement 'filter'. */
+  private class FilteringIterator[%T] : Iterator[T] {
+    private {
+      let test:fn item:S -> T;
+      let iter:Iterator[S];
+    }
+
+    def construct(test:fn item:S -> T, iter:Iterator[S]) {
+      self.test = test;
+      self.iter = iter;
+    }
+
+    def next -> T or void {
+      for value in iter {
+        if test(value) {
+          return value;
+        }
+      }
+    }
+  }
+}

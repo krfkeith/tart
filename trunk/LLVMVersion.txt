@@ -1,0 +1,3 @@
+# Known LLVM versions that work with this version of Tart:
+142082
+142116

@@ -1,0 +1,162 @@
+<html xmlns:py="http://genshi.edgewall.org/" xmlns:xi="http://www.w3.org/2001/XInclude">
+<xi:include href="common.xml"/>
+<head>
+  <title>${d.qualifiedName}</title>
+  <link rel="stylesheet" type="text/css" href="apidoc.css"/>
+  </head>
+<body>
+  ${page_header('defn')}
+  <section class="content-section">
+    <header class="content-header">
+      <span class="defn-declarator">${d.formatDeclarator()}</span>
+      ${d.scopeName()}.<span class="defn-name">${d.name}</span>${si.formatTypeParamList(
+          d.typeArgs(), 'tsig')}
+    </header>
+
+    <!--! Function to write a list of base classes -->
+    <py:def function="base_list(title, bases)">
+      <section class="base-class-section" py:if="bases">
+        <header class="base-class-section-header">${title}</header>
+        <div class="base-class">${si.formatType(bases[0], 'hlink')}
+        <py:for each="base in bases[1:]">, ${si.formatType(base, 'hlink')}</py:for>
+        </div>
+      </section>
+    </py:def>
+
+    ${base_list("Inherits from:", d.inherits())}
+    ${base_list("Implements:", d.implements())}
+    ${base_list("Inherited by:", sorted(d.inheritedBy()))}
+    ${base_list("Implemented by:", sorted(d.implementedBy()))}
+
+    <py:with vars="desc = d.description()">
+	    <section py:if="desc" class="defn-section-description">
+	      ${desc}
+	    </section>
+    </py:with>
+
+    <!--! Function to write a table of members of this definition -->
+    <py:def function="member_list(title, members)">
+      <py:if test="members">
+        <section class="member-list-section">
+          <div class="member-table-box">
+	          <table class="member-table" cellspacing="0" cellpadding="0">${gen.resetcounter()}
+	            <tr>
+	            	 <th class="member-table-col-header" colspan="2">${title}</th>
+	            </tr>
+	            <tr class="member-table-row ${gen.evenodd()}" py:for="m in members">
+                <td class="member-table-row-header member-declarator">${m.formatDeclarator()}</td>
+	              <td class="member-table-data" width="90%">
+	                <div class="member-signature">${m.formatDeclaration(True)}</div>
+	                <div class="member-summary">${m.summary()}</div>
+	              </td>
+	            </tr>
+	          </table>
+          </div>
+        </section>
+      </py:if>
+    </py:def>
+
+    <!--! Function to write details about a member -->
+    <py:def function="member_details(title, members)">
+      <py:if test="members">
+        <section class="member-details-section">
+          <header class="member-details-section-header">${title} Details</header>
+          <section class="member-section" py:for="m in members">
+            <header class="member-header">
+              <a name="${m.name}">
+	              ${m.formatDeclarator()}${m.formatDeclaration(False)}
+              </a>
+            </header>
+            <div class="member-deprecated" py:if="m.hasDeprecated()">
+              <p class="member-deprecated-prologue">This member is deprecated.</p>
+              ${m.deprecated()}
+            </div>
+            <div class="member-description" py:if="m.hasDescription()">
+              ${m.description()}
+            </div>
+            <py:if test="m.params() or m.returns() or m.throws()">
+              <table class="member-features-table" cellspacing="6px">
+                <tr py:if="m.params()">
+                  <th class="member-feature">Parameters</th>
+                  <td class="member-feature-data">
+                    <div class="parameter-name" py:for="param in m.params()">
+                      <span class="symbol">${param.attrib['name']}</span>
+                      - ${m.compressedText(param)}
+                    </div>
+                  </td>
+                </tr>
+                <tr py:if="m.returns()">
+                  <th class="member-feature">Returns</th>
+                  <td class="member-feature-data">
+                    <div class="returns-desc">
+                      ${m.compressedText(m.returns())}
+                    </div>
+                  </td>
+                </tr>
+                <tr py:if="m.throws()">
+                  <th class="member-feature">Exceptions</th>
+                  <td class="member-feature-data">
+                    <div class="exception-name" py:for="ex in m.throws()">
+                      <span class="symbol">${ex.attrib['name']}</span>
+                      - ${m.compressedText(ex)}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </py:if>
+            <!--! TODO: See Also, etc. -->
+          </section>
+        </section>
+      </py:if>
+    </py:def>
+
+    <!--! Function to write the details of an enumeration -->
+    <py:def function="enum_details(title, members)">
+      <py:if test="members">
+        <section class="member-details-section">
+          <header class="member-details-section-header">${title} Details</header>
+          <section class="member-section" py:for="m in members">
+            <header class="member-header">
+              <a name="${m.name}">
+                ${m.formatDeclarator()}${m.formatDeclaration(False)}
+              </a>
+            </header>
+            <div class="member-description" py:if="m.hasDescription()">
+              ${m.description()}
+            </div>
+            <table class="enum-constants-table" border="0" cellspacing="0" cellpadding="0">
+              <tr class="enum-constant-header">
+                <th class="enum-constant-name-header">Name</th>
+                <th class="enum-constant-value-header">Description</th>
+              </tr>
+              <tr py:for="ec in m.members('econst')">
+                <th class="enum-constant-name">${ec.name}</th>
+                <td class="enum-constant-value">${ec.description()}</td>
+              </tr>
+            </table>
+          </section>
+        </section>
+      </py:if>
+    </py:def>
+ 
+    <header class="member-table-header">Member Summary</header>
+
+    ${member_list("Enumerations", d.members('typedef', filter.type_eq('enum')))}
+    ${member_list("Inner Types", d.members('typedef', filter.type_eq('class', 'struct', 'interface')))}
+    ${member_list("Static Constants", d.members('let', filter.is_static()))}
+    ${member_list("Fields", d.members('var', filter.is_not_static()))}
+    ${member_list("Properties", d.members('property', filter.is_not_static()))}
+    ${member_list("Methods", d.members('method', filter.is_not_static()))}
+    ${member_list("Static Methods", d.members('method', filter.is_static()))}
+    ${member_list("Macros", d.members('macro', filter.is_not_static()))}
+    ${member_list("Overridden Methods", d.members('override'))}
+    ${member_list("Undefined Methods", d.members('undef'))}
+
+    ${enum_details("Enum", d.members('typedef', filter.type_eq('enum')))}
+    ${member_details("Property", d.members('property'))}
+    ${member_details("Method", d.members('method') + d.members('macro'))}
+    
+  </section>
+  ${page_footer()}
+</body>
+</html>

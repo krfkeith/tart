@@ -1,0 +1,373 @@
+import Memory.Address;
+import Memory.deref;
+import Memory.reinterpretPtr;
+import Memory.objectReference;
+import tart.testing.Test;
+import tart.gc.TraceAction;
+import tart.gc.GCRuntimeSupport;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(TraceTest);
+}
+
+/** TraceAction that counts the number of non-null pointers. */
+class TraceCounter : TraceAction {
+  private var _count:int = 0;
+  def tracePointer(ptrAddr:Address[readonly(Object)]) {
+    var obj:readonly(Object) = ptrAddr[0];
+    if obj is not null {
+      ++_count;
+	    /*if obj.type is not null {
+	      var s = obj.__typeName;
+  	    Debug.assertTrue(s.size > 0);
+	    }*/
+      //Debug.writeLn(obj.__typeName);
+    } else {
+      //Debug.writeLn("<null>");
+    }
+  }
+
+  def count:int { get { return _count; } }
+  def reset { _count = 0; }
+}
+
+class ClassWithPointers {
+  var a:String;
+  var b:String;
+  var c:String;
+}
+
+class ClassWithUnion {
+  var u:String or int8;
+
+  def construct {
+    u = 0;
+  }
+}
+
+class ClassWithTuple {
+  var t:(int,String,String);
+}
+
+struct StructWithPointer {
+  var a:String;
+
+  def construct(a:String) {
+    self.a = a;
+  }
+}
+
+class TraceTest : Test {
+  def testTraceString {
+    var counter = TraceCounter();
+    counter.traceObject("Hello");
+    assertEq(1, counter.count);
+  }
+
+  def testTraceClassWithPointers {
+    var counter = TraceCounter();
+    var obj = ClassWithPointers();
+    counter.traceObject(obj);
+    assertEq(0, counter.count);
+
+    obj.a = "Hello";
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(1, counter.count);
+
+    obj.b = ", ";
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(2, counter.count);
+
+    obj.c = "World";
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(3, counter.count);
+  }
+
+  def testTraceClassWithUnion {
+    var counter = TraceCounter();
+    var obj = ClassWithUnion();
+    counter.traceObject(obj);
+    assertEq(0, counter.count);
+
+    obj.u = "Hello";
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(1, counter.count);
+
+    obj.u = 1;
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(0, counter.count);
+  }
+
+  def testTraceClassWithTuple {
+    var counter = TraceCounter();
+    var obj = ClassWithTuple();
+    counter.traceObject(obj);
+    assertEq(0, counter.count);
+
+    obj.t = 0, "Hello", "World";
+    counter.reset();
+    counter.traceObject(obj);
+    assertEq(2, counter.count);
+  }
+
+  def testTraceStack {
+    var counter = TraceCounter();
+    GCRuntimeSupport.traceStack(counter);
+    assertTrue(counter.count > 0);
+  }
+
+  def testTraceStackNullPtr {
+    var counter = TraceCounter();
+    var s:String = Memory.nullObject();
+    GCRuntimeSupport.traceStack(counter);
+    var baseCount = counter.count;
+    s = "Hello";
+    counter.reset();
+    GCRuntimeSupport.traceStack(counter);
+    assertEq(baseCount + 1, counter.count);
+  }
+
+  def testTraceUnion {
+    var counter = TraceCounter();
+    var value:String or void;
+    counter.trace(value);
+    assertEq(0, counter.count);
+    value = "Hello";
+    counter.reset();
+    counter.trace(value);
+    assertEq(1, counter.count);
+  }
+
+  def testTraceStackUnion {
+    var counter = TraceCounter();
+    var value:String or void;
+    GCRuntimeSupport.traceStack(counter);
+    var baseCount = counter.count;
+    value = "Hello";
+    counter.reset();
+    GCRuntimeSupport.traceStack(counter);
+    assertEq(baseCount + 1, counter.count);
+  }
+
+  def testTraceIntermediateValue {
+    // Insure that intermediate values to a function are marked as roots.
+    var c1 = getCountForNoValues();
+    var c2 = getCountForNoValues();
+    var c3 = getCountForIntermediateValues(String("Hello"), String("World"));
+    assertEq(c1, c2);
+    assertTrue(c3 > c1);
+  }
+
+  def getCountForNoValues() -> int {
+    var counter = TraceCounter();
+    GCRuntimeSupport.traceStack(counter);
+    return counter.count;
+  }
+
+  def getCountForIntermediateValues(s0:String, s1:String) -> int {
+    var counter = TraceCounter();
+    GCRuntimeSupport.traceStack(counter);
+    return counter.count;
+  }
+
+  def testTraceLocalScopeVar {
+    // Make sure that a variable is not a root when out of scope.
+    var counter = TraceCounter();
+    GCRuntimeSupport.traceStack(counter);
+    var c1 = counter.count;
+    var c2:int;
+    var c3:int;
+
+    if true {
+      var s1 = String("Hello");
+      counter.reset();
+	    GCRuntimeSupport.traceStack(counter);
+    	c2 = counter.count;
+    }
+
+    counter.reset();
+    GCRuntimeSupport.traceStack(counter);
+  	c3 = counter.count;
+
+    //assertTrue(c1 < c2);
+    //assertEq(c1, c3);
+  }
+
+  def testTraceLocalScopeStructVar {
+    // Make sure that a variable is not a root when out of scope.
+    var counter = TraceCounter();
+    GCRuntimeSupport.traceStack(counter);
+    var c1 = counter.count;
+    var c2:int;
+    var c3:int;
+
+    if true {
+      var s1 = StructWithPointer("Hello");
+      counter.reset();
+	    GCRuntimeSupport.traceStack(counter);
+    	c2 = counter.count;
+    }
+
+    counter.reset();
+    GCRuntimeSupport.traceStack(counter);
+  	c3 = counter.count;
+
+    //assertTrue(c1 < c2);
+    //assertEq(c1, c3);
+  }
+
+  def testTraceArray {
+    // Make sure that a variable is not a root when out of scope.
+    var counter = TraceCounter();
+    var array1 = [1, 2, 3, 4];
+    var array2 = ["hello", "world"];
+    counter.traceObject(array1);
+    assertEq(0, counter.count);
+    counter.traceObject(array2);
+    assertEq(2, counter.count);
+  }
+
+  static var aGlobal:String;
+  static var bGlobal:StructWithPointer;
+
+  def testTraceGlobalVar {
+    var counter = TraceCounter();
+    GCRuntimeSupport.traceStaticRoots(counter);
+    counter.reset();
+    GCRuntimeSupport.traceStaticRoots(counter);
+    var c1 = counter.count;
+
+    // Add a global.
+    aGlobal = "Hello";
+    counter.reset();
+    GCRuntimeSupport.traceStaticRoots(counter);
+    var c2 = counter.count;
+
+    // Set the global to null again.
+    aGlobal = Memory.nullObject();
+    counter.reset();
+    GCRuntimeSupport.traceStaticRoots(counter);
+    var c3 = counter.count;
+    assertEq(c1 + 1, c2);
+    assertEq(c1, c3);
+  }
+
+  def testTraceGlobalStructVar {
+    bGlobal = StructWithPointer(Memory.nullObject());
+    var counter = TraceCounter();
+    GCRuntimeSupport.traceStaticRoots(counter);
+    counter.reset();
+    GCRuntimeSupport.traceStaticRoots(counter);
+    var c1 = counter.count;
+
+    // Add a global.
+    bGlobal.a = "Hello";
+    counter.reset();
+    GCRuntimeSupport.traceStaticRoots(counter);
+    var c2 = counter.count;
+
+    // Set the global to null again.
+    bGlobal.a = Memory.nullObject();
+    counter.reset();
+    GCRuntimeSupport.traceStaticRoots(counter);
+    var c3 = counter.count;
+    assertEq(c1 + 1, c2);
+    assertEq(c1, c3);
+  }
+
+  def testCollect {
+    tart.gc.GC.collect();
+  }
+
+  def testCollectTwice {
+    tart.gc.GC.collect();
+    tart.gc.GC.collect();
+  }
+
+  // Test survival of local var of reference type.
+  def testCollectRefLocalVar {
+    var sampleString = newString("ab");
+    tart.gc.GC.collect();
+    assertEq("ab", sampleString);
+  }
+
+  // Test survival of local var struct containing reference type.
+  def testCollectStructLocalVar {
+    var s1 = StructWithPointer(newString("Hello"));
+    tart.gc.GC.collect();
+    assertEq("Hello", s1.a);
+  }
+
+  def testCollectTupleLocalVar {
+    var tt = (newString("Hello"), newString("Goodbye"));
+    tart.gc.GC.collect();
+    assertEq("Hello", tt[0]);
+    assertEq("Goodbye", tt[1]);
+  }
+
+  def testCollectLargeTupleLocalVar {
+    var tt = (newString("Hello"), newString("Goodbye"), newString("Hello"), newString("Goodbye"));
+    tart.gc.GC.collect();
+    assertEq("Hello", tt[0]);
+    assertEq("Goodbye", tt[1]);
+    assertEq("Hello", tt[2]);
+    assertEq("Goodbye", tt[3]);
+  }
+
+  def testCollectOptionalLocalVar {
+    var u:String? = newString("Hello");
+    tart.gc.GC.collect();
+    assertTrue(u isa String);
+    assertEq("Hello", typecast[String](u));
+    u = null;
+    tart.gc.GC.collect();
+    assertFalse(u isa String);
+  }
+
+  def testCollectUnionLocalVar {
+    var u:String or float = newString("Hello");
+    tart.gc.GC.collect();
+    assertTrue(u isa String);
+    assertEq("Hello", typecast[String](u));
+    u = 1.0;
+    tart.gc.GC.collect();
+    assertFalse(u isa String);
+  }
+
+  // Test survival of function param var of reference type.
+  def testCollectParam {
+    collectAndCompare(newString("ab"));
+  }
+
+  def collectAndCompare(s:String) {
+    tart.gc.GC.collect();
+    assertEq("ab", s);
+  }
+
+	// Create a new string instance
+  def newString(s:String) -> String {
+    return String.format("{0}", s);
+  }
+
+  // Tests to write:
+  // Relocation of fields inside parameters that are structs.
+  // Relocation of fields inside parameters that are small tuples.
+  // Relocation of fields inside parameters that are large tuples.
+  // Relocation of fields inside parameters that are unions.
+  // Relocation of the self param (classes)
+  // Relocation of fields inside the self param (structs)
+  // Relocation of globals
+  // Relocation of fields inside global structs
+  // Relocation of closures.
+  // Relocation of statics.
+  // Relocation of instance fields.
+  // Relocation of stuff inside instance fields.
+
+  // Do a collection inside each statement type.
+}

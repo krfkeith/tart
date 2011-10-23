@@ -1,0 +1,112 @@
+import tart.testing.Test;
+import tartx.lexgen.gen.CharacterClass;
+import tartx.lexgen.gen.CharacterRange;
+
+class CharacterClassTest : Test {
+  def testEmptyRange {
+    let cc = CharacterClass();
+    assertEq(0, cc.count);
+    assertTrue(cc.empty);
+    assertFalse('a' in cc);
+  }
+
+  def testAddChar {
+    let cc = CharacterClass();
+    cc.add('b');
+    assertEq(1, cc.count);
+    assertFalse('a' in cc);
+    assertTrue('b' in cc);
+    assertFalse('c' in cc);
+    assertEq("b", cc.toString());
+
+		// Add the same char again
+    cc.add('b');
+    assertEq(1, cc.count);
+    assertEq("b", cc.toString());
+
+		// Add a char at a different position
+    cc.add('f');
+    assertEq(2, cc.count);
+    assertEq("bf", cc.toString());
+
+		// Expand lower range
+    cc.add('c');
+    assertEq(2, cc.count);
+    assertEq("b-cf", cc.toString());
+
+		// Expand upper range
+    cc.add('e');
+    assertEq(2, cc.count);
+    assertEq("b-ce-f", cc.toString());
+
+		// Merge the ranges
+    cc.add('d');
+    assertEq(1, cc.count);
+    assertEq("b-f", cc.toString());
+  }
+
+  def testAddRange {
+    let cc = CharacterClass();
+    cc.add('a', 'f');
+    assertEq(1, cc.count);
+    assertEq("a-e", cc.toString());
+
+    cc.add('e', 'g');
+    assertEq(1, cc.count);
+    assertEq("a-f", cc.toString());
+
+    cc.add('m', 'n');
+    assertEq(2, cc.count);
+    assertEq("a-fm", cc.toString());
+  }
+
+  def testToString {
+    let cc = CharacterClass('a', 'f');
+    assertEq("a-e", cc.toString());
+    cc.add('m', 'n');
+    assertEq("a-em", cc.toString());
+    cc.add('\"');
+    assertEq("\\\"a-em", cc.toString());
+  }
+
+  def testAddCharacterClass {
+    let cc1 = CharacterClass('a', 'f');
+    let cc2 = CharacterClass('a', 'f');
+    cc1.add(cc2);
+    assertEq(1, cc1.count);
+    assertEq("a-e", cc1.toString());
+
+    let cc3 = CharacterClass('a', 'c');
+    cc1.add(cc3);
+    assertEq(1, cc1.count);
+    assertEq("a-e", cc1.toString());
+
+    let cc4 = CharacterClass('a', 'g');
+    cc1.add(cc4);
+    assertEq(1, cc1.count);
+    assertEq("a-f", cc1.toString());
+
+    let cc5 = CharacterClass('y', 'z');
+    cc1.add(cc5);
+    assertEq(2, cc1.count);
+    assertEq("a-fy", cc1.toString());
+
+    let cc6 = CharacterClass('m', 'n');
+    cc1.add(cc6);
+    assertEq(3, cc1.count);
+    assertEq("a-fmy", cc1.toString());
+
+    let cc7 = CharacterClass('n', 'y');
+    cc1.add(cc7);
+    assertEq(2, cc1.count);
+    assertEq("a-fm-y", cc1.toString());
+  }
+
+  def testRemoveCharacterClass {
+    let cc1 = CharacterClass('a', 'z');
+    let cc2 = CharacterClass(CharacterRange('d', 'e'), CharacterRange('m', 'n'));
+    cc1.remove(cc2);
+    assertEq(3, cc1.count);
+    assertEq("a-ce-ln-y", cc1.toString());
+  }
+}

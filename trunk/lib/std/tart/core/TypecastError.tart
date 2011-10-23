@@ -1,0 +1,44 @@
+import tart.reflect.Type;
+
+/** Exception thrown when an attempt to cast an object reference to a type that is not
+    a subclass of the instance. */
+public final class TypecastError : Exception {
+  private var from:readonly(Object);
+  private var to:Type;
+
+  /** Default constructor. */
+  def construct() {}
+
+  /** Constructor accepting an explicit message. */
+  def construct(msg:String) {
+    super(msg);
+  }
+
+  /** Constructor accepting the value being case, and the TIB of the destination type. */
+  def construct(expr:Object, to:Memory.Address[TypeInfoBlock]) {
+    self.from = expr;
+    self.to = to.type;
+    //self(expr, to.type);
+  }
+
+  /** Constructor accepting the value being case, and the destination type. */
+  def construct(expr:Object, to:Type) {
+    self.from = expr;
+    self.to = to;
+  }
+
+  /** Constructor accepting the value being case, and the destination type. */
+  def construct[%T](expr:Object, to:TypeLiteral[T]) {
+    self(expr, Type.of(to));
+  }
+
+  override toString() -> String {
+    if from is not null and to is not null {
+      return String.format("{0}: converting {1} to {2}", __typeName, from.__typeName, to);
+    } else if to is not null {
+      return String.format("{0}: converting <null> to {1}", __typeName, to);
+    } else {
+      return super();
+    }
+  }
+}

@@ -1,0 +1,9 @@
+import tart.annex.Intrinsic;
+
+/** Attribute that indicates that the compiler should generate reflection information for
+    the target type or member. */
+@Attribute(Attribute.Target.ANY, Attribute.Retention.NONE,
+    Attribute.Propagation.SUBTYPES | Attribute.Propagation.MEMBERS)
+class Reflect {
+  @Intrinsic def apply(t:tart.reflect.Type);
+}

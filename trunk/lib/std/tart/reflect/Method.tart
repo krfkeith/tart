@@ -1,0 +1,73 @@
+import tart.collections.List;
+import tart.core.Memory.Address;
+
+/** Description of a callable method. */
+final class Method : Member {
+  private {
+	  let _typeParams:List[Type];
+	  let _params:List[Parameter];
+    let _methodPointer:Address[void];
+    let _isConstructor:bool;
+
+    undef construct();
+  }
+
+  /** Array of type parameters. */
+  def typeParams:List[Type] { get { return _typeParams; } }
+
+  /** The type of the method. */
+  def functionType:FunctionType { get { return Memory.bitCast(memberType); } }
+
+  /** The return type of the method. */
+  def returnType:Type { get { return functionType.returnType; } }
+
+	/** Number of parameters for this method. */
+  def numParams:int { get { return functionType.numParams; } }
+
+  /** The array of function parameter types. */
+  def paramTypes:List[Type] { get { return functionType.paramTypes; } }
+
+  /** The parameters of this method. */
+  def params:List[Parameter] { get { return _params; } }
+
+	/** True if this method is a constructor. */
+  def isConstructor:bool { get { return _isConstructor; } }
+
+  /** Call this method with the given arguments.
+      Parameters:
+        obj - The 'self' argument, or null if this is a static method.
+        args - The list of arguments to the method.
+   */
+  def call(obj:Object?, args:Object[]) -> Object {
+    // TODO: Need a static function for attempt to call an abstract method.
+    return functionType.invoke(_methodPointer, obj, args);
+  }
+
+  /** Call this method with the given arguments.
+      Parameters:
+        obj - The 'self' argument, or null if this is a static method.
+        args - The list of arguments to the method.
+   */
+  def call(obj:Object?, args:Object...) -> Object {
+    return functionType.invoke(_methodPointer, obj, args);
+  }
+
+  override toString -> String {
+    let sb = StringBuilder(name);
+    if not functionType.paramTypes.isEmpty or functionType.returnType is PrimitiveType.VOID {
+      let typeStrings = tart.collections.ArrayList[String]();
+      for type in functionType.paramTypes {
+        typeStrings.append(type.toString());
+      }
+
+      sb.append(String.format("({0})", ",".join(typeStrings)));
+    }
+
+    if functionType.returnType is not PrimitiveType.VOID {
+      sb.append(" -> ");
+	    sb.append(functionType.returnType.toString());
+    }
+
+    return sb.toString();
+  }
+}

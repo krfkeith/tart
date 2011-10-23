@@ -1,0 +1,11 @@
+import tart.collections.Iterators.CountingIterator;
+
+/** Returns an iterator that counts from 0..(end-1). */
+def range(end:int) -> CountingIterator {
+  return CountingIterator(end);
+}
+
+/** Returns an iterator that counts from start..(end-1). */
+def range(start:int, end:int) -> CountingIterator {
+  return CountingIterator(start, end);
+}

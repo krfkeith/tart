@@ -1,0 +1,41 @@
+/** Base class of exceptions.
+ */
+public class Exception : Throwable {
+  private {
+    var _message:String;
+    var _cause:Exception?;
+  }
+
+  // TODO: Add location
+  // TODO: Implement stack trace
+
+  /** Default constructor. */
+  def construct() {
+    self._message = "";
+    self._cause = null;
+  }
+
+  /** Message constructor. */
+  def construct(message:String) {
+    self._message = message;
+    self._cause = null;
+  }
+
+  /** The error message for this exception. */
+  final def message:String {
+    get { return self._message; }
+  }
+
+  /** The lower-level exception that caused this one, if any. */
+  final def cause:Exception? {
+    get { return self._cause; }
+  }
+
+  override toString() -> String {
+    if _message.size > 0 {
+      return String.concat(__typeName, ": ", _message);
+    } else {
+      return __typeName;
+    }
+  }
+}

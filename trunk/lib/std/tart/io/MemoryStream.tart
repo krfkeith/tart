@@ -1,0 +1,110 @@
+import tart.collections.ArrayList;
+
+/** An IOStream implementation that writes to and reads from memory. An ArrayList
+    is used to hold the contents of the stream.
+*/
+final class MemoryStream : IOStream {
+  private {
+    var streamData:ArrayList[ubyte];
+    var pos:int;
+  }
+
+  /** Constructs a new stream with a new ArrayList. */
+  def construct() {
+    streamData = ArrayList[ubyte]();
+    pos = 0;
+  }
+
+  /** Constructs a new stream using an existing ArrayList. Any pre-existing
+      data in the ArrayList is preserved.
+   */
+  def construct(data:ArrayList[ubyte]) {
+    self.streamData = data;
+    pos = data.size;
+  }
+
+  /** Returns a reference to the array list containing the stream data. */
+  def data:ArrayList[ubyte] { get { return streamData; } }
+
+  def seek(from:SeekFrom, offset:int64) -> int64 {
+    switch from {
+      case CURRENT { offset += pos; }
+      case START {}
+      case END { offset += streamData.size; }
+    }
+
+    pos = int(Math.clamp(offset, 0, streamData.size));
+    return pos;
+  }
+
+  def canRead:bool { get { return true; } }
+  def canWrite:bool { get { return true; } }
+  def canSeek:bool { get { return true; } }
+
+  def position:int64 { get { return pos; } }
+
+  def size:int64 { get { return streamData.size; } }
+
+  def read -> int32 {
+    if pos < streamData.size {
+      return streamData[pos++];
+    }
+    return EOF;
+  }
+
+  def read(buffer:ubyte[], start:int = 0, count:int = int.maxVal) -> int {
+    Preconditions.checkIndex(start >= 0);
+    Preconditions.checkIndex(count >= 0);
+    Preconditions.checkState(pos <= streamData.size);
+    start = Math.min(start, buffer.size);
+    count = Math.min(count, buffer.size - start, streamData.size - pos);
+    if count > 0 {
+      buffer.copyFrom(start, streamData, pos, count);
+      pos += count;
+    }
+    return count;
+  }
+
+  def readAll -> ubyte[] {
+    let count = streamData.size - pos;
+    let result = ubyte[](count);
+    result.copyFrom(0, streamData, pos, count);
+    pos += count;
+    return result;
+  }
+
+  def write(value:ubyte) {
+    if pos < streamData.size {
+      streamData[pos++] = value;
+    } else {
+      streamData.append(value);
+      pos = streamData.size;
+    }
+  }
+
+  def write(buffer:ubyte[], start:int = 0, count:int = int.maxVal) {
+    Preconditions.checkIndex(start >= 0);
+    Preconditions.checkIndex(count >= 0);
+    count = Math.min(count, buffer.size);
+    var overlap = streamData.size - pos;
+    if overlap > 0 {
+      overlap = Math.min(overlap, count);
+      if start == 0 and count == buffer.size {
+        streamData.replace(pos, count, buffer);
+      } else {
+        streamData.replace(pos, count, buffer.slice(start, start + count));
+      }
+    } else {
+      if start == 0 and count == buffer.size {
+        streamData.appendAll(buffer);
+      } else {
+        streamData.appendAll(buffer.slice(start, start + count));
+      }
+    }
+    pos += count;
+  }
+
+  def flush {}
+  def close {}
+  def exit {}
+}
