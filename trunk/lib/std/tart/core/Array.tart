@@ -49,7 +49,7 @@ import tart.gc.TraceAction;
   }
 
   /** Static factory function which builds a new 'Array' from a 'Collection'. */
-  static def copyOf(collection:Collection[ElementType]) -> Array {
+  static def copyOf(collection:readonly(Collection[ElementType])) -> Array {
     let size = collection.size;
     if size == 0 {
       return []; // Compiler optimizes empty arrays as static singletons
@@ -113,7 +113,7 @@ import tart.gc.TraceAction;
   }
 
   /** Copy the elements of this collection to a destination address. */
-  def copyElements(dstAddr:Address[ElementType], srcOffset:int, count:int) {
+  readonly def copyElements(dstAddr:Address[ElementType], srcOffset:int, count:int) {
     Preconditions.checkIndex(count >= 0);
     Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= _size);
     count = min(count, _size - srcOffset);
@@ -150,14 +150,14 @@ import tart.gc.TraceAction;
   }
 
   /** Iterate over the elements of the array. */
-  def iterate -> Iterator[ElementType] {
+  readonly def iterate -> Iterator[ElementType] {
     return ArrayIterator(self);
   }
 
   /** Copy 'count' elements, starting from offset 'srcOffset' in array 'src', to offset
       'dstOffset' in array 'dst'.
    */
-  static def copyElements(dst:Array, dstOffset:int, src:Array, srcOffset:int, count:int) {
+  static def copyElements(dst:Array, dstOffset:int, src:readonly(Array), srcOffset:int, count:int) {
     Preconditions.checkIndex(
     		count >= 0 and
     		dstOffset >= 0 and dstOffset <= dst._size and
@@ -259,7 +259,7 @@ import tart.gc.TraceAction;
     }
 
     /** Copy the elements of this array slice to a destination address. */
-    def copyElements(dstAddr:Address[ElementType], srcOffset:int, count:int) {
+    readonly def copyElements(dstAddr:Address[ElementType], srcOffset:int, count:int) {
       Preconditions.checkIndex(count >= 0);
       Preconditions.checkIndex(srcOffset >= 0 and srcOffset <= _size);
       count = min(count, _size - srcOffset);
@@ -301,7 +301,7 @@ import tart.gc.TraceAction;
     /** Copy 'count' elements, starting from offset 'srcOffset' in array 'src', to offset
         'dstOffset' in array 'dst'.
      */
-    static def copyElements(dst:Array, dstOffset:int, src:Array, srcOffset:int, count:int) {
+    static def copyElements(dst:Array, dstOffset:int, src:readonly(Array), srcOffset:int, count:int) {
       Preconditions.checkIndex(
           count >= 0 and
           dstOffset >= 0 and dstOffset <= dst._size and

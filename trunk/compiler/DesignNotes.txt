@@ -3,9 +3,13 @@
 Next up:
 
 * Work on readonly / mutable / immutable type constructors and value casts.
+  * Overrides don't take readonly into account.
 * Fix DWARF.
   * Exception when trying to compile.
   * local vars - why don't they work.
+* GC: Bug in collection of global vars.
+  * Optimization?
+  * Fix bug in nametable static roots.
 * Change templates to use parametric polymorphism:
   * Need some way to test for type T if there's some method X(T) or X(T, T).
   * Then make templates clone the CFG instead of the AST.
@@ -13,22 +17,16 @@ Next up:
 * How to restrict a template to just an enum or an integer type?
   * Ans: abstract types Enum and Integer, similar to protocols.
   * Can non-composite types derive from a protocol? We'd have to make some changes...
-* GC: Bug in collection of global vars.
-  * Optimization?
-  * Fix bug in nametable static roots.
 * String should take from Collection, not Copyable.
 * Type inference
   * Finish refactoring ambiguous types - remove TypeSetConstraint.
   * Pre-cull candidates that can never be chosen
-  * Finish moving classes to Sema/Infer
+  * Finish moving classes to Sema/Infer (Mostly done)
   * can use additional refactoring / simplification I think.
   * Type constructors as arguments:
        def foo[%Mod[?]]() -> Mod[String];
        let s = foo[X => List[X]]();
-  * Template variables: Remove condition list, and instead have a set of upper and lower bounds.
-* Link-time generation:
-  * Generate reflection data at link time?
-  * Generate idispatch functions at link time?
+* Link-time generation
 
 * Deduce argument types and return types for anon funcs.
 * Implement Attribute.Retention.RUNTIME_ITERABLE.
@@ -121,7 +119,7 @@ Implementation TODOS:
 * Class "extension"
 * Statements:
   * with (what interface for using?)
-  * yield
+  * yield (I don't think this should be a statement - it should be a library function.)
   * fork/threading primitives
 * Command-line parsing lib.
 * Ranges
@@ -132,8 +130,6 @@ Implementation TODOS:
   * Indefinite ranges (n ..) and (.. n) ?
 * Generic functions.
   * 'virtual' arguments for multi-methods. (Or 'dispatched')
-* Complex typecast operations should probably go into their own separate functions
-  instead of being inline.
 * Map literals -> Map.of((a, b)) or Map.of(a => b, c => d) where '=>' means 2-tuple.
 * Matrix literals + Matrix class.
 * Anonymous inner classes.
@@ -164,14 +160,6 @@ Implementation TODOS:
     Still need to know how to mark objects in different spaces.
   * Some way to import C++ data structures into Tart - for things like pthreads.
   
-Doc errors:
-
-* Fix operator overload syntax (infixX notation used now.)
-* Fix description of imports to match current functionality.
-* Array literals
-* Better explanation of unpacking
-* First line of Macro section is misleading.
-
 Error TODOS: (things that should be an error)
 
 * Module with multiple public names at top level.
@@ -458,5 +446,19 @@ import tart.ffi.CMallocString;
 // Indicates that the function returns a string via a buffer which is passed
 // in as an argument. This takes care of any pinning that needs to be done.
 @Extern("getcwd") def getcwd(@CArray buffer:ubyte[]);
+
+// ------------------------------------------------------------------------
+
+Option parsing:
+
+class Foo {
+  @CommandLineOption(
+      name="input", abbrev="i", valueName="FILE",
+      help="Source file",
+      group="")
+  static var inputFile = Option[String]("");
+  
+  commandLineOption "input"
+}
 
 // ------------------------------------------------------------------------

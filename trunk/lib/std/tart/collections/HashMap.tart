@@ -177,7 +177,7 @@ final class HashMap[%KeyType, %ValueType, %HashFn = Hashing.HashFn[KeyType]] : M
     _size = 0;
   }
 
-  def iterate -> Iterator[(KeyType, ValueType)] {
+  readonly def iterate -> Iterator[(KeyType, ValueType)] {
     return EntryIterator(self);
   }
 

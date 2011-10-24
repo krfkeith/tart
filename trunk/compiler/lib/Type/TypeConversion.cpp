@@ -56,36 +56,102 @@ void assignSrcToDst(QualifiedType srcType, Expr * srcExpr, QualifiedType dstType
   }
 }
 
-#if 0
-void assignSrcToDst(
-    const Type * srcType, unsigned srcQualifiers, Expr * srcExpr,
-    const Type * dstType, unsigned dstQualifiers, Expr **dstExpr) {
-  if (dstExpr) {
-    if (srcQualifiers != dstQualifiers) {
-      *dstExpr = CastExpr::qualCast(srcExpr, QualifiedType(dstType, dstQualifiers));
-    } else {
-      *dstExpr = srcExpr;
+Expr * coerceToBool(Expr * srcExpr) {
+  // Compare reference type with null.
+  SourceLocation loc = srcExpr->location();
+  if (srcExpr->type()->isReferenceType()) {
+    return new CompareExpr(loc,
+        llvm::CmpInst::ICMP_NE, srcExpr,
+        ConstantNull::get(srcExpr->location(), srcExpr->type()));
+  } else if (srcExpr->type().isa<AddressType>()) {
+    return new CompareExpr(loc,
+        llvm::CmpInst::ICMP_NE, srcExpr,
+        ConstantNull::get(loc, srcExpr->type()));
+  } else if (const UnionType * ut = dyn_cast<UnionType>(srcExpr->type().unqualified())) {
+    if (ut->isSingleNullableType()) {
+      return new CompareExpr(loc,
+          llvm::CmpInst::ICMP_NE, srcExpr,
+          ConstantNull::get(loc, srcExpr->type()));
     }
+  }
+
+  return NULL;
+}
+
+ConversionRank convertConstantToBool(const Type * srcType, Expr * srcExpr,
+    const PrimitiveType * dstType, Expr ** dstExpr, int options) {
+
+  if (ConstantInteger * cint = dyn_cast<ConstantInteger>(srcExpr)) {
+    if (const EnumType * etype = dyn_cast<EnumType>(srcType)) {
+      srcType = etype->baseType();
+    }
+
+    DASSERT(srcType->isIntType());
+
+    if (dstExpr) {
+      llvm::Constant * cival = cint->value();
+      llvm::Constant * czero = llvm::Constant::getNullValue(cival->getType());
+      *dstExpr = new ConstantInteger(
+          cint->location(),
+          &BoolType::instance,
+          cast<llvm::ConstantInt>(
+              llvm::ConstantExpr::getCompare(llvm::ICmpInst::ICMP_NE, cival, czero)));
+    }
+
+    return IntegerToBool;
+  } else {
+    return Incompatible;
   }
 }
 
-void assignSrcToDst(Expr * srcExpr, const Type * dstType, unsigned dstQualifiers, Expr **dstExpr) {
-  if (dstExpr) {
-    QualifiedType srcType = srcExpr->type();
-    if (srcType.qualifiers() != dstType.qualifiers()) {
-      *dstExpr = CastExpr::qualCast(srcExpr, QualifiedType(dstType, dstQualifiers));
-    } else {
-      *dstExpr = srcExpr;
+ConversionRank convertToBool(const Type * srcType, Expr * srcExpr,
+    const PrimitiveType * dstType, Expr ** dstExpr, int options) {
+  if (srcExpr != NULL && isa<ConstantExpr>(srcExpr)) {
+    return convertConstantToBool(srcType, srcExpr, dstType, dstExpr, options);
+  }
+
+  bool isChecked = !!(options & Conversion::Checked);
+  if (const PrimitiveType * fromPType = dyn_cast<PrimitiveType>(srcType)) {
+    TypeId srcId = fromPType->typeId();
+    if (isIntegerTypeId(srcId)) {
+      if (srcExpr && dstExpr) {
+        // Compare with 0.
+        *dstExpr = new CompareExpr(SourceLocation(), llvm::CmpInst::ICMP_NE, srcExpr,
+            ConstantInteger::get(SourceLocation(), srcExpr->type().unqualified(), 0));
+      }
+      return IntegerToBool;
     }
   }
+
+  if (!!(options & Conversion::CoerceToBool) & dstExpr != NULL) {
+    Expr * coerced = coerceToBool(srcExpr);
+    if (coerced != NULL) {
+      *dstExpr = coerced;
+      return NonPreferred;
+    }
+  }
+
+  if (srcType->isReferenceType()) {
+    // TODO: This is not a proper check for unboxing.
+    if (isChecked) {
+      if (dstExpr != NULL) {
+        *dstExpr = new CastExpr(Expr::UnboxCast, srcExpr->location(), dstType, srcExpr);
+      }
+      return NonPreferred;
+    }
+  }
+  return Incompatible;
 }
-#endif
 
 ConversionRank convertToPrimitive(
     const Type * srcType, Expr * srcExpr,
     const PrimitiveType * dstType, Expr ** dstExpr, int options) {
   if (dstType->isUnsizedIntType()) {
     return Incompatible;
+  }
+
+  if (dstType->isBooleanType()) {
+    return convertToBool(srcType, srcExpr, dstType, dstExpr, options);
   }
 
   // For now call the old type conversion functions.

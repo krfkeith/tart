@@ -40,7 +40,7 @@ public final immutable class String : Iterable[char] {
       Parameters:
         bytes: The byte array.
    */
-  static def create(bytes:ubyte[]) -> String {
+  static def create(bytes:readonly(ubyte[])) -> String {
     let self = alloc(bytes.size);
     bytes.copyElements(addressOf(self._data[0]), 0, bytes.size);
     return self;
@@ -51,7 +51,7 @@ public final immutable class String : Iterable[char] {
       Parameters:
         from: The container.
    */
-  static def fromBytes(from:Copyable[ubyte]) -> String {
+  static def fromBytes(from:readonly(Copyable[ubyte])) -> String {
     let self = alloc(from.size);
     from.copyElements(addressOf(self._data[0]), 0, from.size);
     return self;
@@ -68,7 +68,7 @@ public final immutable class String : Iterable[char] {
         IndexError - if 'start' is less than zero.
         ArgumentError - if 'count' is less than zero.
    */
-  static def fromBytes(from:Copyable[ubyte], start:int, count:int) -> String {
+  static def fromBytes(from:readonly(Copyable[ubyte]), start:int, count:int) -> String {
     Preconditions.checkIndex(start >= 0);
     Preconditions.checkArgument(count >= 0);
     start = Math.min(start, from.size);
@@ -113,7 +113,7 @@ public final immutable class String : Iterable[char] {
         ArgumentError - if 'count' is less than zero.
         tart.text.encodings.InvalidCharacterError if an unencodable character was encountered.
    */
-  static def create(chars:char[], start:int = 0, count:int = int.maxVal) -> String {
+  static def create(chars:readonly(char[]), start:int = 0, count:int = int.maxVal) -> String {
     let result = Codecs.UTF_8.encodedLength(chars, start, count);
     if result.state != Codec.CodecState.OK {
       throw InvalidCharacterError();
@@ -128,20 +128,20 @@ public final immutable class String : Iterable[char] {
 
   /** Construct a string from a native byte array. */
   @LinkageName("String_create")
-  static def create(bytes:Address[ubyte], length:int) -> String {
+  static def create(bytes:readonly(Address[ubyte]), length:int) -> String {
     let self = alloc(length);
     Memory.arrayCopy(addressOf(self._data[0]), addressOf(bytes[0]), length);
     return self;
   }
 
   /** Explicitly convert values to String types. */
-  static def create[%T] (value:T) -> String { return "<??>"; }
+  static def create[%T] (value:readonly(T)) -> String { return "<??>"; }
 
   /** Create a string from a type that has a 'toString' method. */
-  static def create[%T <: HasToString] (value:T) -> String { return value.toString(); }
+  static def create[%T <: HasToString] (value:readonly(T)) -> String { return value.toString(); }
 
   /** Create a string from a subclass of 'Object' using the object's 'toString' method. */
-  static def create(value:Object) -> String { return value.toString(); }
+  static def create(value:readonly(Object)) -> String { return value.toString(); }
 
   /** 'true' if this is an empty string. */
   def isEmpty:bool {
@@ -271,7 +271,7 @@ public final immutable class String : Iterable[char] {
   }
 
   /** Converting a 'String' to a 'String' simply returns 'self'. */
-  override toString -> String {
+  readonly override toString -> String {
     return self;
   }
 
@@ -309,7 +309,7 @@ public final immutable class String : Iterable[char] {
         args - the values to be substituted into the format string.
       Returns: the result of the format operation.
    */
-  def format(args:Object[]) -> String {
+  def format(args:readonly(Object[])) -> String {
     return StringFormatter(self, args).toString();
   }
 
@@ -472,13 +472,13 @@ public final immutable class String : Iterable[char] {
 
   /** A protocol for types that have a 'toString' method. */
   protocol HasToString {
-    def toString() -> String;
+    readonly def toString() -> String;
   }
 
   /* Implicitly convert values to String types. */
   //static def coerce[%T] (value:T) -> String { return "<??>"; }
-  static def coerce[%T <: HasToString] (value:T) -> String { return value.toString(); }
-  static def coerce(value:Object) -> String { return value.toString(); }
+  static def coerce[%T <: HasToString] (value:readonly(T)) -> String { return value.toString(); }
+  static def coerce(value:readonly(Object)) -> String { return value.toString(); }
 
   /** Return an immutable buffer representation of this string's data. */
   def asBuffer() -> Memory.Buffer[ubyte] {
@@ -491,7 +491,7 @@ public final immutable class String : Iterable[char] {
   }
 
   /** Iterate over the characters in this string. */
-  def iterate -> Iterator[char] {
+  readonly def iterate -> Iterator[char] {
     return StringIterator(self);
   }
 

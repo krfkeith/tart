@@ -206,7 +206,7 @@ import tart.core.Memory.Address;
     return result;
   }
 
-  def iterate -> Iterator[ElementType] {
+  readonly def iterate -> Iterator[ElementType] {
     return ArrayListIterator(self);
   }
 

@@ -194,7 +194,7 @@ final class Deque[%ElementType, %BlockSize:int = 256]
     }
   }
 
-  def iterate -> Iterator[ElementType] {
+  readonly def iterate -> Iterator[ElementType] {
     return DequeIterator(self);
   }
 
