@@ -1,0 +1,13 @@
+import tart.opts.OptionMgr;
+import tart.testing.Test;
+
+@EntryPoint
+def main(args:String[]) -> int32 {
+  return Test.run(OptionMgrTest);
+}
+
+class OptionMgrTest : Test {
+  def testGetSingleton() {
+    let mgr = OptionMgr.get();
+  }
+}

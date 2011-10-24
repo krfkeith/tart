@@ -208,6 +208,10 @@ Defn * ScopeBuilder::createTemplateDefn(Scope * scope, Module * m, const ASTTemp
     if (CompositeType * ctype = dyn_cast<CompositeType>(tdef->mutableTypePtr())) {
       ctype->auxScopes().insert(&tm->paramScope());
     }
+//  } else if (FunctionDefn * fn = dyn_cast<FunctionDefn>(body)){
+//    Template * tm = Template::get(body, NULL);
+//    tm->setAST(tp);
+//    fn->parameterScope().auxScopes().insert(&tm->paramScope());
   } else {
     Template * tm = Template::get(body, parentScope);
     tm->setAST(tp);

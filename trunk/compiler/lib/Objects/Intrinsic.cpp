@@ -105,7 +105,7 @@ Expr * TypecastIntrinsic::eval(const SourceLocation & loc, Module * m, const Fun
     }
   }
 
-  return toType->explicitCast(loc, fromExpr, Conversion::Coerce | Conversion::Checked);
+  return toType->explicitCast(loc, fromExpr, Conversion::Checked);
 }
 
 // -------------------------------------------------------------------

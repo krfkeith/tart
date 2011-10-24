@@ -8,7 +8,7 @@ import tart.gc.TraceAction;
     InheritDoc: members
     TODO: Make immutable.
  */
-class StaticList[%T] : List[T] {
+immutable class StaticList[%T] : List[T] {
   private {
     var _size:int;
     var _data:FlexibleArray[T];
@@ -56,7 +56,7 @@ class StaticList[%T] : List[T] {
     return false;
   }
 
-  final def iterate -> Iterator[T] {
+  final readonly def iterate -> Iterator[T] {
     return IteratorImpl(self);
   }
 

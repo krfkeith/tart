@@ -51,7 +51,7 @@ public:
   Expr * eval(const SourceLocation & loc, Module * callingModules, Expr * self,
       const ExprList & args) const {
     DASSERT(args.size() == 1);
-    return type_->explicitCast(loc, args[0], Conversion::Coerce);
+    return type_->explicitCast(loc, args[0]);
   }
 
 private:
@@ -67,6 +67,7 @@ public:
     addTrait(Defn::Synthetic);
     addTrait(Defn::Singular);
     setFlag(Final);
+    setFlag(ReadOnlySelf);
     setStorageClass(Storage_Instance);
     setParentDefn(type->typeDefn());
     createQualifiedName(type->typeDefn());
@@ -161,6 +162,7 @@ public:
     addTrait(Defn::Synthetic);
     addTrait(Defn::Singular);
     setFlag(Final);
+    setFlag(ReadOnlySelf);
     setStorageClass(Storage_Instance);
     setParentDefn(type->typeDefn());
     createQualifiedName(type->typeDefn());

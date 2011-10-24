@@ -974,22 +974,8 @@ Expr * ExprAnalyzer::reduceTestExpr(const ASTNode * test, LocalScope *& implicit
     return testExpr;
   }
 
-  // Compare reference type with null.
-  if (testExpr->type()->isReferenceType()) {
-    return new CompareExpr(test->location(), llvm::CmpInst::ICMP_NE, testExpr, ConstantNull::get(
-        test->location(), testExpr->type()));
-  } else if (testExpr->type().isa<AddressType>()) {
-    return new CompareExpr(test->location(), llvm::CmpInst::ICMP_NE, testExpr, ConstantNull::get(
-        test->location(), testExpr->type()));
-  } else if (const UnionType * ut = dyn_cast<UnionType>(testExpr->type().unqualified())) {
-    if (ut->isSingleNullableType()) {
-      return new CompareExpr(test->location(), llvm::CmpInst::ICMP_NE, testExpr, ConstantNull::get(
-          test->location(), testExpr->type()));
-    }
-  }
-
   // Cast to boolean.
-  return BoolType::instance.implicitCast(test->location(), testExpr);
+  return BoolType::instance.implicitCast(test->location(), testExpr, Conversion::CoerceToBool);
 }
 
 Defn * ExprAnalyzer::astToDefn(const ASTDecl * ast) {
