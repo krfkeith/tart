@@ -55,7 +55,7 @@ final class ImmutableList[%ElementType] : List[ElementType], Copyable[ElementTyp
     return false;
   }
 
-  def iterate -> Iterator[ElementType] {
+  readonly def iterate -> Iterator[ElementType] {
     return self.data.iterate();
   }
 

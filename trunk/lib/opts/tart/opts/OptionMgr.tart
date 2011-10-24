@@ -1,0 +1,33 @@
+import tart.collections.HashMap;
+
+/** Singleton class to manage command-line options. */
+class OptionMgr {
+  private {
+    let nameMap = HashMap[String, OptionInfo]();
+    let abbrevMap = HashMap[String, OptionInfo]();
+
+    static var instance:OptionMgr?;
+  }
+
+  static def get -> OptionMgr {
+    if not instance {
+      instance = OptionMgr();
+    }
+    return typecast[OptionMgr](instance);
+  }
+
+  def add(opt:OptionInfo) {
+    if not opt.name.isEmpty {
+      if opt.name in nameMap {
+        throw NameConflictError("Option name conflict: '{0}'".format(opt.name));
+      }
+      nameMap[opt.name] = opt;
+    }
+    if not opt.abbrev.isEmpty {
+      if opt.abbrev in abbrevMap {
+        throw NameConflictError("Option abbreviated name conflict: '{0}'".format(opt.abbrev));
+      }
+      abbrevMap[opt.abbrev] = opt;
+    }
+  }
+}

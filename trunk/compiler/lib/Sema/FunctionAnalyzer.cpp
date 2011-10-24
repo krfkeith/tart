@@ -25,8 +25,6 @@
 
 #include "tart/Meta/MDReader.h"
 
-#define INFER_RETURN_TYPE 0
-
 namespace tart {
 
 static const FunctionDefn::PassSet PASS_SET_RESOLVETYPE = FunctionDefn::PassSet::of(
@@ -141,12 +139,6 @@ bool FunctionAnalyzer::runPasses(FunctionDefn::PassSet passesToRun) {
   if (passesToRun.contains(FunctionDefn::ParameterTypePass) && !resolveParameterTypes()) {
     return false;
   }
-
-#if INFER_RETURN_TYPE
-  if (passesToRun.contains(FunctionDefn::ReturnTypePass)) {
-    passesToRun.add(FunctionDefn::ControlFlowPass);
-  }
-#endif
 
   if (passesToRun.contains(FunctionDefn::ReturnTypePass) && !resolveReturnType()) {
     return false;
@@ -564,68 +556,6 @@ bool FunctionAnalyzer::resolveReturnType() {
     TypeList returnTypes;
     if (returnType.isNull()) {
       returnType = &VoidType::instance;
-#if INFER_RETURN_TYPE
-      BlockList & blocks = target->blocks();
-      for (BlockList::iterator it = blocks.begin(); it != blocks.end(); ++it) {
-        Block * bk = *it;
-        if (bk->terminator() == BlockTerm_Return) {
-          Type * type = &VoidType::instance;
-          Expr * returnExpr = bk->termValue();
-          SourceLocation loc;
-          if (returnExpr != NULL) {
-            type = returnExpr->type();
-            loc = returnExpr->location();
-          }
-
-          if (isErrorResult(type)) {
-            break;
-          } else if (returnTypes.empty()) {
-            returnTypeLoc = loc;
-            returnTypes.push_back(type);
-          } else {
-            // See if 'type' supercedes any existing types.
-            bool insertNew = true;
-            for (TypeList::iterator tp = returnTypes.begin(); tp != returnTypes.end();) {
-              Type * old = *tp;
-              if ((*tp)->isEqual(type)) {
-                insertNew = false;
-                ++tp;
-              } else {
-                // Find which type encompasses the other
-                ConversionRank tcOld = (*tp)->canConvert(type);
-                ConversionRank tcNew = type->canConvert(*tp);
-                if (tcNew > tcOld) {
-                  tp = returnTypes.erase(tp);
-                } else if (tcOld > tcNew) {
-                  insertNew = false;
-                  ++tp;
-                } else {
-                  ++tp;
-                }
-              }
-            }
-
-            if (insertNew) {
-              returnTypes.push_back(type);
-            }
-          }
-        }
-      }
-
-      if (returnTypes.size() == 0) {
-        returnType = &VoidType::instance;
-      } else if (returnTypes.size() == 1) {
-        returnType = returnTypes.front();
-      } else {
-        diag.fatal(target) << "Ambiguous return type";
-        for (TypeList::iterator it = returnTypes.begin(); it != returnTypes.end(); ++it) {
-          diag.info() << *it;
-        }
-
-        returnType = &BadType::instance;
-      }
-
-#endif
       funcType->setReturnType(returnType);
     }
 
@@ -634,49 +564,6 @@ bool FunctionAnalyzer::resolveReturnType() {
     if (returnType->typeClass() == Type::NAddress) {
       target->addTrait(Defn::Unsafe);
     }
-
-#if 0
-    // Add implicit casts to return statements if needed.
-    BlockList & blocks = target->blocks();
-    bool isVoidFunc = returnType->isVoidType();
-    for (BlockList::iterator it = blocks.begin(); it != blocks.end(); ++it) {
-      Block * bk = *it;
-      if (bk->terminator() == BlockTerm_Return) {
-        Expr * returnExpr = bk->termValue();
-        SourceLocation loc = bk->termLocation();
-
-        if (returnExpr != NULL) {
-          if (isVoidFunc) {
-            diag.error(returnExpr) << "function return type is void, return value not allowed";
-            break;
-          }
-
-          const Type * type = returnExpr->type();
-          if (!returnType->isEqual(type)) {
-            analyzeType(returnType, Task_PrepTypeComparison);
-            returnExpr = returnType->implicitCast(loc, returnExpr);
-            if (returnExpr != NULL) {
-              bk->exitReturn(loc, returnExpr);
-            }
-          }
-
-          if (returnExpr) {
-            loc = returnExpr->location();
-          }
-        } else if (!isVoidFunc) {
-          // See if we can convert a void expression to the return type.
-          Expr * voidExpr = ConstantNull::get(loc, &VoidType::instance);
-          returnExpr = returnType->implicitCast(loc, voidExpr);
-          if (returnExpr != NULL) {
-            bk->exitReturn(loc, returnExpr);
-          } else {
-            diag.error(loc) << "return value required";
-            break;
-          }
-        }
-      }
-    }
-#endif
 
     target->passes().finish(FunctionDefn::ReturnTypePass);
   }

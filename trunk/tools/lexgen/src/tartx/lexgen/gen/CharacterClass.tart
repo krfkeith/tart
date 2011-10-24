@@ -40,7 +40,7 @@ class CharacterClass : Iterable[CharacterRange] {
   def empty:bool { get { return ranges.size == 0; } }
 
   /** Iterate through the list of ranges. */
-  def iterate -> Iterator[CharacterRange] {
+  readonly def iterate -> Iterator[CharacterRange] {
     return ranges.iterate();
   }
 

@@ -1,0 +1,12 @@
+class Option[%T] : OptionBase {
+  private {
+    var _value:T?;
+    var _default:T?;
+  }
+
+  def construct(defaultVal:String = "") {
+    self._default = default;
+  }
+
+  def value:String { get { return _value; } }
+}

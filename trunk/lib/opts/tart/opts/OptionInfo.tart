@@ -1,0 +1,50 @@
+/** Information about an option - name, abbreviated name, help string, and so on. */
+class OptionInfo {
+  private {
+    let _option:OptionBase;
+    var _name:String = "";
+    var _abbrev:String = "";
+    var _argName:String = "";
+    var _help:String = "";
+    var _group:String = "";
+  }
+
+  def construct(option:OptionBase) {
+    self._option = option;
+  }
+
+  /** The actual option object. */
+  def option:OptionBase {
+    get { return _option; }
+  }
+
+  /** The argument name. */
+  def name:String {
+    get { return _name; }
+    set { _name = value; }
+  }
+
+  /** The abbreviated name, if any. */
+  def abbrev:String {
+    get { return _abbrev; }
+    set { _abbrev = value; }
+  }
+
+  /** The name of the argument (e.g. 'FILE'). */
+  def argName:String {
+    get { return _argName; }
+    set { _argName = value; }
+  }
+
+  /** The argument help string. */
+  def help:String {
+    get { return _help; }
+    set { _help = value; }
+  }
+
+  /** Which group of options this belongs to. */
+  def group:String {
+    get { return _group; }
+    set { _group = value; }
+  }
+}

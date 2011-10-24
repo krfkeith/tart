@@ -682,6 +682,7 @@ public:
     addTrait(Singular);
     setLinkageName("toString");
     setFlag(FunctionDefn::Final);
+    setFlag(FunctionDefn::ReadOnlySelf);
   }
 
   void init() {
