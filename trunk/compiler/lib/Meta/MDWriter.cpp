@@ -520,6 +520,11 @@ Value * MDWriter::expression(const Expr * in) {
       return NULL;
     }
 
+    case Expr::CtorCall: {
+      // TODO: Implement
+      return NULL;
+    }
+
     case Expr::UpCast: {
       const CastExpr * cast = static_cast<const CastExpr *>(in);
       MDNodeBuilder builder(context_);

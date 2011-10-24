@@ -284,7 +284,6 @@ bool AnalyzerBase::lookupNameInModule(LookupResults & out, StringRef modName,
     Module * m = primaries.front()->module();
     size_t dot = name.rfind('.');
     if (dot == name.npos) {
-      //m->createMembers();
       return findInScope(out, name, m, NULL, loc, NO_PREFERENCE);
     } else {
       DFAIL("Implement");

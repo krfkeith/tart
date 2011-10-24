@@ -17,7 +17,7 @@ class StringFormatter {
     var builder:StringBuilder;
   }
 
-  def construct(formatString:String, args:Object[]) {
+  def construct(formatString:String, args:readonly(Object[])) {
     self.formatString = formatString;
     self.args = args;
     self.formatIndex = 0;

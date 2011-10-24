@@ -166,10 +166,6 @@ void CodeGenerator::generate() {
     genEntryPoint();
   }
 
-  if (debug_) {
-    diBuilder_.finalize();
-  }
-
   genModuleMetadata();
 
   if (Dump) {
@@ -178,6 +174,10 @@ void CodeGenerator::generate() {
       irModule_->dump();
       fprintf(stderr, "------------------------------------------------\n");
     }
+  }
+
+  if (debug_) {
+    diBuilder_.finalize();
   }
 
   if (diag.getErrorCount() == 0) {

@@ -9,7 +9,6 @@ set(TARTLN_OPTIONS -disable-fp-elim -internalize -O0)
 # Module search path
 set(TART_MODULE_PATH
     -i ${TART_SOURCE_DIR}/lib/std
-    -i ${TART_SOURCE_DIR}/lib/opts
     -i ${SRC_ROOT})
 
 # Input files

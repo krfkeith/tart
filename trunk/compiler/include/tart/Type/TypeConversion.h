@@ -50,7 +50,7 @@ FormatStream & operator<<(FormatStream & out, ConversionRank tc);
 /// Input parameters for a type conversion operation.
 struct Conversion {
   enum Options {
-    Coerce = (1<<0),        // Allow coercive casts
+    CoerceToBool = (1<<0),  // Allow implicit coercion to boolean
     DynamicNull = (1<<1),   // Allow dynamic casts (null if fail)
     Checked = (1<<2),       // Allow dynamic casts (exception if fail)
     Explicit = (1<<3),      // Explicit conversion - allow int to float for example

@@ -460,7 +460,7 @@ Expr * ExprAnalyzer::reduceLogicalNot(const ASTOper * ast) {
     return &Expr::ErrorVal;
   }
 
-  value = BoolType::instance.implicitCast(ast->location(), value);
+  value = BoolType::instance.implicitCast(ast->location(), value, Conversion::CoerceToBool);
   if (isErrorResult(value)) {
     return value;
   }
