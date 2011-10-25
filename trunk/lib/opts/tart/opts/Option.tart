@@ -4,8 +4,10 @@ class Option[%T] : OptionBase {
     var _default:T?;
   }
 
-  def construct(defaultVal:String = "") {
-    self._default = default;
+  def construct() {}
+
+  def construct(defaultVal:T) {
+    self._default = defaultVal;
   }
 
   def value:String { get { return _value; } }

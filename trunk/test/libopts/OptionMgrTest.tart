@@ -1,4 +1,7 @@
+import tart.opts.Option;
 import tart.opts.OptionMgr;
+import tart.opts.OptionInfo;
+import tart.opts.OptionBase;
 import tart.testing.Test;
 
 @EntryPoint
@@ -9,5 +12,10 @@ def main(args:String[]) -> int32 {
 class OptionMgrTest : Test {
   def testGetSingleton() {
     let mgr = OptionMgr.get();
+  }
+
+  def testAddOption() {
+    let mgr = OptionMgr.get();
+    let opt = Option[String]();
   }
 }
