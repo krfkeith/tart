@@ -110,7 +110,7 @@ ConversionRank convertToBool(const Type * srcType, Expr * srcExpr,
     return convertConstantToBool(srcType, srcExpr, dstType, dstExpr, options);
   }
 
-  bool isChecked = !!(options & Conversion::Checked);
+  bool isChecked = (options & Conversion::Checked) != 0;
   if (const PrimitiveType * fromPType = dyn_cast<PrimitiveType>(srcType)) {
     TypeId srcId = fromPType->typeId();
     if (isIntegerTypeId(srcId)) {
@@ -123,7 +123,7 @@ ConversionRank convertToBool(const Type * srcType, Expr * srcExpr,
     }
   }
 
-  if (!!(options & Conversion::CoerceToBool) & dstExpr != NULL) {
+  if ((options & Conversion::CoerceToBool) != 0 & dstExpr != NULL) {
     Expr * coerced = coerceToBool(srcExpr);
     if (coerced != NULL) {
       *dstExpr = coerced;

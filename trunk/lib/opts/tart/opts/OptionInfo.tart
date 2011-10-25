@@ -13,6 +13,17 @@ class OptionInfo {
     self._option = option;
   }
 
+  def construct(
+      option:OptionBase, name:String, abbrev:String, argName:String, help:String,
+      group:String) {
+    self._option = option;
+    self._name = name;
+    self._abbrev = abbrev;
+    self._argName = argName;
+    self._help = help;
+    self._group = group;
+  }
+
   /** The actual option object. */
   def option:OptionBase {
     get { return _option; }
