@@ -1,11 +1,6 @@
 import tart.collections.HashSet;
 import tart.testing.Test;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(HashSetTest);
-}
-
 class HashSetTest : Test {
   def testEmptySet {
     let h = HashSet[String]();
@@ -13,7 +8,7 @@ class HashSetTest : Test {
     assertTrue(h.isEmpty);
     assertFalse("Hello" in h);
   }
-  
+
   def testAdd {
     let h = HashSet[String]();
     assertTrue(h.add("Hello"));
@@ -21,7 +16,7 @@ class HashSetTest : Test {
     assertFalse(h.isEmpty);
     assertTrue("Hello" in h);
   }
-  
+
   def testRemoveNonExisting {
     let h = HashSet[String]();
     assertTrue(h.add("Hello"));
@@ -30,7 +25,7 @@ class HashSetTest : Test {
     assertFalse(h.isEmpty);
     assertTrue("Hello" in h);
   }
-  
+
   def testAddRemove {
     let h = HashSet[String]();
     assertTrue(h.add("Hello"));
@@ -39,7 +34,7 @@ class HashSetTest : Test {
     assertTrue(h.isEmpty);
     assertFalse("Hello" in h);
   }
-  
+
   def testAddTwice {
     let h = HashSet[String]();
     assertTrue(h.add("Hello"));
@@ -47,7 +42,7 @@ class HashSetTest : Test {
     assertEq(1, h.size);
     assertFalse(h.isEmpty);
   }
-  
+
   def testAddRemoveOutOfOrder {
     let h = HashSet[String]();
     assertTrue(h.add("Hello"));
@@ -60,7 +55,7 @@ class HashSetTest : Test {
     assertEq(1, h.size);
     assertFalse(h.isEmpty);
   }
-  
+
   def testClear {
     let h = HashSet[String]();
     assertTrue(h.add("Hello"));
@@ -69,7 +64,7 @@ class HashSetTest : Test {
     assertTrue(h.isEmpty);
     assertFalse("Hello" in h);
   }
-  
+
   def testAddAll {
     let h = HashSet[String]();
     h.addAll("One", "Two", "Three", "Four");
@@ -80,7 +75,7 @@ class HashSetTest : Test {
     assertTrue("Three" in h);
     assertTrue("Four" in h);
   }
-  
+
   def testAddMany {
     let h = HashSet[String]();
     h.addAll("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14",
@@ -94,7 +89,7 @@ class HashSetTest : Test {
     assertTrue("16" in h);
     assertTrue("17" in h);
   }
-  
+
   def testIterate() {
     let h = buildLargeStringSet();
     var i = 0;
@@ -103,7 +98,7 @@ class HashSetTest : Test {
     }
     assertEq(26, i);
   }
-  
+
   def buildLargeStringSet() -> HashSet[String] {
     let h = HashSet[String]();
     h.addAll("a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
@@ -111,7 +106,7 @@ class HashSetTest : Test {
              "u", "v", "w", "x", "y", "z");
     return h;
   }
-  
+
   /**
   def construct(capacity:int32 = 0) {
   }

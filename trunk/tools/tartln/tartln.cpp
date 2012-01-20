@@ -285,7 +285,7 @@ std::auto_ptr<TargetMachine> selectTarget(Module & mod) {
 
   Triple theTriple(mod.getTargetTriple());
   if (theTriple.getTriple().empty()) {
-    theTriple.setTriple(sys::getHostTriple());
+    theTriple.setTriple(sys::getDefaultTargetTriple());
   }
 
   // Allocate target machine.  First, check whether the user has explicitly
@@ -340,8 +340,10 @@ std::auto_ptr<TargetMachine> selectTarget(Module & mod) {
 #endif
   }
 
+  TargetOptions options;
   return std::auto_ptr<TargetMachine>(
-      theTarget->createTargetMachine(theTriple.getTriple(), optMCPU, featuresStr));
+      theTarget->createTargetMachine(theTriple.getTriple(), optMCPU, StringRef(featuresStr),
+          options));
 }
 
 /// GenerateBitcode - generates a bitcode file from the module provided

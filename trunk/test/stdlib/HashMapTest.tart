@@ -1,11 +1,6 @@
 import tart.collections.HashMap;
 import tart.testing.Test;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(HashMapTest);
-}
-
 class HashMapTest : Test {
   def testEmptyMap {
     let h = HashMap[String, int32]();
@@ -48,7 +43,7 @@ class HashMapTest : Test {
     assertEq(1, h.size);
     assertFalse(h.isEmpty);
   }
-  
+
   def testAddRemoveOutOfOrder {
     let h = HashMap[String, int32]();
     h["Hello"] = 1;
@@ -61,7 +56,7 @@ class HashMapTest : Test {
     assertEq(1, h.size);
     assertFalse(h.isEmpty);
   }
-  
+
   def testClear {
     let h = HashMap[String, int32]();
     h["Hello"] = 1;
@@ -70,7 +65,7 @@ class HashMapTest : Test {
     assertTrue(h.isEmpty);
     assertFalse("Hello" in h);
   }
-  
+
   def testAddTuple {
     let h = HashMap[String, int32]();
     h.add(("One", 1));
@@ -107,7 +102,7 @@ class HashMapTest : Test {
     assertTrue("16" in h);
     assertTrue("17" in h);
   }
-  
+
   def testIterate() {
     let h = buildLargeStringSet();
     var i = 0;
@@ -116,7 +111,7 @@ class HashMapTest : Test {
     }
     assertEq(26, i);
   }
-  
+
   def buildLargeStringSet() -> HashSet[String] {
     let h = HashSet[String]();
     h.addAll("a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
@@ -124,6 +119,6 @@ class HashMapTest : Test {
              "u", "v", "w", "x", "y", "z");
     return h;
   }
-  
+
   */
 }

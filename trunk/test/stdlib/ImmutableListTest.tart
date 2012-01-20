@@ -1,11 +1,6 @@
 import tart.collections.ImmutableList;
 import tart.testing.Test;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(ImmutableListTest);
-}
-
 class ImmutableListTest : Test {
   def testConstruct() {
     let a = ImmutableList[int32].of(1, 2, 3);

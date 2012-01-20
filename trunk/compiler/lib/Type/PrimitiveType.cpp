@@ -534,89 +534,13 @@ ConversionRank PrimitiveType::fromUnsizedIntToFloat(const ConstantInteger * cint
 }
 
 ConversionRank PrimitiveType::convertToBool(const Conversion & cn) const {
-  const Type * fromType = cn.getFromType();
-  if (fromType == NULL) {
-    return Incompatible;
-  }
-
-  if (fromType == this) {
-    if (cn.resultValue) {
-      *cn.resultValue = cn.fromValue;
-    }
-
-    return IdenticalTypes;
-  }
-
-  if (ConstantExpr * cbase = dyn_cast_or_null<ConstantExpr>(cn.fromValue)) {
-    (void) cbase;
-    return convertConstantToBool(cn);
-  }
-
-  if (const PrimitiveType * fromPType = dyn_cast<PrimitiveType>(fromType)) {
-    TypeId srcId = fromPType->typeId();
-    if (isIntegerTypeId(srcId)) {
-      if (cn.fromValue && cn.resultValue) {
-        // Compare with 0.
-        *cn.resultValue = new CompareExpr(SourceLocation(), llvm::CmpInst::ICMP_NE, cn.fromValue,
-            ConstantInteger::get(SourceLocation(), cn.fromValue->type().unqualified(), 0));
-      }
-
-      return IntegerToBool;
-    }
-
-    return Incompatible;
-  } else if (cn.isChecked() && fromType->isReferenceType()) {
-    return convertFromObject(cn);
-/*  } else if (const UnionType * ut = dyn_cast<UnionType>(fromType)) {
-    if (ut->hasNullType() && ut->hasRefTypesOnly() && ut->numReferenceTypes() == 1) {
-      if (cn.fromValue && cn.resultValue) {
-        *cn.resultValue = new InstanceOfExpr(
-            cn.fromValue->location(), cn.fromValue, ut->getFirstNonVoidType());
-      }
-      return NonPreferred;
-    }
-    return Incompatible;
-*/  } else {
-    return Incompatible;
-  }
+  DFAIL("Deprecated");
+  return Incompatible;
 }
 
+#if 0
 ConversionRank PrimitiveType::convertConstantToBool(const Conversion & cn) const {
-  using namespace llvm;
-
-  const Type * fromType = cn.getFromType();
-  Expr * fromValue = cn.fromValue;
-
-  DASSERT(fromValue != NULL);
-  DASSERT(TypeRelation::isEqual(fromValue->type(), fromType));
-
-  if (ConstantInteger * cint = dyn_cast<ConstantInteger>(fromValue)) {
-    if (const EnumType * etype = dyn_cast<EnumType>(fromType)) {
-      fromType = etype->baseType();
-    }
-
-    const PrimitiveType * srcType = cast<PrimitiveType>(fromType);
-    TypeId srcId = srcType->typeId();
-    DASSERT(isIntegerTypeId(srcId) || srcId == TypeId_UnsizedInt);
-
-    if (cn.resultValue) {
-      Constant * cival = cint->value();
-      Constant * czero = Constant::getNullValue(cival->getType());
-      *cn.resultValue = new ConstantInteger(
-          cint->location(),
-          &BoolType::instance,
-          cast<ConstantInt>(
-              llvm::ConstantExpr::getCompare(ICmpInst::ICMP_NE, cival, czero)));
-    }
-
-    return IntegerToBool;
-  } else if (ConstantFloat * cfloat = dyn_cast<ConstantFloat>(fromValue)) {
-    (void) cfloat;
-    return Incompatible;
-  } else {
-    return Incompatible;
-  }
-}
+#endif
 
 ConversionRank PrimitiveType::convertFromObject(const Conversion & cn) const {
   if (cn.resultValue != NULL) {

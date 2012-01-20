@@ -2,11 +2,6 @@ import tart.collections.ArrayList;
 import tart.collections.ImmutableList;
 import tart.testing.Test;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(ArrayListTest);
-}
-
 class ArrayListTest : Test {
   def testConstruct() {
     let a = ArrayList[int32](1, 2, 3);

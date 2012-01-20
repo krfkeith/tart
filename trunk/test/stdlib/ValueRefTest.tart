@@ -1,10 +1,5 @@
 import tart.testing.Test;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(ValueRefTest);
-}
-
 class ValueRefTest : Test {
   def testManualUnboxFloat() {
     assertEq(5.0f, Refs.valueOf[float](int8(5)));

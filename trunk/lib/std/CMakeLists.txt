@@ -52,21 +52,15 @@ foreach(SRC_FILE ${TART_STDLIB_SRC})
   set(STDLIB_BC_FILES ${STDLIB_BC_FILES} "${OUT_FILE}")
 endforeach(SRC_FILE)
 
-# Target to drive the conversion
+# Generate library and dependencies
 add_custom_command(
-    OUTPUT libstd.bc
+    OUTPUT libstd.bc libstd.deps
     COMMAND ${LLVM_LD} -disable-opt -link-as-library -o libstd.bc ${STDLIB_BC_FILES}
+    COMMAND gendeps -o libstd.deps ${STDLIB_BC_FILES}
 #    COMMAND tartln -filetype=bc -link-as-library -o libstd.bc ${STDLIB_BC_FILES}
-    DEPENDS ${STDLIB_BC_FILES} tartln
+    DEPENDS ${STDLIB_BC_FILES} gendeps
     COMMENT "Linking libstd.bc")
     
-# Generate dependency info
-add_custom_command(
-    OUTPUT libstd.deps
-    COMMAND gendeps -o libstd.deps ${STDLIB_BC_FILES}
-    DEPENDS ${STDLIB_BC_FILES} gendeps
-    COMMENT "Generating dependencies for libstd.bc")
-
 add_custom_target(libstd DEPENDS libstd.bc libstd.deps)
 
 # Extract doc comments

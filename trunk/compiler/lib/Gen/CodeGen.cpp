@@ -57,6 +57,9 @@ Debug("g", llvm::cl::desc("Generate source-level debugging information"));
 llvm::cl::opt<bool>
 NoGC("nogc", llvm::cl::desc("Don't generate garbage-collection intrinsics"));
 
+llvm::cl::opt<bool>
+SsGC("ssgc", llvm::cl::desc("Don't generate garbage-collection intrinsics"));
+
 extern SystemNamespaceMember<FunctionDefn> gc_alloc;
 
 CodeGenerator::CodeGenerator(Module * mod)

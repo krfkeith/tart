@@ -4,11 +4,6 @@ import tart.opts.OptionInfo;
 import tart.opts.OptionBase;
 import tart.testing.Test;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(OptionMgrTest);
-}
-
 class OptionMgrTest : Test {
   def testGetSingleton() {
     let mgr = OptionMgr.get();
@@ -17,5 +12,7 @@ class OptionMgrTest : Test {
   def testAddOption() {
     let mgr = OptionMgr.get();
     let opt = Option[String]();
+    let opi = OptionInfo(opt, "input", "i", "FILE", "Input File", "");
+    mgr.add(opi);
   }
 }

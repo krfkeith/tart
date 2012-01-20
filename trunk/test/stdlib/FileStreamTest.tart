@@ -3,11 +3,6 @@ import tart.io.FileStream;
 import tart.io.IOError;
 import tart.io.IOStream;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(FileStreamTest);
-}
-
 class FileStreamTest : Test {
   def testOpenForRead {
     let fs = FileStream("iotest.txt");

@@ -65,6 +65,7 @@ find_package(LLVM REQUIRED)
 find_program(LLVM_LLC llc PATHS ${LLVM_BIN_DIR})
 find_program(LLVM_LD llvm-ld PATHS ${LLVM_BIN_DIR})
 find_program(LLVM_OPT opt PATHS ${LLVM_BIN_DIR})
+find_program(LLVM_AS llvm-as PATHS ${LLVM_BIN_DIR})
 find_program(CLANG clang PATHS ${LLVM_BIN_DIR} NO_DEFAULT_PATH)
 find_program(PYTHON3 python3)
 
@@ -188,6 +189,10 @@ endif (NOT MSVC)
 # Add the check-build target
 add_custom_target(check)
 
+# Global definitions used by tests.
+set(GC_PLUGIN "${PROJECT_BINARY_DIR}/linker/libgc${CMAKE_SHARED_LIBRARY_SUFFIX}")
+set(REFLECTOR_PLUGIN "${PROJECT_BINARY_DIR}/linker/libreflector${CMAKE_SHARED_LIBRARY_SUFFIX}")
+
 # Subdirs to compile
 add_subdirectory(compiler)
 add_subdirectory(linker)
@@ -198,6 +203,7 @@ add_subdirectory(test/unit)
 add_subdirectory(lib)
 add_subdirectory(test/compile)
 add_subdirectory(test/simple)
+#add_subdirectory(test/minimal)
 add_subdirectory(test/lang)
 add_subdirectory(test/stdlib)
 add_subdirectory(test/libopts)

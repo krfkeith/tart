@@ -3,11 +3,6 @@ import tart.testing.Test;
 import tart.collections.Iterators;
 import tart.collections.ArrayList;
 
-@EntryPoint
-def main(args: String[]) -> int32 {
-  return Test.run(IteratorTest);
-}
-
 class Counter : Iterator[int32] {
   private var value:int32;
   private var end:int32;

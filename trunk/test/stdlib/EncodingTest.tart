@@ -4,11 +4,6 @@ import tart.text.encodings.Codecs;
 import tart.text.encodings.UTF8;
 import tart.text.encodings.InvalidCharacterError;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(EncodingTest);
-}
-
 class EncodingTest : Test {
   def testUTF8CharLength() {
     let encoder = Codecs.UTF_8;

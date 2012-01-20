@@ -16,6 +16,7 @@ public class CompositeType : Type {
     var _nameIndex:int16;
     var _size:uint;
     let _typeInfo:Address[TypeInfoBlock];
+ //   var _module:Module;
     var _supertype:CompositeType?;
     var _interfaces:List[Type];
     var _typeParams:List[Type];

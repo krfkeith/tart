@@ -2,11 +2,6 @@ import tart.testing.Test;
 import tart.text.Character;
 import tart.text.CharacterTables;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(CharacterTest);
-}
-
 class CharacterTest : Test {
   def testIsLetter {
     assertTrue(Character.isLetter('a'));

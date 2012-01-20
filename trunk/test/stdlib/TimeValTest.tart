@@ -2,11 +2,6 @@ import tart.time.TimeSpan;
 import tart.time.TimeVal;
 import tart.testing.Test;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(TimeValTest);
-}
-
 class TimeValTest : Test {
   def testConstruct {
     let tv = TimeVal(0);

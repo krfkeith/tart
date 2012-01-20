@@ -50,10 +50,10 @@ bool ReflectorPass::runOnModule(Module & module) {
   for (Module::GlobalListType::iterator it = globals.begin(); it != globals.end(); ++it) {
     if (GlobalVariable * globalVar = dyn_cast<GlobalVariable>(it)) {
       if (globalVar->getName().startswith(".module")) {
-        //errs() << globalVar->getName() << "\n";
+//        errs() << globalVar->getName() << "\n";
         modules_[globalVar->getName()] = globalVar;
       } else if (globalVar->getName().startswith(".package")) {
-        //errs() << globalVar->getName() << "\n";
+//        errs() << globalVar->getName() << "\n";
         std::string packageName(globalVar->getName());
         packageName.erase(0, 9); // remove ".package."
         /*Package * p =*/ getOrCreatePackage(packageName, globalVar);
@@ -66,6 +66,7 @@ bool ReflectorPass::runOnModule(Module & module) {
     Type * moduleArrayType = requireType("tart.reflect.Module[]", module);
     Type * packageArrayType = requireType("tart.reflect.Package[]", module);
     Type * stringType = requireType("tart.core.String", module);
+    Type * moduleType = requireType("tart.reflect.Module", module);
 
     Constant * emptyModuleArray = requireGlobal("tart.reflect.Module[].emptyArray", module);
     Constant * emptyPackageArray = requireGlobal("tart.reflect.Package[].emptyArray", module);
@@ -106,10 +107,11 @@ bool ReflectorPass::runOnModule(Module & module) {
       // List of modules in package
 
       if (!p->modules().empty()) {
+        Type * modulePtrType = moduleType->getPointerTo();
         ConstantList modules;
         std::sort(p->modules().begin(), p->modules().end(), ModuleNameComparator());
         for (GlobalVarList::iterator m = p->modules().begin(); m != p->modules().end(); ++m) {
-          modules.push_back(*m);
+          modules.push_back(ConstantExpr::getPointerCast(*m, modulePtrType));
         }
 
         cb.addField(createArray(module, modules, moduleArrayTypeInfo, moduleArrayType,

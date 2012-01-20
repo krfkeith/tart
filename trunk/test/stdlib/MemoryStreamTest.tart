@@ -2,11 +2,6 @@ import tart.testing.Test;
 import tart.collections.ArrayList;
 import tart.io.MemoryStream;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(MemoryStreamTest);
-}
-
 class MemoryStreamTest : Test {
   def testEmptyMemoryStream() {
     let ms = MemoryStream();

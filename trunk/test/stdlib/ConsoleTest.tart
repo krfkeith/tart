@@ -1,11 +1,6 @@
 import tart.testing.Test;
 import tart.io.Console;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(ConsoleTest);
-}
-
 class ConsoleTest : Test {
   def testConsoleProperties {
 //    assertTrue(Console.cin.canRead);

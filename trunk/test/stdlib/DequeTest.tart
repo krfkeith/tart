@@ -3,11 +3,6 @@ import tart.collections.Deque;
 import tart.collections.ImmutableList;
 import tart.testing.Test;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(DequeTest);
-}
-
 class DequeTest : Test {
   def testConstruct() {
     let a = Deque[int32, 16]();

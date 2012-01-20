@@ -30,8 +30,8 @@ AddTartGC("tart-gc", "Tart garbage collector.");
 GCMetadataPrinterRegistry::Add<TartGCPrinter>
 AddTartGCPrinter("tart-gc", "Tart garbage collector.");
 
-static cl::opt<bool> optShowGC("show-gc",
-    cl::desc("Print debugging output from GC strategy"));
+//cl::opt<bool> optShowGC("show-gc",
+//    cl::desc("Print debugging output from GC strategy"));
 
 void addTartGC() {}
 
@@ -176,9 +176,9 @@ void TartGCPrinter::finishAssembly(AsmPrinter &AP) {
   for (iterator FI = begin(), FE = end(); FI != FE; ++FI) {
     GCFunctionInfo & gcFn = **FI;
 
-    if (optShowGC) {
-      errs() << "GCStrategy: Function: " << gcFn.getFunction().getName() << "\n";
-    }
+//    if (optShowGC) {
+//      errs() << "GCStrategy: Function: " << gcFn.getFunction().getName() << "\n";
+//    }
 
     // And each safe point...
     for (GCFunctionInfo::iterator sp = gcFn.begin(); sp != gcFn.end(); ++sp) {
@@ -305,19 +305,19 @@ void TartGCPrinter::finishAssembly(AsmPrinter &AP) {
       }
 
       safePoints.push_back(std::pair<MCSymbol *, MCSymbol *>(sp->Label, sTable->traceTableLabel));
-      if (optShowGC) {
-        if (!sTable->fieldOffsets.empty()) {
-          errs() << "GCStrategy:   Field offset descriptor:";
-          for (StackTraceTable::FieldOffsetList::const_iterator it = sTable->fieldOffsets.begin();
-              it != sTable->fieldOffsets.end(); ++it) {
-            errs() << " " << *it;
-          }
-          errs() << "\n";
-        }
-        if (!sTable->traceMethods.empty()) {
-          errs() << "GCStrategy:   Trace method descriptor: " << "\n";
-        }
-      }
+//      if (optShowGC) {
+//        if (!sTable->fieldOffsets.empty()) {
+//          errs() << "GCStrategy:   Field offset descriptor:";
+//          for (StackTraceTable::FieldOffsetList::const_iterator it = sTable->fieldOffsets.begin();
+//              it != sTable->fieldOffsets.end(); ++it) {
+//            errs() << " " << *it;
+//          }
+//          errs() << "\n";
+//        }
+//        if (!sTable->traceMethods.empty()) {
+//          errs() << "GCStrategy:   Trace method descriptor: " << "\n";
+//        }
+//      }
     }
   }
 

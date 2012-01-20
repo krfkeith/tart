@@ -2,11 +2,6 @@ import tart.testing.Test;
 import tart.io.MemoryStream;
 import tart.io.StreamTextWriter;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(StreamTextWriterTest);
-}
-
 class StreamTextWriterTest : Test {
   var mstream:MemoryStream;
   var writer:StreamTextWriter;
