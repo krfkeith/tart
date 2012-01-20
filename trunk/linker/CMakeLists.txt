@@ -7,7 +7,6 @@ if (CMAKE_COMPILER_IS_GNUCXX)
       -fno-operator-names -ffor-scope
       -fPIC
       -fno-rtti
-#      -fvisibility=hidden
       -shared
       )
    if ($PROFILE_TARTLN)

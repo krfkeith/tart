@@ -1,11 +1,6 @@
 import tart.reflect.Module;
 import tart.testing.Test;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(FunctionInterfaceTest);
-}
-
 class NoArgsCallable : Function[String] {
   def () -> String {
     return "NoArgs";

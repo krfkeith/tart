@@ -5,11 +5,6 @@ import tart.io.MemoryStream;
 import tart.io.StreamTextWriter;
 import tart.io.StreamTextReader;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(StreamTextReaderTest);
-}
-
 class StreamTextReaderTest : Test {
   def testConstruct {
     let reader = StreamTextReader(createStream("ab"));

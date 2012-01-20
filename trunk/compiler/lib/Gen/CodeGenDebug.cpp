@@ -147,6 +147,7 @@ DISubprogram CodeGenerator::genDISubprogram(const FunctionDefn * fn) {
   if ((MDNode *)sp == NULL) {
     DIType diFuncType = genDIFunctionType(fn->functionType());
     Function * fval = genFunctionValue(fn->mergeTo() ? fn->mergeTo() : fn);
+    DASSERT(fval != NULL);
     DASSERT(fn->hasBody()) << "genDISubprogram: Function " << fn << " has no body!";
     DASSERT_OBJ(!fn->isIntrinsic(), fn);
     DASSERT_OBJ(!fn->isAbstract(), fn);

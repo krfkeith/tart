@@ -110,7 +110,7 @@ namespace GC1 {
 
   @LinkageName("GC_collect") def collect() {
     // Swap the spaces.
-    //Debug.writeLn("== Begin collection ==");
+    Debug.writeLn("== Begin collection ==");
     //Debug.writeIntLn("  Heap size: ", toSpace.used);
     toSpace, fromSpace = fromSpace, toSpace;
     toSpace.pos = toSpace.begin;
@@ -147,10 +147,10 @@ namespace GC1 {
     }
 
     // Collect stats...
-    //Debug.writeLn("== Tracing complete ==");
+    Debug.writeLn("== Tracing complete ==");
     //Debug.writeIntLn("  Alloc count: ", TRACE_ACTION.count);
-    //Debug.writeIntLn("  Heap size: ", toSpace.used);
-    //Debug.writeLn("== Collection complete ==");
+    Debug.writeIntLn("  Heap size: ", toSpace.used);
+    Debug.writeLn("== Collection complete ==");
   }
 
   /** The trace action for this collector. This relocates objects to the current to-space

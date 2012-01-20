@@ -665,17 +665,21 @@ template<llvm::Intrinsic::ID id>
 inline Value * MathIntrinsic1i<id>::generate(CodeGenerator & cg, const FnCallExpr * call) const {
   const Expr * arg = call->arg(0);
   const PrimitiveType * argType = cast<PrimitiveType>(dealias(arg->type()).unqualified());
-  Value * argVal = cg.genExpr(arg);
+  Value * args[] = {
+    cg.genExpr(arg),
+    cg.builder().getInt1(false)
+  };
 
   if (argType->typeId() != TypeId_SInt32 && argType->typeId() != TypeId_SInt64) {
     diag.fatal(arg->location()) << "Bad intrinsic type.";
     return NULL;
   }
 
-  llvm::Type * types[1];
-  types[0] = argType->irType();
+  llvm::Type * types[] = {
+    argType->irType()
+  };
   Function * intrinsic = llvm::Intrinsic::getDeclaration(cg.irModule(), id, types);
-  return cg.builder().CreateCall(intrinsic, argVal);
+  return cg.builder().CreateCall(intrinsic, args);
 }
 
 template<>
@@ -840,8 +844,8 @@ Expr * EntryPointApplyIntrinsic::eval(const SourceLocation & loc, Module * calli
 
   Module * module = fn->module();
   if (module->entryPoint() != NULL) {
-    diag.error(fn) << "@EntryPoint attribute conflicts with earlier entry point: " <<
-    module->entryPoint();
+    diag.error(fn) << "@EntryPoint attribute conflicts with earlier entry point: "
+        << module->entryPoint();
   } else {
     module->setEntryPoint(fn);
     module->setProgramStartup(programStartFn);

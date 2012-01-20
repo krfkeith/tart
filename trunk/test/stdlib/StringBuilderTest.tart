@@ -1,23 +1,18 @@
 import tart.testing.Test;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(StringBuilderTest);
-}
-
 class StringBuilderTest : Test {
 	def testEmptyStringBuilder() {
 	  let sb = StringBuilder();
 	  assertEq(0, sb.size);
 	  assertEq("", sb.toString());
 	}
-	
+
 	def testNonEmptyStringBuilder() {
 	  let sb = StringBuilder("Hello");
 	  assertEq(5, sb.size);
 	  assertEq("Hello", sb.toString());
 	}
-	
+
 	def testStringBuilderAppend() {
 	  let sb = StringBuilder();
 	  sb.append("Hello");
@@ -30,7 +25,7 @@ class StringBuilderTest : Test {
 	  sb.append('!');
 	  assertEq("Hello, World!!", sb.toString());
 	}
-	
+
 	def testStringBuilderInsert() {
 	  let sb = StringBuilder();
 	  sb.append(", World");
@@ -39,7 +34,7 @@ class StringBuilderTest : Test {
 	  assertEq("Hello, World", sb.toString());
 	  sb.insert(sb.size, '!');
 	}
-	
+
 	def testStringBuilderRemove() {
 	  let sb = StringBuilder();
 	  sb.append("Hello, World");

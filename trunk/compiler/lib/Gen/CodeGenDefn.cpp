@@ -22,9 +22,13 @@
 #include "llvm/Function.h"
 #include "llvm/Analysis/Verifier.h"
 
+#include "llvm/Support/CommandLine.h"
+
 namespace tart {
 
 extern SystemNamespaceMember<FunctionDefn> gc_allocContext;
+
+extern llvm::cl::opt<bool> SsGC;
 
 using namespace llvm;
 
@@ -155,7 +159,11 @@ bool CodeGenerator::genFunction(FunctionDefn * fdef) {
     }
 
     if (gcEnabled_) {
-      f->setGC("tart-gc");
+      if (SsGC) {
+        f->setGC("shadow-stack");
+      } else {
+        f->setGC("tart-gc");
+      }
     }
 
     if (debug_) {

@@ -8,11 +8,6 @@ struct RefContainer {
   var c:String;
 }
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(GCTraceTest);
-}
-
 class GCTraceTest : Test {
   def testGCTrace {
     var a = "S1";

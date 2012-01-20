@@ -10,8 +10,15 @@ import tart.reflect.Reflect;
 
   /** Run all of the test cases in the specified package. */
   static def runAllTests(package:Package) -> int32 {
+    if package.name.isEmpty {
+      Debug.writeLn("Running tests in anonymous package.");
+    } else {
+      Debug.writeLn("Running tests in package: ", package.name);
+    }
+    var foundModules = false;
     var overallStatus:int32 = 0;
     for mod in package.modules {
+      foundModules = true;
       let testStatus = runAllTests(mod);
       if testStatus != 0 {
         overallStatus = testStatus;
@@ -19,10 +26,16 @@ import tart.reflect.Reflect;
     }
 
     for sub in package.subpackages {
+      foundModules = true;
       let testStatus = runAllTests(sub);
       if testStatus != 0 {
         overallStatus = testStatus;
       }
+    }
+
+    if not foundModules {
+      Debug.writeLn("No modules found!");
+      return 1;
     }
 
     return overallStatus;

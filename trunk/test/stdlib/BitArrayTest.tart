@@ -1,11 +1,6 @@
 import tart.collections.BitArray;
 import tart.testing.Test;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(BitArrayTest);
-}
-
 class BitArrayTest : Test {
   def testConstructEmpty() {
     let b = BitArray(0);

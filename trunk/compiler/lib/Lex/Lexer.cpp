@@ -104,7 +104,6 @@ namespace {
           break;
 
         case 'm':
-          if (strcmp(kw, "module") == 0) return Token_Module;
           if (strcmp(kw, "macro") == 0) return Token_Macro;
           if (strcmp(kw, "match") == 0) return Token_Match;
           if (strcmp(kw, "mutable") == 0) return Token_Mutable;

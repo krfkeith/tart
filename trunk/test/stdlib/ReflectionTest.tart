@@ -6,11 +6,6 @@ import tart.reflect.PrimitiveType;
 import tart.reflect.Reflect;
 import tart.testing.Test;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(ReflectionTest);
-}
-
 var savedValue:int32;
 
 @Reflect def sample() {

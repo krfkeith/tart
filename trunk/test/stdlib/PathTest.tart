@@ -1,11 +1,6 @@
 import tart.io.Path;
 import tart.testing.Test;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(PathTest);
-}
-
 class PathTest : Test {
   def testIsAbsolute {
     assertTrue(Path.isAbsolute("/foo/bar"));

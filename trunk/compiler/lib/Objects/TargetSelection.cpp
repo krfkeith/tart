@@ -13,23 +13,25 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/Host.h"
 
-static llvm::cl::opt<std::string>
-optTargetTriple("mtriple", llvm::cl::desc("Override target triple for module"));
+using namespace llvm;
 
-static llvm::cl::opt<std::string>
-optMArch("march", llvm::cl::desc("Architecture to generate code for (see --version)"));
+static cl::opt<std::string>
+optTargetTriple("mtriple", cl::desc("Override target triple for module"));
 
-static llvm::cl::opt<std::string>
+static cl::opt<std::string>
+optMArch("march", cl::desc("Architecture to generate code for (see --version)"));
+
+static cl::opt<std::string>
 optMCPU("mcpu",
-    llvm::cl::desc("Target a specific cpu type (-mcpu=help for details)"),
-    llvm::cl::value_desc("cpu-name"),
-    llvm::cl::init(""));
+    cl::desc("Target a specific cpu type (-mcpu=help for details)"),
+    cl::value_desc("cpu-name"),
+    cl::init(""));
 
-static llvm::cl::list<std::string>
+static cl::list<std::string>
 optMAttrs("mattr",
-    llvm::cl::CommaSeparated,
-    llvm::cl::desc("Target specific attributes (-mattr=help for details)"),
-    llvm::cl::value_desc("a1,+a2,-a3,..."));
+    cl::CommaSeparated,
+    cl::desc("Target specific attributes (-mattr=help for details)"),
+    cl::value_desc("a1,+a2,-a3,..."));
 
 namespace tart {
 
@@ -49,16 +51,16 @@ bool TargetSelection::selectTarget() {
   if (!optTargetTriple.empty()) {
     targetTriple_.setTriple(optTargetTriple);
   } else {
-    targetTriple_.setTriple(llvm::sys::getHostTriple());
+    targetTriple_.setTriple(sys::getDefaultTargetTriple());
   }
 
   // Allocate target machine.  First, check whether the user has explicitly
   // specified an architecture to compile for. If so we have to look it up by
   // name, because it might be a backend that has no mapping to a target triple.
-  const llvm::Target * target = 0;
+  const Target * target = 0;
   if (!optMArch.empty()) {
-    for (llvm::TargetRegistry::iterator it = llvm::TargetRegistry::begin(),
-           ie = llvm::TargetRegistry::end(); it != ie; ++it) {
+    for (TargetRegistry::iterator it = TargetRegistry::begin(),
+           ie = TargetRegistry::end(); it != ie; ++it) {
       if (optMArch == it->getName()) {
         target = &*it;
         break;
@@ -72,13 +74,13 @@ bool TargetSelection::selectTarget() {
 
     // Adjust the triple to match (if known), otherwise stick with the
     // module/host triple.
-    llvm::Triple::ArchType archType = llvm::Triple::getArchTypeForLLVMName(optMArch);
-    if (archType != llvm::Triple::UnknownArch) {
+    Triple::ArchType archType = Triple::getArchTypeForLLVMName(optMArch);
+    if (archType != Triple::UnknownArch) {
       targetTriple_.setArch(archType);
     }
   } else {
     std::string err;
-    target = llvm::TargetRegistry::lookupTarget(targetTriple_.getTriple(), err);
+    target = TargetRegistry::lookupTarget(targetTriple_.getTriple(), err);
     if (target == 0) {
       diag.error() << "Error auto-selecting target for module '"
              << err << "'.  Please use the -march option to explicitly "
@@ -88,11 +90,11 @@ bool TargetSelection::selectTarget() {
   }
 
   // Package up features to be passed to target/subtarget
-  llvm::SmallString<0> featuresStr;
+  SmallString<0> featuresStr;
   if (optMAttrs.size()) {
     DFAIL("Features disabled due to LLVM link error - investigate.");
 #if 0
-    llvm::SubtargetFeatures features;
+    SubtargetFeatures features;
     for (unsigned i = 0; i != optMAttrs.size(); ++i) {
       features.AddFeature(optMAttrs[i]);
     }
@@ -101,13 +103,15 @@ bool TargetSelection::selectTarget() {
 #endif
   }
 
-  targetMachine_ = target->createTargetMachine(targetTriple_.getTriple(), optMCPU, featuresStr);
+  TargetOptions options;
+  targetMachine_ = target->createTargetMachine(targetTriple_.getTriple(), optMCPU,
+      StringRef(featuresStr), options);
   assert(targetMachine_ && "Could not allocate target machine!");
   targetData_ = targetMachine_->getTargetData();
   return true;
 }
 
-void TargetSelection::addToModule(llvm::Module * module) {
+void TargetSelection::addToModule(Module * module) {
   if (initialized_) {
     module->setTargetTriple(targetTriple_.getTriple());
   }

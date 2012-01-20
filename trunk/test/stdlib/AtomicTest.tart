@@ -1,11 +1,6 @@
 import tart.testing.Test;
 import tart.atomic.AtomicInt;
 
-@EntryPoint
-def main(args:String[]) -> int32 {
-  return Test.run(AtomicTest);
-}
-
 class AtomicTest : Test {
   def testAtomicInt {
     var a = AtomicInt[int32](0);
